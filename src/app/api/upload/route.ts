@@ -125,3 +125,4 @@ export async function GET() {
     timestamp: new Date().toISOString(),
   });
 }
+// Force redeploy: 2026年 2月17日 週二 02時32分59秒 HKT
