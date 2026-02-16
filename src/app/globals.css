@@ -1,26 +1,30 @@
 @import "tailwindcss";
 
-/* ==================== 基礎樣式 ==================== */
+/* ==================== 無印風格基礎樣式 MUJI Style ==================== */
 
 :root {
-  --foreground-rgb: 17, 24, 39;
-  --background-start-rgb: 249, 250, 251;
-  --background-end-rgb: 243, 244, 246;
+  --bg-primary: #F5F5F0;
+  --bg-warm: #FAF9F7;
+  --text-primary: #4A4A4A;
+  --text-secondary: #8C8C8C;
+  --text-muted: #B5B5B5;
+  --accent-primary: #8C8C8C;
+  --accent-hover: #6B6B6B;
+  --accent-warm: #E0D5C7;
+  --border-color: #E5E5E5;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgb(var(--background-end-rgb))
-  )
-  rgb(var(--background-start-rgb));
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.025em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ==================== 手機優先響應式設計 ==================== */
+/* ==================== 手機優先設計 ==================== */
 
-/* 基礎觸控優化 */
 @layer base {
   /* 增大觸控目標 */
   button,
@@ -39,7 +43,7 @@ body {
   }
 }
 
-/* ==================== 自定義工具類 ==================== */
+/* ==================== 工具類 ==================== */
 
 @layer utilities {
   /* 文字截斷 */
@@ -57,15 +61,15 @@ body {
     overflow: hidden;
   }
 
-  /* 滾動條美化 */
+  /* 滾動條 */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    scrollbar-color: rgba(140, 140, 140, 0.3) transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -73,198 +77,185 @@ body {
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgba(156, 163, 175, 0.5);
-    border-radius: 3px;
+    background-color: rgba(140, 140, 140, 0.3);
+    border-radius: 2px;
+  }
+
+  /* 圖片風格 - 輕微去飽和 */
+  .img-muji {
+    filter: grayscale(20%);
+    transition: filter 0.3s ease;
+  }
+  
+  .img-muji:hover {
+    filter: grayscale(0%);
   }
 }
 
 /* ==================== 動畫 ==================== */
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from {
+  from { 
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
-  to {
+  to { 
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 .animate-slide-up {
-  animation: slideUp 0.4s ease-out;
-}
-
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-/* ==================== 主題顏色 ==================== */
-
-.bg-gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.text-gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  animation: slideUp 0.5s ease-out;
 }
 
 /* ==================== Markdown 樣式 ==================== */
 
 .markdown-content {
-  /* 基礎樣式 */
-  line-height: 1.75;
+  line-height: 1.8;
+  color: #4A4A4A;
 }
 
 .markdown-content h1 {
   font-size: 1.875rem;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #4A4A4A;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.02em;
 }
 
 .markdown-content h2 {
   font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 0.75rem;
-  margin-top: 1.5rem;
+  font-weight: 600;
+  color: #4A4A4A;
+  margin-bottom: 1rem;
+  margin-top: 2rem;
+  letter-spacing: 0.02em;
+  border-top: 1px solid #E5E5E5;
+  padding-top: 1.5rem;
 }
 
 .markdown-content h3 {
   font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-  margin-top: 1rem;
+  font-weight: 600;
+  color: #4A4A4A;
+  margin-bottom: 0.75rem;
+  margin-top: 1.5rem;
+  letter-spacing: 0.02em;
 }
 
 .markdown-content p {
-  color: #374151;
-  margin-bottom: 1rem;
-  line-height: 1.75;
+  color: #4A4A4A;
+  margin-bottom: 1.25rem;
+  line-height: 1.8;
 }
 
 .markdown-content ul {
   list-style-type: disc;
   list-style-position: inside;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .markdown-content ul li {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  color: #4A4A4A;
 }
 
 .markdown-content ol {
   list-style-type: decimal;
   list-style-position: inside;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .markdown-content ol li {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  color: #4A4A4A;
 }
 
 .markdown-content code {
-  background-color: #f3f4f6;
+  background-color: #F0F0F0;
   padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
   font-size: 0.875rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: #4f46e5;
+  color: #6B6B6B;
 }
 
 .markdown-content pre {
-  background-color: #111827;
-  border-radius: 0.75rem;
+  background-color: #F5F5F5;
+  border-radius: 0.5rem;
   padding: 1rem;
   overflow-x: auto;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  border-top: 1px solid #E5E5E5;
 }
 
 .markdown-content pre code {
   background-color: transparent;
-  color: #f3f4f6;
+  color: #4A4A4A;
   padding: 0;
 }
 
 .markdown-content blockquote {
-  border-left: 4px solid #818cf8;
+  border-left: 2px solid #C4B9AC;
   padding-left: 1rem;
-  font-style: italic;
-  color: #4b5563;
-  margin: 1rem 0;
+  font-style: normal;
+  color: #6B6B6B;
+  margin: 1.25rem 0;
 }
 
 .markdown-content img {
-  border-radius: 0.75rem;
+  border-radius: 0.25rem;
   max-width: 100%;
   height: auto;
-  margin: 1rem 0;
+  margin: 1.25rem 0;
+  filter: grayscale(20%);
 }
 
 .markdown-content a {
-  color: #4f46e5;
+  color: #6B6B6B;
   text-decoration: underline;
+  text-decoration-color: #C4B9AC;
+  text-underline-offset: 0.2em;
 }
 
 .markdown-content a:hover {
-  color: #4338ca;
+  color: #4A4A4A;
 }
 
 .markdown-content table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .markdown-content th,
 .markdown-content td {
-  border: 1px solid #e5e7eb;
-  padding: 0.5rem 1rem;
+  border-top: 1px solid #E5E5E5;
+  padding: 0.75rem 1rem;
+  text-align: left;
 }
 
 .markdown-content th {
-  background-color: #f9fafb;
+  background-color: #FAF9F7;
   font-weight: 600;
+  color: #4A4A4A;
 }
 
-/* ==================== 表單樣式（手機優先） ==================== */
+.markdown-content tr:last-child td {
+  border-bottom: 1px solid #E5E5E5;
+}
+
+/* ==================== 表單樣式 ==================== */
 
 input[type="text"],
 input[type="email"],
@@ -274,10 +265,13 @@ input[type="url"],
 textarea,
 select {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
+  padding: 0.875rem 1rem;
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid #E5E5E5;
+  background-color: #FAF9F7;
   font-size: 1rem;
+  color: #4A4A4A;
   transition: all 0.2s;
 }
 
@@ -289,8 +283,13 @@ input[type="url"]:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background-color: #F5F5F0;
+  border-top-color: #8C8C8C;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #B5B5B5;
 }
 
 textarea {
@@ -302,7 +301,7 @@ textarea {
 
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238C8C8C' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.75rem center;
   background-repeat: no-repeat;
   background-size: 1.5em 1.5em;
@@ -315,16 +314,16 @@ input[type="checkbox"],
 input[type="radio"] {
   width: 1.25rem;
   height: 1.25rem;
-  color: #4f46e5;
-  border-color: #d1d5db;
-  border-radius: 0.25rem;
+  color: #8C8C8C;
+  border-color: #D0D0D0;
+  border-radius: 0;
   cursor: pointer;
 }
 
 input[type="checkbox"]:focus,
 input[type="radio"]:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: none;
 }
 
 /* ==================== 滾動行為 ==================== */
@@ -336,8 +335,8 @@ html {
 /* ==================== 選中文本 ==================== */
 
 ::selection {
-  background-color: #e0e7ff;
-  color: #312e81;
+  background-color: #E0D5C7;
+  color: #4A4A4A;
 }
 
 /* ==================== 打印樣式 ==================== */
@@ -345,5 +344,9 @@ html {
 @media print {
   .no-print {
     display: none !important;
+  }
+  
+  body {
+    background: white;
   }
 }

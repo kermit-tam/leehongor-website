@@ -71,25 +71,25 @@ export default function AdminDashboard() {
           icon="📝"
           label="文章總數"
           value={stats.totalPosts}
-          color="indigo"
+          color="gray"
         />
         <StatCard
           icon="📚"
           label="課程總數"
           value={stats.totalLessons}
-          color="emerald"
+          color="earth"
         />
         <StatCard
           icon="👥"
           label="用戶總數"
           value={stats.totalUsers}
-          color="blue"
+          color="warm"
         />
         <StatCard
           icon="🔥"
           label="今日活躍"
           value={stats.todayActive}
-          color="amber"
+          color="gray"
         />
       </div>
 

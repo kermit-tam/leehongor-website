@@ -1,8 +1,8 @@
 /**
- * 六角雷達圖組件
- * Hexagonal Radar Chart Component
+ * 無印風格六角雷達圖
+ * MUJI Style Hexagonal Radar Chart
  * 
- * 顯示用戶在六個維度的實力分數
+ * 大地色系：柔和、自然
  */
 
 'use client';
@@ -28,14 +28,14 @@ const DIMENSION_LABELS: Record<QuizDimension, string> = {
   application: '應用',
 };
 
-// 維度顏色映射
+// 大地色系 - 無印風格
 const DIMENSION_COLORS: Record<QuizDimension, string> = {
-  pronunciation: '#8b5cf6', // violet-500
-  kanji: '#ec4899',         // pink-500
-  vocabulary: '#f59e0b',    // amber-500
-  grammar: '#10b981',       // emerald-500
-  listening: '#3b82f6',     // blue-500
-  application: '#ef4444',   // red-500
+  pronunciation: '#C4B9AC', // 暖灰褐
+  kanji: '#A8B5A0',         // 鼠尾草綠
+  vocabulary: '#D4C5B9',    // 淺駝色
+  grammar: '#B8B8B8',       // 中性灰
+  listening: '#D1C7B7',     // 米駝色
+  application: '#C9BCAD',   // 暖沙色
 };
 
 interface RadarChartProps {
@@ -63,24 +63,25 @@ export function AbilityRadarChart({
     <div className="relative" style={{ width: size, height: size }}>
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
-          <PolarGrid stroke="#e5e7eb" />
+          <PolarGrid stroke="#E5E5E5" />
           <PolarAngleAxis
             dataKey="dimension"
-            tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }}
+            tick={{ fill: '#8C8C8C', fontSize: 12, fontWeight: 400 }}
           />
           <PolarRadiusAxis
             angle={90}
             domain={[0, 100]}
-            tick={{ fill: '#9ca3af', fontSize: 10 }}
+            tick={{ fill: '#B5B5B5', fontSize: 10 }}
             tickCount={6}
+            axisLine={false}
           />
           <Radar
             name="實力分數"
             dataKey="score"
-            stroke="#667eea"
-            strokeWidth={2}
-            fill="#667eea"
-            fillOpacity={0.3}
+            stroke="#8C8C8C"
+            strokeWidth={1.5}
+            fill="#C4B9AC"
+            fillOpacity={0.4}
             isAnimationActive={animate}
           />
           <Tooltip
@@ -88,10 +89,10 @@ export function AbilityRadarChart({
               if (active && payload && payload.length) {
                 const data = payload[0].payload;
                 return (
-                  <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
-                    <p className="font-semibold text-gray-900">{data.dimension}</p>
-                    <p className="text-indigo-600 font-bold text-lg">{data.score} 分</p>
-                    <p className="text-gray-500 text-sm">嘗試次數: {data.attempts}</p>
+                  <div className="bg-[#FAF9F7] p-3 border-t border-[#E5E5E5] shadow-sm">
+                    <p className="text-[#4A4A4A] font-normal">{data.dimension}</p>
+                    <p className="text-[#6B6B6B] text-lg">{data.score} 分</p>
+                    <p className="text-[#8C8C8C] text-xs">嘗試 {data.attempts} 次</p>
                   </div>
                 );
               }
@@ -104,7 +105,7 @@ export function AbilityRadarChart({
   );
 }
 
-// ==================== 簡化版雷達圖（用於小空間） ====================
+// ==================== 簡化版雷達圖 ====================
 
 export function MiniRadarChart({
   abilityScores,
@@ -122,15 +123,15 @@ export function MiniRadarChart({
     <div style={{ width: size, height: size }}>
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
-          <PolarGrid stroke="#e5e7eb" strokeWidth={0.5} />
+          <PolarGrid stroke="#E5E5E5" strokeWidth={0.5} />
           <PolarAngleAxis tick={false} />
           <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
           <Radar
             dataKey="score"
-            stroke="#667eea"
-            strokeWidth={1.5}
-            fill="#667eea"
-            fillOpacity={0.25}
+            stroke="#8C8C8C"
+            strokeWidth={1}
+            fill="#C4B9AC"
+            fillOpacity={0.3}
             isAnimationActive={false}
           />
         </RadarChart>
@@ -159,44 +160,43 @@ export function AbilityScoreCard({
 
   return (
     <div
-      className={`relative p-4 rounded-xl border-2 transition-all ${
+      className={`relative p-5 bg-[#FAF9F7] border-t border-[#E5E5E5] transition-all ${
         isNewBest
-          ? 'border-yellow-400 bg-yellow-50 shadow-lg scale-105'
-          : 'border-gray-100 bg-white hover:border-gray-200'
+          ? 'bg-[#E0D5C7]/30'
+          : ''
       }`}
     >
       {isNewBest && (
-        <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white text-lg animate-bounce">
-          🏆
+        <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#D4C5B9] flex items-center justify-center text-white text-sm">
+          ★
         </div>
       )}
       
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-gray-600">{label}</span>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm text-[#8C8C8C] tracking-wide">{label}</span>
         <div
-          className="w-3 h-3 rounded-full"
+          className="w-2.5 h-2.5 rounded-full"
           style={{ backgroundColor: color }}
         />
       </div>
       
       <div className="flex items-baseline space-x-1">
         <span
-          className="text-3xl font-bold"
-          style={{ color: score > 0 ? color : '#9ca3af' }}
+          className="text-3xl font-light text-[#4A4A4A]"
         >
           {score}
         </span>
-        <span className="text-sm text-gray-400">/100</span>
+        <span className="text-sm text-[#B5B5B5]">/100</span>
       </div>
       
-      <div className="mt-2 text-xs text-gray-400">
+      <div className="mt-2 text-xs text-[#B5B5B5]">
         嘗試 {attempts} 次
       </div>
       
       {/* 進度條 */}
-      <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="mt-4 h-[2px] bg-[#E5E5E5]">
         <div
-          className="h-full rounded-full transition-all duration-500"
+          className="h-full transition-all duration-500"
           style={{
             width: `${score}%`,
             backgroundColor: color,

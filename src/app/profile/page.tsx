@@ -150,25 +150,25 @@ export default function ProfilePage() {
           label="成就分數"
           value={displayUser.achievementExp}
           subtext={`Lv.${displayUser.level}`}
-          color="amber"
+          color="warm"
         />
         <StatCard
           icon="📖"
           label="已完成"
           value={displayUser.completedLessons.length}
-          color="emerald"
+          color="earth"
         />
         <StatCard
           icon="🔓"
           label="已解鎖"
           value={displayUser.unlockedLessons.length}
-          color="indigo"
+          color="gray"
         />
         <StatCard
           icon="🔥"
           label="連續登入"
           value={`${displayUser.streakDays}天`}
-          color="rose"
+          color="gray"
         />
       </div>
 

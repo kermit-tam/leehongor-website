@@ -1,6 +1,6 @@
 /**
- * 導航欄組件
- * Navbar Component
+ * 無印風格導航欄
+ * MUJI Style Navbar
  */
 
 'use client';
@@ -26,13 +26,13 @@ export function Navbar() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+    <nav className="sticky top-0 z-50 bg-[#F5F5F0]/95 backdrop-blur-sm border-t border-[#E5E5E5]">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-2xl">🇯🇵</span>
-            <span className="font-bold text-xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <Link href="/" className="flex items-center space-x-3">
+            <span className="text-xl">🎌</span>
+            <span className="font-normal text-lg tracking-wider text-[#4A4A4A]">
               利康哥日文
             </span>
           </Link>
@@ -43,41 +43,40 @@ export function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="px-4 py-2 rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                className="px-4 py-2 text-[#8C8C8C] hover:text-[#4A4A4A] transition-colors tracking-wide"
               >
-                <span className="mr-1">{item.icon}</span>
                 {item.label}
               </Link>
             ))}
           </div>
 
           {/* User Section */}
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
-                <Link href="/profile" className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors">
-                  <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+                <Link href="/profile" className="flex items-center space-x-3 hover:bg-[#FAF9F7] px-3 py-2 transition-colors">
+                  <div className="relative w-8 h-8 bg-[#E0D5C7] flex items-center justify-center text-[#4A4A4A] text-sm">
                     {user.avatar ? (
                       <Image
                         src={user.avatar}
                         alt={user.name}
                         fill
-                        className="object-cover"
+                        className="object-cover grayscale-[20%]"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">
-                        {user.name.charAt(0)}
-                      </div>
+                      user.name.charAt(0)
                     )}
                   </div>
                   <div className="text-sm">
-                    <div className="font-medium text-gray-900">{user.name}</div>
-                    <div className="text-xs text-gray-500">Lv.{user.level}</div>
+                    <div className="text-[#4A4A4A]">{user.name}</div>
                   </div>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={logout}>
+                <button 
+                  onClick={logout}
+                  className="text-[#8C8C8C] hover:text-[#4A4A4A] text-sm tracking-wide"
+                >
                   登出
-                </Button>
+                </button>
               </>
             ) : (
               <Link href="/">
@@ -90,16 +89,16 @@ export function Navbar() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            className="md:hidden p-2 text-[#8C8C8C] hover:text-[#4A4A4A]"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? (
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
             ) : (
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             )}
           </button>
@@ -107,16 +106,15 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100">
-            <div className="space-y-2">
+          <div className="md:hidden py-4 border-t border-[#E5E5E5]">
+            <div className="space-y-1">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  className="block px-4 py-3 text-[#8C8C8C] hover:text-[#4A4A4A] hover:bg-[#FAF9F7] transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span className="text-xl mr-3">{item.icon}</span>
                   {item.label}
                 </Link>
               ))}
@@ -125,10 +123,9 @@ export function Navbar() {
                 <>
                   <Link
                     href="/profile"
-                    className="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    className="block px-4 py-3 text-[#4A4A4A] hover:bg-[#FAF9F7] transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <span className="text-xl mr-3">👤</span>
                     個人中心
                   </Link>
                   <button
@@ -136,19 +133,17 @@ export function Navbar() {
                       logout();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full flex items-center px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full text-left px-4 py-3 text-[#8C8C8C] hover:text-[#4A4A4A] hover:bg-[#FAF9F7] transition-colors"
                   >
-                    <span className="text-xl mr-3">🚪</span>
                     登出
                   </button>
                 </>
               ) : (
                 <Link
                   href="/"
-                  className="flex items-center px-4 py-3 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  className="block px-4 py-3 text-[#4A4A4A] hover:bg-[#FAF9F7] transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span className="text-xl mr-3">🔑</span>
                   登入
                 </Link>
               )}

@@ -24,6 +24,10 @@ import { auth, googleProvider } from './firebase';
 import { UserService } from './firestore';
 import type { User } from '@/types';
 
+// ==================== Admin 用戶配置 ====================
+// 這些郵箱會自動設為管理員
+const ADMIN_EMAILS = ['Kermit.tam@gmail.com', 'kermit.tam@gmail.com'];
+
 // ==================== Context 類型定義 ====================
 
 interface AuthContextType {
@@ -68,14 +72,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (userData) {
           // 更新最後登入時間
           await UserService.updateLastLogin(firebaseUser.uid);
-          setUser(userData);
+          
+          // 檢查是否為 Admin 郵箱但未設為 admin
+          if (firebaseUser.email && 
+              ADMIN_EMAILS.includes(firebaseUser.email) && 
+              userData.role !== 'admin') {
+            await UserService.setAdmin(firebaseUser.uid);
+            // 重新獲取用戶資料
+            const updatedUser = await UserService.getUser(firebaseUser.uid);
+            setUser(updatedUser);
+          } else {
+            setUser(userData);
+          }
         } else {
           // 新用戶，創建資料
+          const isAdmin = firebaseUser.email && ADMIN_EMAILS.includes(firebaseUser.email);
+          
           await UserService.createUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
             name: firebaseUser.displayName || '',
             avatar: firebaseUser.photoURL || '',
+            role: isAdmin ? 'admin' : 'user',
           });
           
           const newUser = await UserService.getUser(firebaseUser.uid);
@@ -101,13 +119,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const existingUser = await UserService.getUser(firebaseUser.uid);
       
       if (!existingUser) {
-        // 創建新用戶
+        // 創建新用戶，檢查是否為 Admin
+        const isAdmin = firebaseUser.email && ADMIN_EMAILS.includes(firebaseUser.email);
+        
         await UserService.createUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email || '',
           name: firebaseUser.displayName || '',
           avatar: firebaseUser.photoURL || '',
+          role: isAdmin ? 'admin' : 'user',
         });
+      } else {
+        // 檢查現有用戶是否應該為 Admin
+        if (firebaseUser.email && 
+            ADMIN_EMAILS.includes(firebaseUser.email) && 
+            existingUser.role !== 'admin') {
+          await UserService.setAdmin(firebaseUser.uid);
+        }
       }
       
       // 刷新用戶資料

@@ -1,8 +1,8 @@
 /**
- * 按鈕組件
- * Button Component
+ * 無印風格按鈕組件
+ * MUJI Style Button Component
  * 
- * 支援多種變體和大小，手機優先設計
+ * 簡約、大按鈕、易撳
  */
 
 'use client';
@@ -14,7 +14,7 @@ interface ButtonProps {
   onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg' | 'xl';  // xl 為手機優先的大按鈕
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   disabled?: boolean;
   loading?: boolean;
   className?: string;
@@ -32,30 +32,39 @@ export function Button({
   className = '',
   fullWidth = false,
 }: ButtonProps) {
-  // 基礎樣式
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  // 基礎樣式 - 無印風格
+  const baseStyles = 'inline-flex items-center justify-center font-normal tracking-wide transition-all duration-200 focus:outline-none';
   
-  // 變體樣式
+  // 變體樣式 - 大地色系
   const variantStyles = {
-    primary: 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 focus:ring-indigo-500 shadow-md hover:shadow-lg',
-    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500',
-    outline: 'border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50 focus:ring-indigo-500',
-    ghost: 'text-indigo-600 hover:bg-indigo-50 focus:ring-indigo-500',
-    danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
+    // 主按鈕：灰色
+    primary: 'bg-[#8C8C8C] text-white hover:bg-[#6B6B6B] active:bg-[#5A5A5A]',
+    
+    // 次要按鈕：米白背景
+    secondary: 'bg-[#FAF9F7] text-[#4A4A4A] hover:bg-[#F0F0F0] border-t border-[#E5E5E5]',
+    
+    // 邊框按鈕
+    outline: 'bg-transparent text-[#4A4A4A] border border-[#8C8C8C] hover:bg-[#FAF9F7]',
+    
+    // 幽靈按鈕
+    ghost: 'bg-transparent text-[#8C8C8C] hover:text-[#4A4A4A] hover:bg-[#F5F5F0]',
+    
+    // 危險按鈕
+    danger: 'bg-[#B8A8A0] text-white hover:bg-[#A09088]',
   };
   
-  // 大小樣式（手機優先：xl 尺寸特別大，易於點擊）
+  // 大小樣式 - 手機優先大按鈕
   const sizeStyles = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
-    xl: 'px-8 py-4 text-xl min-h-[56px]',  // 手機優先：大按鈕
+    sm: 'px-4 py-2 text-sm min-h-[40px]',
+    md: 'px-6 py-3 text-base min-h-[48px]',
+    lg: 'px-8 py-4 text-lg min-h-[56px]',
+    xl: 'px-10 py-5 text-xl min-h-[64px]',  // 手機優先：特大按鈕
   };
   
   // 狀態樣式
   const stateStyles = (disabled || loading) 
-    ? 'opacity-50 cursor-not-allowed' 
-    : 'active:scale-95';
+    ? 'opacity-40 cursor-not-allowed' 
+    : 'active:scale-[0.98]';
   
   const widthStyles = fullWidth ? 'w-full' : '';
 
@@ -74,8 +83,8 @@ export function Button({
       `}
     >
       {loading && (
-        <svg className="animate-spin -ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <svg className="animate-spin -ml-1 mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
         </svg>
       )}
@@ -93,7 +102,7 @@ export function GoogleLoginButton({ onClick, loading = false }: { onClick: () =>
       loading={loading}
       size="xl"
       fullWidth
-      className="bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:shadow-md"
+      className="bg-white text-[#4A4A4A] border border-[#E5E5E5] hover:bg-[#FAF9F7]"
     >
       <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24">
         <path

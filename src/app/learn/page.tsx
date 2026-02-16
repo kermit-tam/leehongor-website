@@ -130,25 +130,25 @@ export default function LearnPage() {
               label="已完成"
               value={displayUser.completedLessons.length}
               subtext={`共 ${lessons.length} 課`}
-              color="emerald"
+              color="earth"
             />
             <StatCard
               icon="🔓"
               label="已解鎖"
               value={displayUser.unlockedLessons.length}
-              color="indigo"
+              color="gray"
             />
             <StatCard
               icon="⭐"
               label="成就分數"
               value={displayUser.achievementExp}
-              color="amber"
+              color="warm"
             />
             <StatCard
               icon="🏅"
               label="徽章"
               value={displayUser.badges.length}
-              color="rose"
+              color="gray"
             />
           </div>
         </>
