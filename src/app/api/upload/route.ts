@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     const cloudinaryFormData = new FormData();
     cloudinaryFormData.append('file', file);
     cloudinaryFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    // 注意：不傳 folder，使用 Preset 的默認設置 (samples/ecommerce)
+    // folder 會使用 Preset 設置的 leehongor
 
     console.log('API Upload: 開始上傳到 Cloudinary');
     console.log('API Upload: Upload Preset', CLOUDINARY_UPLOAD_PRESET);
