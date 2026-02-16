@@ -106,13 +106,14 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   console.log('API Upload: GET 請求');
   
-  const isConfigured = CLOUDINARY_CLOUD_NAME !== 'your-cloud-name';
+  // 硬編碼配置，總是已配置
+  const isConfigured = true;
   
   console.log('API Upload: 配置狀態', { isConfigured, cloudName: CLOUDINARY_CLOUD_NAME });
   
   return NextResponse.json({
     configured: isConfigured,
-    cloudName: isConfigured ? CLOUDINARY_CLOUD_NAME : null,
+    cloudName: CLOUDINARY_CLOUD_NAME,
     timestamp: new Date().toISOString(),
   });
 }
