@@ -58,8 +58,7 @@ export async function uploadImage(
  * 檢查 Cloudinary 是否已配置
  */
 export function isCloudinaryConfigured(): boolean {
-  return CLOUDINARY_CLOUD_NAME !== 'your-cloud-name' && 
-         CLOUDINARY_UPLOAD_PRESET !== 'leehongor_unsigned';
+  return CLOUDINARY_CLOUD_NAME !== 'your-cloud-name';
 }
 
 /**
