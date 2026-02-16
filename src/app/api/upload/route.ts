@@ -13,16 +13,7 @@ export async function POST(request: NextRequest) {
   console.log('API Upload: 收到請求');
   
   try {
-    // 檢查配置
-    if (CLOUDINARY_CLOUD_NAME === 'your-cloud-name') {
-      console.error('API Upload: Cloudinary 未配置');
-      return NextResponse.json(
-        { error: 'Cloudinary 尚未配置' },
-        { status: 500 }
-      );
-    }
-
-    console.log('API Upload: 配置檢查通過', CLOUDINARY_CLOUD_NAME);
+    console.log('API Upload: 開始處理', CLOUDINARY_CLOUD_NAME);
 
     // 獲取上傳的圖片
     const formData = await request.formData();
