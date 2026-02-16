@@ -9,8 +9,9 @@
 // ==================== Cloudinary 配置 ====================
 // 請在 .env.local 中填入你的配置，或直接修改這裡
 
-const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
-const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'leehongor_unsigned';
+// 硬編碼 Cloudinary 配置（確保 production 可用）
+const CLOUDINARY_CLOUD_NAME = 'drld2cjpo';
+const CLOUDINARY_UPLOAD_PRESET = 'leehongor_unsigned';
 
 /**
  * 上傳圖片到 Cloudinary
