@@ -10,19 +10,31 @@ const CLOUDINARY_CLOUD_NAME = 'drld2cjpo';
 const CLOUDINARY_UPLOAD_PRESET = 'leehongor_unsigned';
 
 export async function POST(request: NextRequest) {
+  console.log('API Upload: 收到請求');
+  
   try {
     // 檢查配置
     if (CLOUDINARY_CLOUD_NAME === 'your-cloud-name') {
+      console.error('API Upload: Cloudinary 未配置');
       return NextResponse.json(
         { error: 'Cloudinary 尚未配置' },
         { status: 500 }
       );
     }
 
+    console.log('API Upload: 配置檢查通過', CLOUDINARY_CLOUD_NAME);
+
     // 獲取上傳的圖片
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const folder = (formData.get('folder') as string) || 'leehongor';
+
+    console.log('API Upload: 文件信息', { 
+      hasFile: !!file, 
+      fileType: file?.type, 
+      fileSize: file?.size,
+      folder 
+    });
 
     if (!file) {
       return NextResponse.json(
@@ -53,18 +65,22 @@ export async function POST(request: NextRequest) {
     cloudinaryFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
     cloudinaryFormData.append('folder', folder);
 
+    console.log('API Upload: 開始上傳到 Cloudinary');
+
     // 上傳到 Cloudinary
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: cloudinaryFormData,
-      }
-    );
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+    console.log('API Upload: URL', uploadUrl);
+    
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      body: cloudinaryFormData,
+    });
+
+    console.log('API Upload: Cloudinary 響應狀態', response.status);
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('Cloudinary error:', error);
+      console.error('API Upload: Cloudinary 錯誤', error);
       return NextResponse.json(
         { error: error.error?.message || '上傳到 Cloudinary 失敗' },
         { status: 500 }
@@ -72,6 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
+    console.log('API Upload: 成功', data.secure_url);
     
     // 返回成功結果
     return NextResponse.json({
@@ -81,9 +98,9 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Upload API error:', error);
+    console.error('API Upload: 意外錯誤', error);
     return NextResponse.json(
-      { error: '上傳過程中發生錯誤' },
+      { error: '上傳過程中發生錯誤: ' + (error instanceof Error ? error.message : '未知錯誤') },
       { status: 500 }
     );
   }
@@ -91,10 +108,15 @@ export async function POST(request: NextRequest) {
 
 // 檢查配置狀態
 export async function GET() {
+  console.log('API Upload: GET 請求');
+  
   const isConfigured = CLOUDINARY_CLOUD_NAME !== 'your-cloud-name';
+  
+  console.log('API Upload: 配置狀態', { isConfigured, cloudName: CLOUDINARY_CLOUD_NAME });
   
   return NextResponse.json({
     configured: isConfigured,
     cloudName: isConfigured ? CLOUDINARY_CLOUD_NAME : null,
+    timestamp: new Date().toISOString(),
   });
 }
