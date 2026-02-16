@@ -27,13 +27,11 @@ export async function POST(request: NextRequest) {
     // 獲取上傳的圖片
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const folder = (formData.get('folder') as string) || 'leehongor';
 
     console.log('API Upload: 文件信息', { 
       hasFile: !!file, 
       fileType: file?.type, 
-      fileSize: file?.size,
-      folder 
+      fileSize: file?.size 
     });
 
     if (!file) {
@@ -63,9 +61,10 @@ export async function POST(request: NextRequest) {
     const cloudinaryFormData = new FormData();
     cloudinaryFormData.append('file', file);
     cloudinaryFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    cloudinaryFormData.append('folder', folder);
+    // 注意：不傳 folder，使用 Preset 的默認設置 (samples/ecommerce)
 
     console.log('API Upload: 開始上傳到 Cloudinary');
+    console.log('API Upload: Upload Preset', CLOUDINARY_UPLOAD_PRESET);
 
     // 上傳到 Cloudinary
     const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
@@ -79,10 +78,16 @@ export async function POST(request: NextRequest) {
     console.log('API Upload: Cloudinary 響應狀態', response.status);
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('API Upload: Cloudinary 錯誤', error);
+      const errorText = await response.text();
+      console.error('API Upload: Cloudinary 錯誤響應', errorText);
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch {
+        error = { message: errorText };
+      }
       return NextResponse.json(
-        { error: error.error?.message || '上傳到 Cloudinary 失敗' },
+        { error: error.error?.message || error.message || '上傳到 Cloudinary 失敗' },
         { status: 500 }
       );
     }
