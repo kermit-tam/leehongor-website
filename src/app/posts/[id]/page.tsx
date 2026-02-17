@@ -1,6 +1,6 @@
 /**
- * 文章詳情頁 - 無印風格 + 生字 + MC題
- * Post Detail Page with Vocabulary & Quiz
+ * 文章詳情頁 - 無印風格 + 生字 + MC題 + 評論
+ * Post Detail Page with Vocabulary, Quiz & Comments
  */
 
 'use client';
@@ -10,9 +10,10 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { PostService } from '@/lib/firestore';
+import { PostService, CommentService } from '@/lib/firestore';
+import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
-import type { Post, Vocabulary, PostQuiz } from '@/types';
+import type { Post, Vocabulary, PostQuiz, Comment, CommentType } from '@/types';
 
 // ==================== 生字卡片組件 ====================
 
@@ -172,6 +173,191 @@ function QuizSection({ quizzes, postId }: { quizzes: PostQuiz[]; postId: string 
   );
 }
 
+// ==================== 評論區組件 ====================
+
+function CommentSection({ postId }: { postId: string }) {
+  const { user } = useAuth();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [commentType, setCommentType] = useState<CommentType>('comment');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadComments();
+  }, [postId]);
+
+  const loadComments = async () => {
+    try {
+      setIsLoading(true);
+      const fetchedComments = await CommentService.getComments(postId);
+      setComments(fetchedComments);
+    } catch (err) {
+      console.error('Error loading comments:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newComment.trim()) return;
+
+    try {
+      setIsSubmitting(true);
+      await CommentService.createComment({
+        postId,
+        userId: user.uid,
+        userName: user.name || '匿名用戶',
+        userAvatar: user.avatar || undefined,
+        type: commentType,
+        content: newComment.trim(),
+      });
+      setNewComment('');
+      await loadComments();
+    } catch (err) {
+      console.error('Error posting comment:', err);
+      alert('發送失敗，請重試');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('zh-HK', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return (
+    <div className="mt-8 bg-[#FAF9F7] border-t border-[#E5E5E5]">
+      {/* 標題 */}
+      <div className="px-6 py-4 border-b border-[#E5E5E5]">
+        <h3 className="text-lg font-normal text-[#4A4A4A] tracking-wide">
+          💬 討論區 ({comments.length})
+        </h3>
+      </div>
+
+      {/* 評論列表 */}
+      <div className="divide-y divide-[#E5E5E5]">
+        {isLoading ? (
+          <div className="p-6 text-center text-[#8C8C8C]">載入中...</div>
+        ) : comments.length === 0 ? (
+          <div className="p-6 text-center text-[#8C8C8C]">
+            暫無討論，{user ? '來發表第一則留言吧！' : '登入後即可參與討論'}
+          </div>
+        ) : (
+          comments.map((comment) => (
+            <div key={comment.id} className="p-5 hover:bg-[#F5F5F0] transition-colors">
+              <div className="flex items-start gap-3">
+                {/* 頭像 */}
+                <div className="w-10 h-10 rounded-full bg-[#E0D5C7] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {comment.userAvatar ? (
+                    <img src={comment.userAvatar} alt={comment.userName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[#8C8C8C] text-lg">👤</span>
+                  )}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  {/* 頭部信息 */}
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-medium text-[#4A4A4A]">{comment.userName}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      comment.type === 'question' 
+                        ? 'bg-[#E0D5C7] text-[#4A4A4A]' 
+                        : 'bg-[#F5F5F0] text-[#8C8C8C]'
+                    }`}>
+                      {comment.type === 'question' ? '❓ 提問' : '💬 留言'}
+                    </span>
+                    <span className="text-xs text-[#B5B5B5]">{formatDate(comment.createdAt)}</span>
+                  </div>
+                  
+                  {/* 內容 */}
+                  <p className="text-[#4A4A4A] whitespace-pre-wrap">{comment.content}</p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* 發表評論 */}
+      <div className="p-6 border-t border-[#E5E5E5] bg-[#FAF9F7]">
+        {user ? (
+          <form onSubmit={handleSubmit}>
+            {/* 類型選擇 */}
+            <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setCommentType('comment')}
+                className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                  commentType === 'comment'
+                    ? 'bg-[#8C8C8C] text-white'
+                    : 'bg-white border border-[#E5E5E5] text-[#8C8C8C] hover:border-[#8C8C8C]'
+                }`}
+              >
+                💬 留言
+              </button>
+              <button
+                type="button"
+                onClick={() => setCommentType('question')}
+                className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                  commentType === 'question'
+                    ? 'bg-[#C4B9AC] text-white'
+                    : 'bg-white border border-[#E5E5E5] text-[#8C8C8C] hover:border-[#C4B9AC]'
+                }`}
+              >
+                ❓ 提問
+              </button>
+            </div>
+            
+            {/* 輸入框 */}
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder={commentType === 'question' ? '有什麼疑問想問？' : '分享你的想法...'}
+              rows={3}
+              className="w-full px-4 py-3 bg-white border border-[#E5E5E5] rounded text-[#4A4A4A] focus:border-[#8C8C8C] focus:outline-none resize-none"
+            />
+            
+            {/* 提交按鈕 */}
+            <div className="flex justify-between items-center mt-3">
+              <span className="text-xs text-[#B5B5B5]">
+                以 {user.name || '匿名用戶'} 的身份發表
+              </span>
+              <button
+                type="submit"
+                disabled={!newComment.trim() || isSubmitting}
+                className={`px-6 py-2 text-sm rounded transition-colors ${
+                  newComment.trim() && !isSubmitting
+                    ? 'bg-[#8C8C8C] text-white hover:bg-[#6B6B6B]'
+                    : 'bg-[#E5E5E5] text-[#B5B5B5] cursor-not-allowed'
+                }`}
+              >
+                {isSubmitting ? '發送中...' : '發表'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-[#8C8C8C] mb-3">登入後即可參與討論</p>
+            <Link href="/">
+              <span className="inline-block px-6 py-2 bg-[#8C8C8C] text-white rounded text-sm hover:bg-[#6B6B6B] transition-colors">
+                前往登入
+              </span>
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ==================== 主頁面 ====================
 
 export default function PostDetailPage() {
@@ -312,6 +498,9 @@ export default function PostDetailPage() {
           <QuizSection quizzes={post.quizzes} postId={post.id} />
         </div>
       )}
+
+      {/* 評論區塊 */}
+      <CommentSection postId={post.id} />
 
       {/* 底部分享 */}
       <div className="mt-8 pt-6 border-t border-[#E5E5E5]">

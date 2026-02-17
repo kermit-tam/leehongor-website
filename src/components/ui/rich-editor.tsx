@@ -7,13 +7,13 @@
 
 'use client';
 
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
-import TextStyle from '@tiptap/extension-text-style';
+import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import { useState, useCallback } from 'react';
 
@@ -270,36 +270,7 @@ export function RichEditor({ content, onChange, placeholder = '輸入內容...' 
         {editor.storage.characterCount?.characters?.() || editor.getText().length} 字
       </div>
 
-      {/* Bubble Menu（選中文字時顯示） */}
-      {editor && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
-          <div className="flex items-center gap-1 bg-white border border-[#E5E5E5] shadow-sm p-1">
-            <button
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              className={`p-1 text-sm ${editor.isActive('bold') ? 'bg-[#E0D5C7]' : ''}`}
-            >
-              <strong>B</strong>
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={`p-1 text-sm italic ${editor.isActive('italic') ? 'bg-[#E0D5C7]' : ''}`}
-            >
-              I
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-              className={`p-1 text-sm underline ${editor.isActive('underline') ? 'bg-[#E0D5C7]' : ''}`}
-            >
-              U
-            </button>
-            <input
-              type="color"
-              onInput={(e) => editor.chain().focus().setColor(e.currentTarget.value).run()}
-              className="w-6 h-6 p-0 border-0 cursor-pointer"
-            />
-          </div>
-        </BubbleMenu>
-      )}
+
     </div>
   );
 }

@@ -245,3 +245,29 @@ export interface LeaderboardUser {
   streakDays: number;
   badgesCount: number;
 }
+
+// ==================== 評論相關類型 ====================
+
+/**
+ * 評論類型
+ */
+export type CommentType = 'comment' | 'question';
+
+/**
+ * 評論數據
+ */
+export interface Comment {
+  id: string;
+  postId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  type: CommentType;
+  content: string;
+  createdAt: Date;
+  updatedAt?: Date;
+  
+  // 回覆功能（可選）
+  parentId?: string;
+  replies?: Comment[];
+}

@@ -36,6 +36,8 @@ import type {
   QuizScores,
   NewBestRecord,
   QuizDimension,
+  Comment,
+  CommentType,
 } from '@/types';
 
 // ==================== 輔助函數 ====================
@@ -552,5 +554,65 @@ export const LeaderboardService = {
 
     const snapshot = await getDocs(q);
     return snapshot.size + 1;
+  },
+};
+
+// ==================== 評論服務 ====================
+
+function convertCommentData(docData: DocumentData, id: string): Comment {
+  return {
+    ...docData,
+    id,
+    createdAt: timestampToDate(docData.createdAt),
+    updatedAt: docData.updatedAt ? timestampToDate(docData.updatedAt) : undefined,
+  } as Comment;
+}
+
+export const CommentService = {
+  /**
+   * 獲取文章的所有評論
+   */
+  async getComments(postId: string): Promise<Comment[]> {
+    const q = query(
+      collection(db, COLLECTIONS.COMMENTS),
+      where('postId', '==', postId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => convertCommentData(doc.data(), doc.id));
+  },
+
+  /**
+   * 創建評論
+   */
+  async createComment(comment: Omit<Comment, 'id' | 'createdAt'>): Promise<string> {
+    const docRef = doc(collection(db, COLLECTIONS.COMMENTS));
+    const newComment: Comment = {
+      ...comment,
+      id: docRef.id,
+      createdAt: new Date(),
+    };
+    
+    await setDoc(docRef, newComment);
+    return docRef.id;
+  },
+
+  /**
+   * 更新評論
+   */
+  async updateComment(id: string, content: string): Promise<void> {
+    const docRef = doc(db, COLLECTIONS.COMMENTS, id);
+    await updateDoc(docRef, {
+      content,
+      updatedAt: new Date(),
+    });
+  },
+
+  /**
+   * 刪除評論
+   */
+  async deleteComment(id: string): Promise<void> {
+    await deleteDoc(doc(db, COLLECTIONS.COMMENTS, id));
   },
 };

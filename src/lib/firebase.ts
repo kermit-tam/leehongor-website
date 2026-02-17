@@ -61,6 +61,7 @@ export const COLLECTIONS = {
   LESSONS: 'lessons',
   PRACTICE_RECORDS: 'practice_records',
   BADGES: 'badges',
+  COMMENTS: 'comments',
 } as const;
 
 // ==================== 環境檢查 ====================
