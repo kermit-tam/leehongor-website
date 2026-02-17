@@ -1,93 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { lesson1Data, getQuizReward, getUnitProgressKey, scoringConfig } from '@/data/n5-lessons';
 
-// 第1課：4個微單元（每單元10-11詞，3分鐘完成）
-const lessonData = [
-  {
-    id: 1,
-    title: "人稱與稱呼",
-    subtitle: "自我介绍的第一步",
-    vocab: [
-      { hiragana: "わたし", kanji: "私", meaning: "我", note: "女性常用" },
-      { hiragana: "あなた", kanji: "貴方", meaning: "你/您", note: "禮貌說法" },
-      { hiragana: "あのひと", kanji: "あの人", meaning: "他/她/那個人", note: "口語" },
-      { hiragana: "あのかた", kanji: "あの方", meaning: "那一位", note: "敬語" },
-      { hiragana: "～さん", kanji: "～さん", meaning: "先生/女士", note: "尊稱" },
-      { hiragana: "～ちゃん", kanji: "～ちゃん", meaning: "小～", note: "對小孩或親暱稱呼" },
-      { hiragana: "～じん", kanji: "～人", meaning: "～人", note: "國籍" },
-      { hiragana: "せんせい", kanji: "先生", meaning: "老師", note: "稱呼他人" },
-      { hiragana: "きょうし", kanji: "教師", meaning: "教師", note: "職業名稱" },
-      { hiragana: "がくせい", kanji: "学生", meaning: "學生", note: "" }
-    ]
-  },
-  {
-    id: 2,
-    title: "職業與場所",
-    subtitle: "工作場合用語",
-    vocab: [
-      { hiragana: "かいしゃいん", kanji: "会社員", meaning: "公司職員", note: "" },
-      { hiragana: "しゃいん", kanji: "社員", meaning: "～公司職員", note: "前面加公司名" },
-      { hiragana: "ぎんこういん", kanji: "銀行員", meaning: "銀行行員", note: "" },
-      { hiragana: "いしゃ", kanji: "医者", meaning: "醫生", note: "" },
-      { hiragana: "けんきゅうしゃ", kanji: "研究者", meaning: "研究人員", note: "" },
-      { hiragana: "だいがく", kanji: "大学", meaning: "大學", note: "" },
-      { hiragana: "びょういん", kanji: "病院", meaning: "醫院", note: "" },
-      { hiragana: "だれ", kanji: "誰", meaning: "誰", note: "口語" },
-      { hiragana: "どなた", kanji: "何方", meaning: "哪位", note: "敬語" },
-      { hiragana: "なんさい", kanji: "何歳", meaning: "幾歲", note: "問年齡" },
-      { hiragana: "おいくつ", kanji: "お幾つ", meaning: "多大歲數", note: "禮貌問法" }
-    ]
-  },
-  {
-    id: 3,
-    title: "初次見面",
-    subtitle: "基本禮貌會話",
-    vocab: [
-      { hiragana: "はじめまして", kanji: "初めまして", meaning: "初次見面", note: "見面必說" },
-      { hiragana: "～からきました", kanji: "～から来ました", meaning: "從～來的", note: "來自..." },
-      { hiragana: "よろしくおねがいします", kanji: "よろしくお願いします", meaning: "請多關照", note: "結束語" },
-      { hiragana: "しつれいですが", kanji: "失礼ですが", meaning: "對不起/請問", note: "打斷別人時" },
-      { hiragana: "おなまえは", kanji: "お名前は", meaning: "您貴姓？", note: "問名字" },
-      { hiragana: "こちらは～さんです", kanji: "こちらは～さんです", meaning: "這位是～", note: "介紹他人" },
-      { hiragana: "はい", kanji: "はい", meaning: "是/對", note: "" },
-      { hiragana: "いいえ", kanji: "いいえ", meaning: "不/不是", note: "" },
-      { hiragana: "あ", kanji: "あ", meaning: "啊", note: "驚訝時" },
-      { hiragana: "～さい", kanji: "～歳", meaning: "～歲", note: "數字+歳" }
-    ]
-  },
-  {
-    id: 4,
-    title: "國家名稱",
-    subtitle: "來自哪裡？",
-    vocab: [
-      { hiragana: "アメリカ", kanji: "America", meaning: "美國", note: "" },
-      { hiragana: "イギリス", kanji: "UK", meaning: "英國", note: "" },
-      { hiragana: "にほん", kanji: "日本", meaning: "日本", note: "" },
-      { hiragana: "かんこく", kanji: "韓国", meaning: "韓國", note: "" },
-      { hiragana: "ちゅうごく", kanji: "中国", meaning: "中國", note: "" },
-      { hiragana: "フランス", kanji: "France", meaning: "法國", note: "" },
-      { hiragana: "ドイツ", kanji: "Germany", meaning: "德國", note: "" },
-      { hiragana: "タイ", kanji: "Thailand", meaning: "泰國", note: "" },
-      { hiragana: "インド", kanji: "India", meaning: "印度", note: "" },
-      { hiragana: "ブラジル", kanji: "Brazil", meaning: "巴西", note: "" }
-    ]
-  }
-];
-
-export default function Lesson1Page() {
-  const [currentUnit, setCurrentUnit] = useState(0);
+function Lesson1Content() {
+  const searchParams = useSearchParams();
+  const initialUnit = parseInt(searchParams.get('unit') || '1');
+  
+  const [currentUnit, setCurrentUnit] = useState(initialUnit - 1);
   const [mode, setMode] = useState<'menu' | 'study' | 'quiz' | 'result'>('menu');
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
+  const [showCantonese, setShowCantonese] = useState(true);
   const [quizIndex, setQuizIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [completedUnits, setCompletedUnits] = useState<Set<number>>(new Set());
-  const [unitProgress, setUnitProgress] = useState<number[]>([0, 0, 0, 0]);
+  const [completedUnits, setCompletedUnits] = useState<Set<string>>(new Set());
+  const [unitExp, setUnitExp] = useState(0);
 
-  const currentUnitData = lessonData[currentUnit];
+  const currentUnitData = lesson1Data.units[currentUnit];
+
+  useEffect(() => {
+    const saved = localStorage.getItem('n5-unit-completed');
+    if (saved) {
+      setCompletedUnits(new Set(JSON.parse(saved)));
+    }
+  }, []);
+
+  const saveCompleted = (unitId: number) => {
+    const key = getUnitProgressKey(lesson1Data.id, unitId);
+    const newCompleted = new Set(completedUnits);
+    newCompleted.add(key);
+    setCompletedUnits(newCompleted);
+    localStorage.setItem('n5-unit-completed', JSON.stringify([...newCompleted]));
+  };
 
   const playAudio = (text: string) => {
     if ('speechSynthesis' in window) {
@@ -150,15 +99,14 @@ export default function Lesson1Page() {
       setAnswered(false);
       setSelectedOption(null);
     } else {
-      // 完成單元
-      const newCompleted = new Set(completedUnits);
-      newCompleted.add(currentUnit);
-      setCompletedUnits(newCompleted);
+      // 計算總分和經驗值
+      const finalScore = score + (selectedOption === currentUnitData.vocab[quizIndex].meaning ? 1 : 0);
+      const percentage = Math.round((finalScore / currentUnitData.vocab.length) * 100);
+      const reward = getQuizReward(percentage);
+      const totalExp = scoringConfig.unitBaseExp + reward.exp;
       
-      const newProgress = [...unitProgress];
-      newProgress[currentUnit] = Math.round((score + (selectedOption === currentUnitData.vocab[quizIndex].meaning ? 1 : 0)) / currentUnitData.vocab.length * 100);
-      setUnitProgress(newProgress);
-      
+      setUnitExp(totalExp);
+      saveCompleted(currentUnitData.id);
       setMode('result');
     }
   };
@@ -168,83 +116,136 @@ export default function Lesson1Page() {
     setFlippedCards(new Set());
   };
 
+  // 選單模式
   if (mode === 'menu') {
     return (
       <div className="min-h-screen bg-[#F5F5F0] pb-20">
+        {/* 頂部導航 */}
         <div className="bg-white border-b border-[#E5E5E5] px-4 py-6 sticky top-0 z-50">
           <div className="max-w-lg mx-auto">
+            <Link href="/learn" className="text-[#8C8C8C] text-sm mb-2 inline-block">
+              ← 返回課程列表
+            </Link>
             <h1 className="text-2xl font-normal text-[#4A4A4A] mb-1">第1課：初次見面</h1>
-            <p className="text-sm text-[#8C8C8C]">大家的日本語 • 分4個微單元學習</p>
+            <p className="text-sm text-[#8C8C8C]">選擇微單元開始學習</p>
             
-            {/* 總進度條 */}
-            <div className="mt-4 flex gap-2">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className={`flex-1 h-2 rounded-full ${completedUnits.has(i) ? 'bg-[#A8B5A0]' : 'bg-[#E5E5E5]'}`} />
-              ))}
+            {/* 廣東話諧音開關 */}
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setShowCantonese(!showCantonese)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all ${
+                  showCantonese 
+                    ? 'bg-[#C4B9AC] text-white' 
+                    : 'bg-[#F5F5F0] text-[#8C8C8C] border border-[#E0E0E0]'
+                }`}
+              >
+                <span>🇭🇰</span>
+                <span>廣東話諧音</span>
+                <span className={`w-8 h-4 rounded-full relative transition-colors ${showCantonese ? 'bg-white/30' : 'bg-[#E0E0E0]'}`}>
+                  <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${showCantonese ? 'left-[18px]' : 'left-0.5'}`} />
+                </span>
+              </button>
             </div>
-            <p className="text-xs text-[#8C8C8C] mt-2 text-right">
-              已完成 {completedUnits.size}/4 單元
-            </p>
           </div>
         </div>
 
+        {/* 單元列表 */}
         <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
-          {lessonData.map((unit, index) => (
-            <motion.button
-              key={unit.id}
-              onClick={() => startStudy(index)}
-              className="w-full bg-white rounded-xl p-5 border border-[#E8E8E8] text-left relative overflow-hidden"
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="text-xs text-[#C4B9AC] tracking-wider">UNIT 0{unit.id}</span>
-                  <h3 className="text-lg text-[#4A4A4A] mt-1">{unit.title}</h3>
-                  <p className="text-sm text-[#8C8C8C]">{unit.subtitle}</p>
+          {lesson1Data.units.map((unit, index) => {
+            const isCompleted = completedUnits.has(getUnitProgressKey(lesson1Data.id, unit.id));
+            
+            return (
+              <motion.button
+                key={unit.id}
+                onClick={() => startStudy(index)}
+                className={`w-full rounded-xl p-5 text-left relative overflow-hidden border transition-all ${
+                  isCompleted 
+                    ? 'bg-[#E8F5E9] border-[#A5D6A7]' 
+                    : 'bg-white border-[#E8E8E8] hover:border-[#C4B9AC]'
+                }`}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <span className={`text-xs tracking-wider ${isCompleted ? 'text-[#4CAF50]' : 'text-[#C4B9AC]'}`}>
+                      單元 0{unit.id}
+                    </span>
+                    <h3 className="text-lg text-[#4A4A4A] mt-1">{unit.title}</h3>
+                    <p className="text-sm text-[#8C8C8C]">{unit.subtitle}</p>
+                  </div>
+                  {isCompleted ? (
+                    <span className="text-2xl">✓</span>
+                  ) : (
+                    <span className="text-sm text-[#C4B9AC]">{unit.vocab.length}詞</span>
+                  )}
                 </div>
-                {completedUnits.has(index) ? (
-                  <span className="text-2xl">✓</span>
-                ) : (
-                  <span className="text-sm text-[#C4B9AC]">{unit.vocab.length}詞</span>
-                )}
-              </div>
-              
-              <div className="flex gap-2 mt-3">
-                {unit.vocab.slice(0, 4).map((v, i) => (
-                  <span key={i} className="text-xs bg-[#F5F5F0] px-2 py-1 rounded text-[#8C8C8C]">
-                    {v.hiragana}
-                  </span>
-                ))}
-                {unit.vocab.length > 4 && (
-                  <span className="text-xs text-[#C4B9AC] px-1">+{unit.vocab.length - 4}</span>
-                )}
-              </div>
-              
-              {completedUnits.has(index) && (
-                <div className="absolute top-0 right-0 w-20 h-20 bg-[#F0F5F0] rounded-bl-full opacity-50" />
-              )}
-            </motion.button>
-          ))}
+                
+                {/* 預覽詞彙 */}
+                <div className="flex gap-2 mt-3">
+                  {unit.vocab.slice(0, 3).map((v, i) => (
+                    <span key={i} className="text-xs bg-[#F5F5F0] px-2 py-1 rounded text-[#8C8C8C]">
+                      {showCantonese && v.cantonese ? v.cantonese : v.hiragana}
+                    </span>
+                  ))}
+                </div>
+
+                {/* 內容標籤 */}
+                <div className="flex gap-2 mt-3">
+                  <span className="text-xs px-2 py-0.5 bg-[#E3F2FD] text-[#1976D2] rounded">詞彙</span>
+                  {unit.grammar && <span className="text-xs px-2 py-0.5 bg-[#F3E5F5] text-[#7B1FA2] rounded">文法</span>}
+                  {unit.listening && <span className="text-xs px-2 py-0.5 bg-[#E8F5E9] text-[#388E3C] rounded">聽力</span>}
+                  {unit.dialogue && <span className="text-xs px-2 py-0.5 bg-[#FFF3E0] text-[#F57C00] rounded">對話</span>}
+                </div>
+              </motion.button>
+            );
+          })}
         </div>
       </div>
     );
   }
 
+  // 學習模式
   if (mode === 'study') {
     return (
       <div className="min-h-screen bg-[#F5F5F0] pb-20">
-        <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50 flex justify-between items-center">
-          <button onClick={backToMenu} className="text-[#8C8C8C] text-sm">← 返回</button>
-          <span className="text-sm text-[#4A4A4A]">單元 {currentUnit + 1}/4</span>
-          <button 
-            onClick={startQuiz} 
-            className="text-sm bg-[#C4B9AC] text-white px-3 py-1.5 rounded-full"
-          >
-            測驗 →
-          </button>
+        {/* 頂部導航 */}
+        <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50">
+          <div className="max-w-lg mx-auto flex justify-between items-center">
+            <button onClick={backToMenu} className="text-[#8C8C8C] text-sm">← 返回</button>
+            <div className="text-center">
+              <span className="text-sm text-[#4A4A4A]">{currentUnitData.title}</span>
+              <span className="text-xs text-[#8C8C8C] ml-2">單元 {currentUnitData.id}/4</span>
+            </div>
+            <button 
+              onClick={startQuiz} 
+              className="text-sm bg-[#C4B9AC] text-white px-3 py-1.5 rounded-full"
+            >
+              測驗 →
+            </button>
+          </div>
         </div>
 
         <div className="max-w-lg mx-auto px-4 py-6">
+          {/* 文法點 */}
+          {currentUnitData.grammar && (
+            <div className="bg-white rounded-xl p-4 mb-6 border border-[#E8E8E8]">
+              <h3 className="text-sm font-medium text-[#4A4A4A] mb-3">📚 文法重點</h3>
+              {currentUnitData.grammar.map((g, i) => (
+                <div key={i} className="mb-3 last:mb-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[#C4B9AC] font-medium">{g.pattern}</span>
+                    <span className="text-xs text-[#8C8C8C]">→ {g.meaning}</span>
+                  </div>
+                  <p className="text-sm text-[#4A4A4A] bg-[#F5F5F0] px-3 py-2 rounded">
+                    {g.example}
+                    <span className="text-[#8C8C8C] ml-2">({g.exampleMeaning})</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 詞彙卡片 */}
           <p className="text-center text-sm text-[#8C8C8C] mb-4">
             👆 撳卡片睇答案 • 再撳聽發音
           </p>
@@ -265,10 +266,15 @@ export default function Lesson1Page() {
                   style={{ transformStyle: 'preserve-3d' }}
                 >
                   {/* 正面 */}
-                  <div className="absolute inset-0 bg-white rounded-lg shadow-sm border border-[#E8E8E8] flex flex-col items-center justify-center p-3 backface-hidden">
-                    <span className="text-2xl text-[#4A4A4A]" style={{ fontFamily: 'Noto Sans JP' }}>
-                      {word.hiragana}
-                    </span>
+                  <div className="absolute inset-0 bg-white rounded-lg shadow-sm border border-[#E8E8E8] flex flex-col items-center justify-center p-3">
+                    {showCantonese && word.cantonese ? (
+                      <>
+                        <span className="text-xl text-[#4A4A4A]">{word.cantonese}</span>
+                        <span className="text-sm text-[#C4B9AC] mt-1">{word.hiragana}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl text-[#4A4A4A]">{word.hiragana}</span>
+                    )}
                     <span className="text-xs text-[#C4B9AC] mt-2">點擊翻轉</span>
                   </div>
 
@@ -289,13 +295,51 @@ export default function Lesson1Page() {
               </motion.div>
             ))}
           </div>
+
+          {/* 情境對話 */}
+          {currentUnitData.dialogue && (
+            <div className="mt-6 bg-white rounded-xl p-4 border border-[#E8E8E8]">
+              <h3 className="text-sm font-medium text-[#4A4A4A] mb-3">💬 情境對話</h3>
+              {currentUnitData.dialogue.map((d, i) => (
+                <div key={i} className="mb-3 last:mb-0">
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-medium text-[#C4B9AC] w-12 shrink-0">{d.speaker}</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-[#4A4A4A]">{d.japanese}</p>
+                      {showCantonese && d.cantonese && (
+                        <p className="text-xs text-[#C4B9AC]">{d.cantonese}</p>
+                      )}
+                      <p className="text-xs text-[#8C8C8C]">{d.meaning}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 聽力練習 */}
+          {currentUnitData.listening && (
+            <div className="mt-6 bg-[#E8F5E9] rounded-xl p-4 border border-[#A5D6A7]">
+              <h3 className="text-sm font-medium text-[#2E7D32] mb-2">🎧 {currentUnitData.listening.title}</h3>
+              <p className="text-sm text-[#4A4A4A] mb-2">{currentUnitData.listening.audioScript}</p>
+              <p className="text-xs text-[#8C8C8C] mb-2">{currentUnitData.listening.translation}</p>
+              <div className="flex flex-wrap gap-2">
+                {currentUnitData.listening.keyPhrases.map((phrase, i) => (
+                  <span key={i} className="text-xs bg-white px-2 py-1 rounded text-[#388E3C]">{phrase}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
+  // 測驗模式
   if (mode === 'quiz') {
     const currentWord = currentUnitData.vocab[quizIndex];
+    const progress = ((quizIndex + 1) / currentUnitData.vocab.length) * 100;
+    
     return (
       <div className="min-h-screen bg-[#F5F5F0] pb-20">
         <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50">
@@ -306,20 +350,25 @@ export default function Lesson1Page() {
         </div>
 
         <div className="max-w-lg mx-auto px-4 py-6">
-          <div className="h-1 bg-[#E5E5E5] rounded-full mb-6 overflow-hidden">
-            <div 
-              className="h-full bg-[#C4B9AC] transition-all duration-300"
-              style={{ width: `${((quizIndex + 1) / currentUnitData.vocab.length) * 100}%` }}
-            />
+          {/* 進度條 */}
+          <div className="h-2 bg-[#E5E5E5] rounded-full mb-6 overflow-hidden">
+            <div className="h-full bg-[#C4B9AC] rounded-full transition-all" style={{ width: `${progress}%` }} />
           </div>
 
+          {/* 題目 */}
           <div className="bg-white rounded-xl p-8 shadow-sm border border-[#E8E8E8] text-center mb-6">
-            <div className="text-5xl text-[#4A4A4A] mb-2" style={{ fontFamily: 'Noto Sans JP' }}>
-              {currentWord.hiragana}
-            </div>
+            {showCantonese && currentWord.cantonese ? (
+              <>
+                <div className="text-3xl text-[#C4B9AC] mb-1">{currentWord.cantonese}</div>
+                <div className="text-lg text-[#8C8C8C] mb-2">{currentWord.hiragana}</div>
+              </>
+            ) : (
+              <div className="text-5xl text-[#4A4A4A] mb-2">{currentWord.hiragana}</div>
+            )}
             <div className="text-sm text-[#C4B9AC]">這是什麼意思？</div>
           </div>
 
+          {/* 選項 */}
           <div className="grid grid-cols-2 gap-3">
             {generateOptions(currentWord).map((option, idx) => (
               <motion.button
@@ -342,6 +391,7 @@ export default function Lesson1Page() {
             ))}
           </div>
 
+          {/* 反饋 */}
           <AnimatePresence>
             {answered && (
               <motion.div
@@ -356,6 +406,9 @@ export default function Lesson1Page() {
                     <>正確答案：<strong>{currentWord.kanji}</strong>（{currentWord.meaning}）</>
                   )}
                 </p>
+                {showCantonese && currentWord.cantonese && (
+                  <p className="text-xs text-[#C4B9AC] mt-1">廣東話諧音：{currentWord.cantonese}</p>
+                )}
                 <button
                   onClick={nextQuestion}
                   className="w-full mt-3 py-3 bg-[#8C8C8C] text-white rounded-lg"
@@ -370,8 +423,13 @@ export default function Lesson1Page() {
     );
   }
 
+  // 結果模式
   if (mode === 'result') {
-    const percentage = Math.round((score / currentUnitData.vocab.length) * 100);
+    const totalQuestions = currentUnitData.vocab.length;
+    const percentage = Math.round((score / totalQuestions) * 100);
+    const reward = getQuizReward(percentage);
+    const isNewCompletion = !completedUnits.has(getUnitProgressKey(lesson1Data.id, currentUnitData.id));
+    
     return (
       <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center p-4">
         <motion.div 
@@ -379,17 +437,42 @@ export default function Lesson1Page() {
           animate={{ scale: 1, opacity: 1 }}
           className="bg-white rounded-2xl p-8 max-w-sm w-full text-center border border-[#E8E8E8]"
         >
+          {/* 分數圓環 */}
           <div className="w-24 h-24 rounded-full border-4 border-[#C4B9AC] flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl text-[#4A4A4A]">{percentage}%</span>
           </div>
           
           <h3 className="text-xl text-[#4A4A4A] mb-2">
-            {percentage >= 80 ? '完成！🎉' : percentage >= 60 ? '及格！👍' : '再試一次 💪'}
+            {reward.label}
           </h3>
           
-          <p className="text-sm text-[#8C8C8C] mb-6">
-            {currentUnitData.title} • {score}/{currentUnitData.vocab.length} 正確
+          {/* 星星評級 */}
+          <div className="flex justify-center gap-2 mb-3">
+            {[1, 2, 3].map((star) => (
+              <span 
+                key={star} 
+                className={`text-2xl ${star <= reward.stars ? 'text-[#FFC107]' : 'text-[#E0E0E0]'}`}
+              >
+                ⭐
+              </span>
+            ))}
+          </div>
+          
+          <p className="text-sm text-[#8C8C8C] mb-2">
+            {currentUnitData.title} • {score}/{totalQuestions} 正確
           </p>
+
+          {/* 經驗值獲得 */}
+          {isNewCompletion && (
+            <div className="bg-[#FFF8E1] rounded-lg p-3 mb-4">
+              <p className="text-sm text-[#4A4A4A]">
+                🎉 獲得 <span className="font-bold text-[#C4B9AC]">+{unitExp} EXP</span>
+              </p>
+              <p className="text-xs text-[#8C8C8C]">
+                單元完成 +{scoringConfig.unitBaseExp} | 測驗獎勵 +{unitExp - scoringConfig.unitBaseExp}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <button
@@ -416,4 +499,17 @@ export default function Lesson1Page() {
   }
 
   return null;
+}
+
+// 主組件包裹在 Suspense 中
+export default function Lesson1Page() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
+        <div className="text-[#8C8C8C]">載入中...</div>
+      </div>
+    }>
+      <Lesson1Content />
+    </Suspense>
+  );
 }
