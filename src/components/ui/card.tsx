@@ -81,6 +81,7 @@ interface LessonCardProps {
   isUnlocked: boolean;
   isCompleted: boolean;
   userLevel?: number;
+  customHref?: string;
 }
 
 export function LessonCard({
@@ -88,7 +89,10 @@ export function LessonCard({
   isUnlocked,
   isCompleted,
   userLevel = 1,
+  customHref,
 }: LessonCardProps) {
+  // 生成課程鏈接（靜態課程使用自定義路徑）
+  const lessonHref = customHref || `/learn/${lesson.id}`;
   // 根據狀態決定樣式
   const cardStyles = isCompleted
     ? 'bg-[#E0D5C7]/30 border-t border-[#D4C5B9]'
@@ -132,7 +136,7 @@ export function LessonCard({
         
         {isUnlocked ? (
           <Link
-            href={`/learn/${lesson.id}`}
+            href={lessonHref}
             className={`px-4 py-2 text-sm transition-colors ${
               isCompleted
                 ? 'bg-[#A8B5A0]/20 text-[#4A4A4A]'
