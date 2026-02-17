@@ -13,6 +13,7 @@ import { useRequireAdmin } from '@/lib/auth-context';
 import { PostService } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { ImageUpload } from '@/components/ui/image-upload';
+import { RichEditor } from '@/components/ui/rich-editor';
 import type { Post, PostCategory } from '@/types';
 
 const CATEGORIES: PostCategory[] = ['諧音卡', '動漫', '心得', '工具', '錯誤分享'];
@@ -214,18 +215,15 @@ export default function AdminPostsPage() {
               />
             </div>
 
-            {/* 內容（Markdown） */}
+            {/* 內容（富文本編輯器） */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                內容（支援 Markdown）*
+              <label className="block text-sm font-medium text-[#4A4A4A] mb-1 tracking-wide">
+                文章內容 *
               </label>
-              <textarea
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                required
-                rows={10}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 font-mono text-sm"
-                placeholder="# 標題&#10;&#10;文章內容...&#10;&#10;- 項目1&#10;- 項目2"
+              <RichEditor
+                content={formData.content}
+                onChange={(content) => setFormData({ ...formData, content })}
+                placeholder="輸入文章內容，支援文字樣式、圖片、排版..."
               />
             </div>
           </div>

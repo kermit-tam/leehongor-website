@@ -154,9 +154,15 @@ export default function PostDetailPage() {
 
           {/* 文章內容 */}
           <div className="markdown-content">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {post.content}
-            </ReactMarkdown>
+            {post.content.includes('<') && post.content.includes('>') ? (
+              // HTML 內容（來自富文本編輯器）
+              <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            ) : (
+              // Markdown 內容（舊文章）
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {post.content}
+              </ReactMarkdown>
+            )}
           </div>
 
           {/* 底部分享區 */}
