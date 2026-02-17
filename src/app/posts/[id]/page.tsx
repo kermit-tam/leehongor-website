@@ -1,22 +1,181 @@
 /**
- * 文章詳情頁
- * Post Detail Page
+ * 文章詳情頁 - 無印風格 + 生字 + MC題
+ * Post Detail Page with Vocabulary & Quiz
  */
 
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { PostService } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
-import type { Post } from '@/types';
+import type { Post, Vocabulary, PostQuiz } from '@/types';
+
+// ==================== 生字卡片組件 ====================
+
+function VocabularyCard({ vocab }: { vocab: Vocabulary }) {
+  return (
+    <div className="bg-[#FAF9F7] border-t border-[#E5E5E5] p-5 hover:bg-[#F5F5F0] transition-colors">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          {/* 日文部分 */}
+          <div className="flex items-baseline gap-3 mb-2">
+            <span className="text-2xl font-normal text-[#4A4A4A]">{vocab.kanji}</span>
+            <span className="text-base text-[#8C8C8C]">{vocab.hiragana}</span>
+          </div>
+          
+          {/* 羅馬音 + 廣東話諧音 */}
+          <div className="flex items-center gap-2 text-sm text-[#8C8C8C] mb-3">
+            <span>{vocab.romanji}</span>
+            <span className="text-[#B5B5B5]">•</span>
+            <span className="text-[#A09088]">「{vocab.cantonese}」</span>
+          </div>
+          
+          {/* 中文意思 */}
+          <div className="text-[#4A4A4A]">{vocab.meaning}</div>
+        </div>
+        
+        {/* 語音播放按鈕（如果有） */}
+        {vocab.audioUrl && (
+          <button
+            onClick={() => new Audio(vocab.audioUrl).play()}
+            className="p-2 text-[#8C8C8C] hover:text-[#4A4A4A] hover:bg-[#E0D5C7]/30 transition-colors"
+          >
+            🔊
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==================== MC題組件 ====================
+
+function QuizSection({ quizzes, postId }: { quizzes: PostQuiz[]; postId: string }) {
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
+  const [currentQuiz, setCurrentQuiz] = useState(0);
+
+  const handleSelect = (quizId: string, optionIndex: number) => {
+    if (submitted[quizId]) return;
+    setAnswers(prev => ({ ...prev, [quizId]: optionIndex }));
+  };
+
+  const handleSubmit = (quizId: string) => {
+    if (answers[quizId] === undefined) return;
+    setSubmitted(prev => ({ ...prev, [quizId]: true }));
+  };
+
+  const quiz = quizzes[currentQuiz];
+  const hasAnswered = answers[quiz.id] !== undefined;
+  const isSubmitted = submitted[quiz.id];
+  const isCorrect = isSubmitted && answers[quiz.id] === quiz.correct;
+
+  return (
+    <div className="bg-[#FAF9F7] border-t border-[#E5E5E5]">
+      {/* 標題和進度 */}
+      <div className="px-6 py-4 border-b border-[#E5E5E5]">
+        <h3 className="text-lg font-normal text-[#4A4A4A] tracking-wide">考考你</h3>
+        <p className="text-sm text-[#8C8C8C] mt-1">
+          第 {currentQuiz + 1} 題，共 {quizzes.length} 題
+        </p>
+      </div>
+
+      {/* 題目內容 */}
+      <div className="p-6">
+        <p className="text-lg text-[#4A4A4A] mb-6">{quiz.question}</p>
+
+        {/* 選項 */}
+        <div className="space-y-3">
+          {quiz.options.map((option, index) => {
+            const isSelected = answers[quiz.id] === index;
+            const showCorrect = isSubmitted && index === quiz.correct;
+            const showWrong = isSubmitted && isSelected && index !== quiz.correct;
+
+            return (
+              <button
+                key={index}
+                onClick={() => handleSelect(quiz.id, index)}
+                disabled={isSubmitted}
+                className={`w-full p-4 text-left border transition-all ${
+                  showCorrect
+                    ? 'bg-[#A8B5A0]/20 border-[#A8B5A0]'
+                    : showWrong
+                    ? 'bg-[#B8A8A0]/20 border-[#B8A8A0]'
+                    : isSelected
+                    ? 'bg-[#E0D5C7] border-[#8C8C8C]'
+                    : 'bg-white border-[#E5E5E5] hover:border-[#8C8C8C]'
+                }`}
+              >
+                <div className="flex items-center">
+                  <span className={`w-6 h-6 mr-3 flex items-center justify-center text-sm border ${
+                    showCorrect
+                      ? 'bg-[#A8B5A0] border-[#A8B5A0] text-white'
+                      : showWrong
+                      ? 'bg-[#B8A8A0] border-[#B8A8A0] text-white'
+                      : isSelected
+                      ? 'bg-[#8C8C8C] border-[#8C8C8C] text-white'
+                      : 'border-[#8C8C8C]'
+                  }`}>
+                    {String.fromCharCode(65 + index)}
+                  </span>
+                  <span className="flex-1">{option}</span>
+                  {showCorrect && <span className="text-[#A8B5A0] ml-2">✓</span>}
+                  {showWrong && <span className="text-[#B8A8A0] ml-2">✗</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 提交按鈕或解釋 */}
+        {!isSubmitted ? (
+          <button
+            onClick={() => handleSubmit(quiz.id)}
+            disabled={!hasAnswered}
+            className={`mt-6 w-full py-3 transition-colors ${
+              hasAnswered
+                ? 'bg-[#8C8C8C] text-white hover:bg-[#6B6B6B]'
+                : 'bg-[#E5E5E5] text-[#B5B5B5] cursor-not-allowed'
+            }`}
+          >
+            提交答案
+          </button>
+        ) : (
+          <div className="mt-6 p-4 bg-[#E0D5C7]/30 border-t border-[#D4C5B9]">
+            <p className="text-[#4A4A4A]">{quiz.explanation}</p>
+          </div>
+        )}
+
+        {/* 導航按鈕 */}
+        <div className="flex justify-between mt-6">
+          <button
+            onClick={() => setCurrentQuiz(prev => Math.max(0, prev - 1))}
+            disabled={currentQuiz === 0}
+            className="px-4 py-2 text-[#8C8C8C] disabled:opacity-40 hover:text-[#4A4A4A] transition-colors"
+          >
+            ← 上一題
+          </button>
+          <button
+            onClick={() => setCurrentQuiz(prev => Math.min(quizzes.length - 1, prev + 1))}
+            disabled={currentQuiz === quizzes.length - 1}
+            className="px-4 py-2 text-[#8C8C8C] disabled:opacity-40 hover:text-[#4A4A4A] transition-colors"
+          >
+            下一題 →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== 主頁面 ====================
 
 export default function PostDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const postId = params.id as string;
   
   const [post, setPost] = useState<Post | null>(null);
@@ -48,28 +207,17 @@ export default function PostDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-3/4 mb-4" />
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-8" />
-          <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded" />
-            <div className="h-4 bg-gray-200 rounded" />
-            <div className="h-4 bg-gray-200 rounded w-5/6" />
-          </div>
-        </div>
+      <div className="max-w-4xl mx-auto px-6 py-8 bg-[#F5F5F0] min-h-screen">
+        <div className="text-center py-16 text-[#8C8C8C]">載入中...</div>
       </div>
     );
   }
 
   if (error || !post) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 text-center">
-        <div className="text-6xl mb-4">😕</div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          {error || '文章不存在'}
-        </h1>
-        <p className="text-gray-500 mb-6">無法找到你要求的內容</p>
+      <div className="max-w-4xl mx-auto px-6 py-16 text-center bg-[#F5F5F0] min-h-screen">
+        <div className="text-4xl mb-4">😕</div>
+        <h1 className="text-xl text-[#4A4A4A] mb-2">{error || '文章不存在'}</h1>
         <Link href="/posts">
           <Button>返回文章列表</Button>
         </Link>
@@ -78,26 +226,23 @@ export default function PostDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-4xl mx-auto px-6 py-8 bg-[#F5F5F0] min-h-screen">
       {/* 返回按鈕 */}
       <Link
         href="/posts"
-        className="inline-flex items-center text-gray-500 hover:text-indigo-600 mb-6 transition-colors"
+        className="inline-flex items-center text-[#8C8C8C] hover:text-[#4A4A4A] mb-6 transition-colors text-sm tracking-wide"
       >
-        <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        返回文章列表
+        ← 返回文章列表
       </Link>
 
-      <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <article className="bg-[#FAF9F7] border-t border-[#E5E5E5]">
         {/* 封面圖 */}
         {post.imageUrl && (
-          <div className="relative aspect-[21/9] bg-gray-100">
+          <div className="relative aspect-[21/9] bg-[#F0F0F0]">
             <img
               src={post.imageUrl}
               alt={post.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover grayscale-[20%]"
             />
           </div>
         )}
@@ -105,47 +250,29 @@ export default function PostDetailPage() {
         {/* 內容 */}
         <div className="p-6 sm:p-8">
           {/* 分類 */}
-          <div className="mb-4">
-            <span className="inline-block px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium">
-              {post.category}
-            </span>
-          </div>
+          <span className="inline-block text-xs text-[#8C8C8C] tracking-wider mb-3">
+            {post.category}
+          </span>
 
           {/* 標題 */}
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl sm:text-3xl font-light text-[#4A4A4A] mb-4 tracking-wide">
             {post.title}
           </h1>
 
           {/* 元信息 */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-8 pb-8 border-b border-gray-100">
-            <span className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {post.createdAt.toLocaleDateString('zh-HK', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </span>
-            {post.authorName && (
-              <span className="flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                {post.authorName}
-              </span>
-            )}
+          <div className="text-sm text-[#B5B5B5] mb-8 pb-6 border-b border-[#E5E5E5]">
+            {post.createdAt.toLocaleDateString('zh-HK', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
           </div>
 
           {/* 標籤 */}
           {post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-8">
               {post.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"
-                >
+                <span key={tag} className="text-xs text-[#B5B5B5]">
                   #{tag}
                 </span>
               ))}
@@ -153,56 +280,57 @@ export default function PostDetailPage() {
           )}
 
           {/* 文章內容 */}
-          <div className="markdown-content">
+          <div className="markdown-content mb-10">
             {post.content.includes('<') && post.content.includes('>') ? (
-              // HTML 內容（來自富文本編輯器）
               <div dangerouslySetInnerHTML={{ __html: post.content }} />
             ) : (
-              // Markdown 內容（舊文章）
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {post.content}
               </ReactMarkdown>
             )}
           </div>
-
-          {/* 底部分享區 */}
-          <div className="mt-12 pt-8 border-t border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-500">
-                覺得有用？分享給朋友！
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({
-                        title: post.title,
-                        url: window.location.href,
-                      });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      alert('連結已複製！');
-                    }
-                  }}
-                  className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-                >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </article>
 
-      {/* 相關文章推薦（可擴展） */}
-      <div className="mt-8">
-        <Link href="/posts">
-          <Button variant="outline" fullWidth>
-            查看更多文章
-          </Button>
-        </Link>
+      {/* 生字區塊 */}
+      {post.vocabularies && post.vocabularies.length > 0 && (
+        <div className="mt-6 bg-[#FAF9F7] border-t border-[#E5E5E5]">
+          <div className="px-6 py-4 border-b border-[#E5E5E5]">
+            <h3 className="text-lg font-normal text-[#4A4A4A] tracking-wide">本課生字</h3>
+          </div>
+          <div className="divide-y divide-[#E5E5E5]">
+            {post.vocabularies.map((vocab) => (
+              <VocabularyCard key={vocab.id} vocab={vocab} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MC題區塊 */}
+      {post.quizzes && post.quizzes.length > 0 && (
+        <div className="mt-6">
+          <QuizSection quizzes={post.quizzes} postId={post.id} />
+        </div>
+      )}
+
+      {/* 底部分享 */}
+      <div className="mt-8 pt-6 border-t border-[#E5E5E5]">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-[#8C8C8C]">覺得有用？分享給朋友</span>
+          <button
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({ title: post.title, url: window.location.href });
+              } else {
+                navigator.clipboard.writeText(window.location.href);
+                alert('連結已複製');
+              }
+            }}
+            className="p-2 text-[#8C8C8C] hover:text-[#4A4A4A] hover:bg-[#FAF9F7] transition-colors"
+          >
+            分享
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -68,6 +68,8 @@ function convertPostData(docData: DocumentData, id: string): Post {
   return {
     ...docData,
     id,
+    vocabularies: docData.vocabularies || [],
+    quizzes: docData.quizzes || [],
     createdAt: timestampToDate(docData.createdAt),
     updatedAt: docData.updatedAt ? timestampToDate(docData.updatedAt) : undefined,
   } as Post;

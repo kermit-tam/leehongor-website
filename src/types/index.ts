@@ -7,29 +7,26 @@
 
 /**
  * 六角雷達維度分數
- * Six-dimension radar scores for user abilities
  */
 export interface AbilityScore {
-  best: number;      // 最高分（只計最高分）
-  attempts: number;  // 嘗試次數
+  best: number;
+  attempts: number;
 }
 
 /**
  * 用戶能力分數（六角雷達）
- * User ability scores across 6 dimensions
  */
 export interface AbilityScores {
-  pronunciation: AbilityScore;  // 發音
-  kanji: AbilityScore;          // 漢字
-  vocabulary: AbilityScore;     // 詞彙
-  grammar: AbilityScore;        // 文法
-  listening: AbilityScore;      // 聽力
-  application: AbilityScore;    // 應用
+  pronunciation: AbilityScore;
+  kanji: AbilityScore;
+  vocabulary: AbilityScore;
+  grammar: AbilityScore;
+  listening: AbilityScore;
+  application: AbilityScore;
 }
 
 /**
  * 用戶數據
- * User data structure
  */
 export interface User {
   uid: string;
@@ -38,18 +35,15 @@ export interface User {
   avatar: string;
   role: 'user' | 'admin';
   
-  // 遊戲化數據
-  achievementExp: number;       // 成就分數（參與度）
-  level: number;                // 等級
-  streakDays: number;           // 連續登入天數
-  badges: string[];             // 已解鎖徽章
+  achievementExp: number;
+  level: number;
+  streakDays: number;
+  badges: string[];
   
-  // 能力分數
   abilityScores: AbilityScores;
   
-  // 課程進度
-  unlockedLessons: string[];    // 已解鎖課程
-  completedLessons: string[];   // 已完成課程
+  unlockedLessons: string[];
+  completedLessons: string[];
   
   lastLogin: Date;
   createdAt?: Date;
@@ -59,18 +53,40 @@ export interface User {
 
 /**
  * 文章分類
- * Post categories
  */
 export type PostCategory = '諧音卡' | '動漫' | '心得' | '工具' | '錯誤分享';
 
 /**
+ * 生字/詞彙
+ */
+export interface Vocabulary {
+  id: string;
+  kanji: string;
+  hiragana: string;
+  romanji: string;
+  cantonese: string;
+  meaning: string;
+  audioUrl?: string;
+}
+
+/**
+ * 輕鬆測驗題（MC題）
+ */
+export interface PostQuiz {
+  id: string;
+  question: string;
+  options: string[];
+  correct: number;
+  explanation: string;
+}
+
+/**
  * 文章數據
- * Post data structure
  */
 export interface Post {
   id: string;
   title: string;
-  content: string;              // Markdown 格式
+  content: string;
   category: PostCategory;
   tags: string[];
   imageUrl?: string;
@@ -78,31 +94,33 @@ export interface Post {
   updatedAt?: Date;
   authorId: string;
   authorName?: string;
+  
+  // 新增：生字表
+  vocabularies: Vocabulary[];
+  
+  // 新增：輕鬆測驗
+  quizzes: PostQuiz[];
 }
 
 // ==================== 課程相關類型 ====================
 
 /**
  * 課程分類
- * Lesson categories
  */
 export type LessonCategory = '五十音' | '基礎文法' | '進階文法' | '會話' | '聽力';
 
 /**
- * 測驗維度（對應六角雷達）
- * Quiz dimension mapping to radar chart
+ * 測驗維度
  */
 export type QuizDimension = 'pronunciation' | 'kanji' | 'vocabulary' | 'grammar' | 'listening' | 'application';
 
 /**
  * 內容區塊類型
- * Content block types
  */
 export type ContentBlockType = 'text' | 'image' | 'video' | 'audio' | 'example';
 
 /**
  * 課程內容區塊
- * Lesson content block
  */
 export interface ContentBlock {
   type: ContentBlockType;
@@ -112,51 +130,40 @@ export interface ContentBlock {
 }
 
 /**
- * 測驗問題
- * Quiz question
+ * 課程測驗問題
  */
 export interface QuizQuestion {
   id: string;
-  dimension: QuizDimension;     // 屬於哪個維度
+  dimension: QuizDimension;
   question: string;
-  options: string[];            // 選項
-  correct: number;              // 正確答案索引
-  explanation: string;          // 解釋
-  imageUrl?: string;            // 問題圖片（可選）
+  options: string[];
+  correct: number;
+  explanation: string;
+  imageUrl?: string;
 }
 
 /**
  * 課程測驗
- * Lesson quiz
  */
 export interface LessonQuiz {
   questions: QuizQuestion[];
-  expReward: number;            // 完成獎勵經驗值
-  passScore: number;            // 及格分數（預設 60）
-  timeLimit?: number;           // 時間限制（秒，可選）
+  expReward: number;
+  passScore: number;
+  timeLimit?: number;
 }
 
 /**
  * 課程數據
- * Lesson data structure
  */
 export interface Lesson {
-  id: string;                   // lesson-0, lesson-1, ...
+  id: string;
   title: string;
   description: string;
   category: LessonCategory;
-  order: number;                // 排序
-  
-  // 解鎖條件
-  unlockRequirement: string | null;  // 需要完成的課程 ID，null 表示免費
-  
-  // 內容
+  order: number;
+  unlockRequirement: string | null;
   contentBlocks: ContentBlock[];
-  
-  // 測驗
   quiz: LessonQuiz;
-  
-  // 元數據
   thumbnailUrl?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -166,16 +173,14 @@ export interface Lesson {
 
 /**
  * 測驗分數
- * Quiz scores by dimension
  */
 export interface QuizScores {
-  [dimension: string]: number;  // 各維度得分
-  overall: number;              // 總分
+  [dimension: string]: number;
+  overall: number;
 }
 
 /**
  * 新紀錄標記
- * New best record flags
  */
 export interface NewBestRecord {
   [dimension: string]: boolean;
@@ -183,29 +188,19 @@ export interface NewBestRecord {
 
 /**
  * 練習記錄
- * Practice record
  */
 export interface PracticeRecord {
   id?: string;
   userId: string;
   lessonId: string;
-  
-  // 分數
   scores: QuizScores;
-  
-  // 破紀錄標記
   isNewBest: NewBestRecord;
-  
-  // 獎勵
   achievementExpEarned: number;
-  
-  // 詳細答案
   answers?: {
     questionId: string;
     selected: number;
     correct: boolean;
   }[];
-  
   completedAt: Date;
 }
 
@@ -213,24 +208,22 @@ export interface PracticeRecord {
 
 /**
  * 徽章數據
- * Badge data
  */
 export interface Badge {
   id: string;
   name: string;
   description: string;
   icon: string;
-  condition: string;            // 解鎖條件描述
-  expRequired?: number;         // 需要經驗值
-  lessonRequired?: string;      // 需要完成的課程
-  streakRequired?: number;      // 需要連續天數
+  condition: string;
+  expRequired?: number;
+  lessonRequired?: string;
+  streakRequired?: number;
 }
 
 // ==================== UI 相關類型 ====================
 
 /**
  * 導航項目
- * Navigation item
  */
 export interface NavItem {
   label: string;
@@ -241,7 +234,6 @@ export interface NavItem {
 
 /**
  * 排行榜用戶
- * Leaderboard user
  */
 export interface LeaderboardUser {
   rank: number;
