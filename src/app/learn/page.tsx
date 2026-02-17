@@ -15,21 +15,37 @@ import { LessonCard, LevelCard, StatCard } from '@/components/ui/card';
 import { AbilityRadarChart } from '@/components/charts/radar-chart';
 import type { Lesson, User } from '@/types';
 
-// 靜態課程資料（N5 形容詞）- 整合到課程地圖
-const staticN5Lesson: Lesson = {
-  id: 'n5-lesson-8',
-  title: '第八課：形容詞',
-  description: '學習常用形容詞：高い、安い、重い、軽い等，掌握い形容詞的基本用法。',
-  category: '基礎文法',
-  order: 1,
-  unlockRequirement: null, // 無需解鎖
-  contentBlocks: [],
-  quiz: {
-    questions: [],
-    expReward: 50,
-    passScore: 60,
+// 靜態課程資料（N5 基礎課程）- 整合到課程地圖
+const staticN5Lessons: Lesson[] = [
+  {
+    id: 'n5-lesson-1',
+    title: '第1課：初次見面',
+    description: '學習人稱、職業、國家名稱，掌握自我介紹的基本會話。分4個微單元，每單元10-11個詞彙。',
+    category: '會話',
+    order: 1,
+    unlockRequirement: null, // 無需解鎖
+    contentBlocks: [],
+    quiz: {
+      questions: [],
+      expReward: 50,
+      passScore: 60,
+    },
   },
-};
+  {
+    id: 'n5-lesson-8',
+    title: '第八課：形容詞',
+    description: '學習常用形容詞：高い、安い、重い、軽い等，掌握い形容詞的基本用法。',
+    category: '基礎文法',
+    order: 2,
+    unlockRequirement: null, // 無需解鎖
+    contentBlocks: [],
+    quiz: {
+      questions: [],
+      expReward: 50,
+      passScore: 60,
+    },
+  },
+];
 
 export default function LearnPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -81,7 +97,7 @@ export default function LearnPage() {
   const displayUser = userData || user;
   
   // 合併靜態課程和動態課程（靜態課程排前面）
-  const allLessons = [staticN5Lesson, ...lessons];
+  const allLessons = [...staticN5Lessons, ...lessons];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
@@ -210,7 +226,9 @@ export default function LearnPage() {
               : false;
             
             // 靜態課程使用自定義路徑
-            const customHref = lesson.id === 'n5-lesson-8' ? '/learn/n5/lesson-8' : undefined;
+            const customHref = lesson.id.startsWith('n5-lesson-') 
+              ? `/learn/n5/${lesson.id.replace('n5-', '')}` 
+              : undefined;
 
             return (
               <LessonCard
