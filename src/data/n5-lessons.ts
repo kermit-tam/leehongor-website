@@ -231,12 +231,19 @@ export const lesson1Data: N5Lesson = {
   ],
 };
 
+// ==================== 導入第2-7課 ====================
+import { n5Lessons2to4, n5Lessons5to7, allN5Lessons } from './n5-lessons-full';
+
 // ==================== 所有N5課程列表 ====================
 
 export const n5LessonsList = [
   lesson1Data,
-  // 未來加入第2-15課
+  ...n5Lessons2to4,
+  ...n5Lessons5to7,
 ];
+
+// 匯出第2-4課供課程頁面使用
+export { n5Lessons2to4 };
 
 // ==================== 計分系統配置 ====================
 

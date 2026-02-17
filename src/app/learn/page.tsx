@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { UserService } from '@/lib/firestore';
 import { LevelCard, StatCard } from '@/components/ui/card';
 import { AbilityRadarChart } from '@/components/charts/radar-chart';
-import { lesson1Data, calculateLevel, scoringConfig, getUnitProgressKey, calculateLessonProgress } from '@/data/n5-lessons';
+import { lesson1Data, calculateLevel, scoringConfig, getUnitProgressKey, calculateLessonProgress, n5LessonsList } from '@/data/n5-lessons';
 import type { User } from '@/types';
 
 // 廣東話諧音開關組件
@@ -272,22 +272,40 @@ export default function LearnPage() {
         />
       </div>
 
-      {/* 第8課 - 簡化卡片 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-[#E8E8E8] p-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xs text-[#C4B9AC] tracking-wider mb-1">第 8 課</div>
-            <h3 className="text-xl font-bold text-[#4A4A4A]">形容詞</h3>
-            <p className="text-sm text-[#8C8C8C]">學習い形容詞的基本用法</p>
+      {/* 第2-7課卡片 */}
+      {n5LessonsList.slice(1, 7).map((lesson) => (
+        <div 
+          key={lesson.id}
+          className={`bg-white rounded-2xl shadow-sm border border-[#E8E8E8] p-6 mb-4 ${
+            lesson.units.length === 0 ? 'opacity-60' : ''
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-[#C4B9AC] tracking-wider mb-1">第 {lesson.lessonNum} 課</div>
+              <h3 className="text-xl font-bold text-[#4A4A4A]">{lesson.title}</h3>
+              <p className="text-sm text-[#8C8C8C]">{lesson.description}</p>
+              {lesson.units.length > 0 && (
+                <p className="text-xs text-[#C4B9AC] mt-1">
+                  {lesson.units.length} 單元 • {lesson.totalVocab} 詞彙
+                </p>
+              )}
+            </div>
+            {lesson.units.length > 0 ? (
+              <Link
+                href={`/learn/n5/lesson-${lesson.lessonNum}`}
+                className="px-6 py-3 bg-[#C4B9AC] text-white rounded-lg hover:bg-[#B5A99D] transition-colors"
+              >
+                開始學習 →
+              </Link>
+            ) : (
+              <span className="px-4 py-2 bg-[#F5F5F0] text-[#8C8C8C] rounded-lg text-sm">
+                準備中
+              </span>
+            )}
           </div>
-          <Link
-            href="/learn/n5/lesson-8"
-            className="px-6 py-3 bg-[#C4B9AC] text-white rounded-lg hover:bg-[#B5A99D] transition-colors"
-          >
-            開始學習 →
-          </Link>
         </div>
-      </div>
+      ))}
 
       {/* 計分系統說明 */}
       <div className="bg-[#FAF9F7] rounded-2xl border border-[#E8E8E8] p-6 mb-8">
