@@ -13,6 +13,8 @@ import { UserService } from '@/lib/firestore';
 import { LevelCard, StatCard } from '@/components/ui/card';
 import { AbilityRadarChart } from '@/components/charts/radar-chart';
 import { lesson1Data, calculateLevel, scoringConfig, getUnitProgressKey, calculateLessonProgress, n5LessonsList } from '@/data/n5-lessons';
+import { loadLearningProgress, loadProficiencyData, calculateLearningRate, calculateProficiency } from '@/data/progress-system';
+import { DualProgressDisplay } from '@/components/progress/dual-progress';
 import type { User } from '@/types';
 
 // 廣東話諧音開關組件
@@ -182,6 +184,20 @@ export default function LearnPage() {
   const [showCantonese, setShowCantonese] = useState(true);
   const [completedUnits, setCompletedUnits] = useState<Set<string>>(new Set());
   const [unitScores, setUnitScores] = useState<Record<string, number>>({});
+  
+  // 雙軌進度 state
+  const [learningProgress, setLearningProgress] = useState({
+    completedUnits: [] as string[],
+    totalTimeSpent: 0,
+    streakDays: 0,
+  });
+  const [proficiencyData, setProficiencyData] = useState({
+    quizResults: [] as { score: number }[],
+    overallLevel: 'N5-Beginner' as string,
+  });
+  const [learningStats, setLearningStats] = useState<{ rate: number; completedCount: number; totalCount: number; status: 'beginner' | 'active' | 'dedicated' | 'master' }>({ rate: 0, completedCount: 0, totalCount: 0, status: 'beginner' });
+  const [proficiencyStats, setProficiencyStats] = useState({ overall: 0, level: 'N5-Beginner', weakAreas: [] as string[], strongAreas: [] as string[] });
+  const [quizAvg, setQuizAvg] = useState(0);
 
   // 加載數據
   useEffect(() => {
@@ -199,6 +215,23 @@ export default function LearnPage() {
         if (savedScores) {
           setUnitScores(JSON.parse(savedScores));
         }
+        
+        // 加載雙軌進度
+        const lp = loadLearningProgress();
+        const pd = loadProficiencyData();
+        
+        setLearningProgress(lp);
+        setProficiencyData(pd);
+        
+        // 總單元數（第1-4課）
+        const totalUnitsAcrossLessons = lesson1Data.units.length + 
+          n5LessonsList.slice(1, 4).reduce((sum, l) => sum + (l.units?.length || 0), 0);
+        
+        setLearningStats(calculateLearningRate(lp, totalUnitsAcrossLessons));
+        setProficiencyStats(calculateProficiency(pd));
+        setQuizAvg(pd.quizResults.length > 0
+          ? Math.round(pd.quizResults.reduce((sum, r) => sum + r.score, 0) / pd.quizResults.length)
+          : 0);
 
         // 如果用戶已登入，加載用戶數據
         if (user?.uid) {
@@ -246,6 +279,23 @@ export default function LearnPage() {
         <p className="text-[#8C8C8C]">
           大家的日本語 • 微單元學習 • 廣東話諧音輔助
         </p>
+      </div>
+
+      {/* 雙軌進度顯示 */}
+      <div className="mb-8">
+        <DualProgressDisplay
+          learningRate={learningStats.rate}
+          completedUnits={learningStats.completedCount}
+          totalUnits={learningStats.totalCount}
+          studyTime={learningProgress.totalTimeSpent}
+          streakDays={learningProgress.streakDays}
+          proficiency={proficiencyStats.overall}
+          level={proficiencyStats.level}
+          quizCount={proficiencyData.quizResults.length}
+          averageScore={quizAvg}
+          weakAreas={proficiencyStats.weakAreas}
+          strongAreas={proficiencyStats.strongAreas}
+        />
       </div>
 
       {/* 廣東話諧音說明 */}
