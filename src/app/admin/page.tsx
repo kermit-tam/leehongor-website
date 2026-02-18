@@ -130,6 +130,40 @@ export default function AdminDashboard() {
             </div>
           </div>
         </Link>
+
+        <Link href="/admin/n5-phonetics">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all active:scale-[0.98]">
+            <div className="flex items-center">
+              <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center text-2xl mr-4">
+                🎵
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900">發音編輯</h3>
+                <p className="text-sm text-gray-500">編輯N5課程廣東話諧音</p>
+              </div>
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/admin/system-guide">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all active:scale-[0.98]">
+            <div className="flex items-center">
+              <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-2xl mr-4">
+                📖
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900">系統說明書</h3>
+                <p className="text-sm text-gray-500">查看系統架構、計分模式、課程狀態</p>
+              </div>
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* 使用提示 */}
@@ -142,6 +176,7 @@ export default function AdminDashboard() {
               <li>所有操作會立即生效</li>
               <li>請在編輯前備份重要內容</li>
               <li>圖片會自動上傳到 Firebase Storage</li>
+              <li>課程資料狀態請查看「系統說明書」</li>
             </ul>
           </div>
         </div>

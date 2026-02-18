@@ -1,11 +1,14 @@
 /**
- * 大家的日本語 N5 第2-7課完整數據
- * Lessons 2-7 with Cantonese Phonetics
+ * 大家的日本語 N5 第2-15課完整數據
+ * Lessons 2-15 with Cantonese Phonetics
+ * 
+ * 來源：大家的日本語 初級 I (第2版)
+ * 注意：部分詞彙和諧音根據標準教材建立，可能需要人工校對
  */
 
 import { N5Lesson, N5Vocab, N5Unit, GrammarPoint, DialogueItem } from './n5-lessons';
 
-// 第2課：這是什麼
+// ==================== 第2課：這是什麼 ====================
 const lesson2Units: N5Unit[] = [
   {
     id: 1,
@@ -101,7 +104,7 @@ const lesson2Units: N5Unit[] = [
   },
 ];
 
-// 第3課：這裡是哪裡
+// ==================== 第3課：這裡是哪裡 ====================
 const lesson3Units: N5Unit[] = [
   {
     id: 1,
@@ -196,74 +199,68 @@ const lesson3Units: N5Unit[] = [
   },
 ];
 
-// 第4課：現在幾點
+// ==================== 第4課：現在幾點 ====================
 const lesson4Units: N5Unit[] = [
   {
     id: 1,
-    title: '時間',
-    subtitle: '時和分',
+    title: '時間（1-12時）',
+    subtitle: '現在幾點？',
     estimatedTime: 5,
     vocab: [
-      { hiragana: 'いま', kanji: '今', meaning: '現在', cantonese: '衣嘛', note: '' },
-      { hiragana: 'なんじ', kanji: '何時', meaning: '幾點', cantonese: '難芝', note: '' },
-      { hiragana: '～じ', kanji: '～時', meaning: '～點', cantonese: '芝', note: '' },
-      { hiragana: '～ふん', kanji: '～分', meaning: '～分', cantonese: '魂', note: '' },
-      { hiragana: 'はん', kanji: '半', meaning: '半', cantonese: '杭', note: '30分' },
-      { hiragana: 'ごぜん', kanji: '午前', meaning: '上午', cantonese: '哥仙', note: '' },
-      { hiragana: 'ごご', kanji: '午後', meaning: '下午', cantonese: '哥哥', note: '' },
-      { hiragana: 'あさ', kanji: '朝', meaning: '早上', cantonese: '阿撒', note: '' },
-      { hiragana: 'ひる', kanji: '昼', meaning: '中午', cantonese: '希路', note: '' },
-      { hiragana: 'よる', kanji: '夜', meaning: '晚上', cantonese: '喲路', note: '' },
+      { hiragana: 'いちじ', kanji: '一時', meaning: '一點', cantonese: '衣芝', note: '' },
+      { hiragana: 'にじ', kanji: '二時', meaning: '二點', cantonese: '你芝', note: '' },
+      { hiragana: 'さんじ', kanji: '三時', meaning: '三點', cantonese: '散芝', note: '' },
+      { hiragana: 'よじ', kanji: '四時', meaning: '四點', cantonese: '喲芝', note: '' },
+      { hiragana: 'ごじ', kanji: '五時', meaning: '五點', cantonese: '哥芝', note: '' },
+      { hiragana: 'ろくじ', kanji: '六時', meaning: '六點', cantonese: '囉古芝', note: '' },
+      { hiragana: 'しちじ', kanji: '七時', meaning: '七點', cantonese: '西芝芝', note: '' },
+      { hiragana: 'はちじ', kanji: '八時', meaning: '八點', cantonese: '哈芝', note: '' },
+      { hiragana: 'くじ', kanji: '九時', meaning: '九點', cantonese: '古芝', note: '' },
+      { hiragana: 'じゅうじ', kanji: '十時', meaning: '十點', cantonese: '租芝', note: '' },
     ],
     grammar: [
       {
-        pattern: 'いまなんじですか',
-        meaning: '現在幾點？',
-        example: 'いまなんじですか。',
-        exampleMeaning: '現在幾點？',
-      },
-      {
-        pattern: '～じ～ふんです',
-        meaning: '～點～分',
-        example: 'さんじよんじゅうごふんです。',
-        exampleMeaning: '3點45分。',
+        pattern: 'いま～じです',
+        meaning: '現在是～點',
+        example: 'いまくじです。',
+        exampleMeaning: '現在是九點。',
       },
     ],
   },
   {
     id: 2,
-    title: '動作1',
-    subtitle: '基本動詞',
+    title: '時間（分鐘）',
+    subtitle: '幾點幾分？',
     estimatedTime: 5,
     vocab: [
-      { hiragana: 'おきます', kanji: '起きます', meaning: '起床', cantonese: '哦ki嘛司', note: '' },
-      { hiragana: 'ねます', kanji: '寝ます', meaning: '睡覺', cantonese: '涅嘛司', note: '' },
-      { hiragana: 'はたらきます', kanji: '働きます', meaning: '工作', cantonese: '哈他啦ki嘛司', note: '' },
-      { hiragana: 'やすみます', kanji: '休みます', meaning: '休息', cantonese: '也士咪嘛司', note: '' },
-      { hiragana: 'べんきょうします', kanji: '勉強します', meaning: '學習', cantonese: '便鏡喲 西嘛司', note: '' },
-      { hiragana: 'おわります', kanji: '終わります', meaning: '結束', cantonese: '哦哇利嘛司', note: '' },
-      { hiragana: 'です', kanji: 'です', meaning: '是', cantonese: '爹司', note: '' },
-      { hiragana: 'ます', kanji: 'ます', meaning: '（禮貌形）', cantonese: '嘛司', note: '動詞結尾' },
-      { hiragana: 'まいにち', kanji: '毎日', meaning: '每天', cantonese: '嘛衣你芝', note: '' },
-      { hiragana: 'きょう', kanji: '今日', meaning: '今天', cantonese: '鏡喲', note: '' },
+      { hiragana: 'いっぷん', kanji: '一分', meaning: '一分', cantonese: '衣噸', note: '' },
+      { hiragana: 'にふん', kanji: '二分', meaning: '二分', cantonese: '你婚', note: '' },
+      { hiragana: 'さんぷん', kanji: '三分', meaning: '三分', cantonese: '散噸', note: '' },
+      { hiragana: 'よんぷん', kanji: '四分', meaning: '四分', cantonese: '喲噸', note: '' },
+      { hiragana: 'ごふん', kanji: '五分', meaning: '五分', cantonese: '哥婚', note: '' },
+      { hiragana: 'ろっぷん', kanji: '六分', meaning: '六分', cantonese: '囉噸', note: '' },
+      { hiragana: 'ななふん', kanji: '七分', meaning: '七分', cantonese: '哪哪婚', note: '' },
+      { hiragana: 'はっぷん', kanji: '八分', meaning: '八分', cantonese: '哈噸', note: '' },
+      { hiragana: 'きゅうふん', kanji: '九分', meaning: '九分', cantonese: '鳩婚', note: '' },
+      { hiragana: 'じゅっぷん', kanji: '十分', meaning: '十分', cantonese: '租噸', note: '' },
     ],
   },
   {
     id: 3,
     title: '時間表達',
-    subtitle: '何時做什麼',
+    subtitle: '時間助詞',
     estimatedTime: 5,
     vocab: [
-      { hiragana: 'なんじに', kanji: '何時に', meaning: '幾點（做～）', cantonese: '難芝 你', note: '' },
-      { hiragana: 'ごろ', kanji: '頃', meaning: '左右', cantonese: '哥囉', note: '大約時間' },
-      { hiragana: 'から', kanji: 'から', meaning: '從', cantonese: '卡拉', note: '' },
-      { hiragana: 'まで', kanji: 'まで', meaning: '到', cantonese: '媽爹', note: '' },
-      { hiragana: 'けさ', kanji: '今朝', meaning: '今天早上', cantonese: 'kei撒', note: '' },
-      { hiragana: 'こんばん', kanji: '今晩', meaning: '今天晚上', cantonese: '魂崩', note: '' },
-      { hiragana: 'あした', kanji: '明日', meaning: '明天', cantonese: '阿士他', note: '' },
+      { hiragana: 'にじはん', kanji: '二時半', meaning: '兩點半', cantonese: '你芝 喚', note: '' },
+      { hiragana: 'ごぜん', kanji: '午前', meaning: '上午', cantonese: '哥前', note: 'AM' },
+      { hiragana: 'ごご', kanji: '午後', meaning: '下午', cantonese: '哥哥', note: 'PM' },
+      { hiragana: 'あさ', kanji: '朝', meaning: '早上', cantonese: '阿撒', note: '' },
+      { hiragana: 'ひる', kanji: '昼', meaning: '中午', cantonese: '希路', note: '' },
+      { hiragana: 'ばん', kanji: '晩', meaning: '晚上', cantonese: '崩', note: '' },
+      { hiragana: 'よる', kanji: '夜', meaning: '夜晚', cantonese: '喲路', note: '' },
+      { hiragana: 'おととい', kanji: '一昨日', meaning: '前天', cantonese: '哦多喲', note: '' },
       { hiragana: 'きのう', kanji: '昨日', meaning: '昨天', cantonese: 'ki喲', note: '' },
-      { hiragana: 'まいあさ', kanji: '毎朝', meaning: '每天早上', cantonese: '嘛衣阿撒', note: '' },
-      { hiragana: 'まいばん', kanji: '毎晩', meaning: '每天晚上', cantonese: '嘛衣崩', note: '' },
+      { hiragana: 'きょう', kanji: '今日', meaning: '今天', cantonese: '鏡', note: '' },
     ],
   },
   {
@@ -292,7 +289,11 @@ const lesson4Units: N5Unit[] = [
   },
 ];
 
-// 匯出所有課程
+// 導入第5-7課和第8-15課
+import { n5Lessons5to7V2 } from './n5-lessons-5to15';
+import { n5Lessons8to15 } from './n5-lessons-8to15';
+
+// 導出第2-4課
 export const n5Lessons2to4: N5Lesson[] = [
   {
     id: 'n5-lesson-2',
@@ -323,35 +324,15 @@ export const n5Lessons2to4: N5Lesson[] = [
   },
 ];
 
-// 第5-7課（待補充）
-export const n5Lessons5to7: N5Lesson[] = [
-  {
-    id: 'n5-lesson-5',
-    lessonNum: 5,
-    title: '一起去看電影吧',
-    description: '學習邀請和回應的表達。準備中...',
-    totalVocab: 0,
-    totalTime: 20,
-    units: [],
-  },
-  {
-    id: 'n5-lesson-6',
-    lessonNum: 6,
-    title: '這是怎樣的料理',
-    description: '學習食物和形容詞。準備中...',
-    totalVocab: 0,
-    totalTime: 20,
-    units: [],
-  },
-  {
-    id: 'n5-lesson-7',
-    lessonNum: 7,
-    title: '這裡是哪裡',
-    description: '學習地點和方向。準備中...',
-    totalVocab: 0,
-    totalTime: 20,
-    units: [],
-  },
-];
+// 重新導出第5-7課（新版）
+export { n5Lessons5to7V2 as n5Lessons5to7 };
 
-export const allN5Lessons = [...n5Lessons2to4, ...n5Lessons5to7];
+// 導出第8-15課
+export { n5Lessons8to15 };
+
+// 所有課程
+export const allN5Lessons = [
+  ...n5Lessons2to4, 
+  ...n5Lessons5to7V2, 
+  ...n5Lessons8to15
+];

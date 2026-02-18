@@ -322,40 +322,35 @@ export default function LearnPage() {
         />
       </div>
 
-      {/* 第2-7課卡片 */}
-      {n5LessonsList.slice(1, 7).map((lesson) => (
-        <div 
-          key={lesson.id}
-          className={`bg-white rounded-2xl shadow-sm border border-[#E8E8E8] p-6 mb-4 ${
-            lesson.units.length === 0 ? 'opacity-60' : ''
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-[#C4B9AC] tracking-wider mb-1">第 {lesson.lessonNum} 課</div>
-              <h3 className="text-xl font-bold text-[#4A4A4A]">{lesson.title}</h3>
-              <p className="text-sm text-[#8C8C8C]">{lesson.description}</p>
-              {lesson.units.length > 0 && (
-                <p className="text-xs text-[#C4B9AC] mt-1">
-                  {lesson.units.length} 單元 • {lesson.totalVocab} 詞彙
-                </p>
-              )}
-            </div>
+      {/* 第2-15課卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {n5LessonsList.slice(1).map((lesson) => (
+          <Link
+            key={lesson.id}
+            href={lesson.units.length > 0 ? `/learn/n5/lesson-${lesson.lessonNum}` : '#'}
+            className={`bg-white rounded-2xl shadow-sm border border-[#E8E8E8] p-5 transition-all hover:shadow-md ${
+              lesson.units.length === 0 ? 'opacity-60 cursor-not-allowed' : 'hover:border-[#C4B9AC]'
+            }`}
+          >
+            <div className="text-xs text-[#C4B9AC] tracking-wider mb-1">第 {lesson.lessonNum} 課</div>
+            <h3 className="text-lg font-bold text-[#4A4A4A] mb-1">{lesson.title}</h3>
+            <p className="text-xs text-[#8C8C8C] line-clamp-2">{lesson.description}</p>
+            
             {lesson.units.length > 0 ? (
-              <Link
-                href={`/learn/n5/lesson-${lesson.lessonNum}`}
-                className="px-6 py-3 bg-[#C4B9AC] text-white rounded-lg hover:bg-[#B5A99D] transition-colors"
-              >
-                開始學習 →
-              </Link>
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-xs text-[#C4B9AC]">
+                  {lesson.units.length} 單元 • {lesson.totalVocab} 詞彙
+                </span>
+                <span className="text-sm text-[#C4B9AC]">→</span>
+              </div>
             ) : (
-              <span className="px-4 py-2 bg-[#F5F5F0] text-[#8C8C8C] rounded-lg text-sm">
+              <span className="mt-3 inline-block text-xs bg-[#F5F5F0] text-[#8C8C8C] px-2 py-1 rounded">
                 準備中
               </span>
             )}
-          </div>
-        </div>
-      ))}
+          </Link>
+        ))}
+      </div>
 
       {/* 計分系統說明 */}
       <div className="bg-[#FAF9F7] rounded-2xl border border-[#E8E8E8] p-6 mb-8">

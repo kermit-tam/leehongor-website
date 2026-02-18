@@ -231,15 +231,18 @@ export const lesson1Data: N5Lesson = {
   ],
 };
 
-// ==================== 導入第2-7課 ====================
-import { n5Lessons2to4, n5Lessons5to7, allN5Lessons } from './n5-lessons-full';
+// ==================== 導入第2-15課 ====================
+import { n5Lessons2to4 } from './n5-lessons-full';
+import { n5Lessons5to7V2 } from './n5-lessons-5to15';
+import { n5Lessons8to15 } from './n5-lessons-8to15';
 
 // ==================== 所有N5課程列表 ====================
 
 export const n5LessonsList = [
   lesson1Data,
   ...n5Lessons2to4,
-  ...n5Lessons5to7,
+  ...n5Lessons5to7V2,
+  ...n5Lessons8to15,
 ];
 
 // 匯出第2-4課供課程頁面使用

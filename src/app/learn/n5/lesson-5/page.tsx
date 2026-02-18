@@ -4,53 +4,20 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { lesson1Data, getQuizReward, getUnitProgressKey, scoringConfig, calculateParticipationExp, saveExpHistory, ExpSource } from '@/data/n5-lessons';
+import SentenceBuilder from './sentence-builder';
+import { n5Lessons5to7V2 } from '@/data/n5-lessons-5to15';
+import { getUnitProgressKey, getQuizReward, calculateParticipationExp, saveExpHistory, ExpSource } from '@/data/n5-lessons';
 import { useAuth } from '@/lib/auth-context';
 import { UserService } from '@/lib/firestore';
 
-// 聽力測驗題目類型
-type ListeningQuiz = {
-  id: number;
-  audioText: string;
-  correctAnswer: string;
-  options: string[];
-};
+// 獲取第5課數據
+const lesson5Data = n5Lessons5to7V2[0];
 
-// 生成聽力測驗（隨機15題）
-function generateListeningQuiz(): ListeningQuiz[] {
-  // 收集所有單元嘅詞彙
-  const allVocab = lesson1Data.units.flatMap(unit => unit.vocab);
-  
-  // 隨機排序選15個
-  const shuffled = [...allVocab].sort(() => Math.random() - 0.5).slice(0, 15);
-  
-  return shuffled.map((vocab, index) => {
-    // 生成錯誤選項（從其他詞彙隨機選3個）
-    const wrongOptions = allVocab
-      .filter(v => v.meaning !== vocab.meaning)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
-      .map(v => v.meaning);
-    
-    // 合併並隨機排序
-    const options = [vocab.meaning, ...wrongOptions].sort(() => Math.random() - 0.5);
-    
-    return {
-      id: index,
-      audioText: vocab.hiragana,
-      correctAnswer: vocab.meaning,
-      options,
-    };
-  });
-}
-
-function LessonContent() {
+function Lesson5Content() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  const initialUnit = parseInt(searchParams.get('unit') || '1');
-  
-  const [currentUnit, setCurrentUnit] = useState(initialUnit - 1);
-  const [mode, setMode] = useState<'menu' | 'study' | 'quiz' | 'listening' | 'result'>('menu');
+  const [mode, setMode] = useState<'menu' | 'study' | 'quiz' | 'builder' | 'listening' | 'result'>('menu');
+  const [currentUnit, setCurrentUnit] = useState(0);
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
   const [showCantonese, setShowCantonese] = useState(true);
   
@@ -60,29 +27,17 @@ function LessonContent() {
   const [wrongCount, setWrongCount] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [quizHistory, setQuizHistory] = useState<{correct: boolean; answer: string}[]>([]);
-  
-  // 聽力測驗狀態
-  const [listeningQuiz, setListeningQuiz] = useState<ListeningQuiz[]>([]);
-  const [listeningIndex, setListeningIndex] = useState(0);
-  const [listeningScore, setListeningScore] = useState(0);
-  const [listeningWrong, setListeningWrong] = useState(0);
-  const [listeningAnswered, setListeningAnswered] = useState(false);
-  const [listeningSelected, setListeningSelected] = useState<string | null>(null);
-  const [listeningHistory, setListeningHistory] = useState<{correct: boolean; answer: string}[]>([]);
-  const [isPlaying, setIsPlaying] = useState(false);
   
   // 進度
   const [completedUnits, setCompletedUnits] = useState<Set<string>>(new Set());
   const [participationClaimed, setParticipationClaimed] = useState<Set<string>>(new Set());
-  const [unitExp, setUnitExp] = useState(0);
-  const [expBreakdown, setExpBreakdown] = useState<{participation: number, assessment: number}>({ participation: 0, assessment: 0 });
   const [showExpDetail, setShowExpDetail] = useState(false);
+  const [expBreakdown, setExpBreakdown] = useState<{participation: number, assessment: number}>({ participation: 0, assessment: 0 });
   
   // 重置確認
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  const currentUnitData = lesson1Data.units[currentUnit];
+  const currentUnitData = lesson5Data.units[currentUnit];
 
   useEffect(() => {
     const savedCompleted = localStorage.getItem('n5-unit-completed');
@@ -95,44 +50,12 @@ function LessonContent() {
     }
   }, []);
 
-  // 播放聽力音頻
-  const playListeningAudio = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ja-JP';
-      utterance.rate = 0.7; // 聽力用慢啲速度
-      utterance.pitch = 1;
-      
-      utterance.onstart = () => setIsPlaying(true);
-      utterance.onend = () => setIsPlaying(false);
-      
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  // 開始聽力測驗
-  const startListeningQuiz = () => {
-    const quiz = generateListeningQuiz();
-    setListeningQuiz(quiz);
-    setListeningIndex(0);
-    setListeningScore(0);
-    setListeningWrong(0);
-    setListeningAnswered(false);
-    setListeningSelected(null);
-    setListeningHistory([]);
-    setMode('listening');
-    
-    // 自動播放第一題
-    setTimeout(() => playListeningAudio(quiz[0].audioText), 300);
-  };
-
   // 給予參與分
   const awardParticipationExp = async (unitId: number) => {
-    const key = `${lesson1Data.id}-unit${unitId}-participation`;
+    const key = `${lesson5Data.id}-unit${unitId}-participation`;
     if (participationClaimed.has(key)) return;
 
-    const unit = lesson1Data.units.find(u => u.id === unitId);
+    const unit = lesson5Data.units.find(u => u.id === unitId);
     if (!unit) return;
 
     const exp = calculateParticipationExp(unit);
@@ -147,7 +70,7 @@ function LessonContent() {
       action: `完成${unit.title}學習`,
       exp,
       timestamp: new Date(),
-      lessonId: lesson1Data.id,
+      lessonId: lesson5Data.id,
       unitId,
     };
     saveExpHistory(expSource);
@@ -177,7 +100,7 @@ function LessonContent() {
       action: `測驗得分 ${percentage}%`,
       exp: reward.exp,
       timestamp: new Date(),
-      lessonId: lesson1Data.id,
+      lessonId: lesson5Data.id,
       unitId: currentUnitData.id,
     };
     saveExpHistory(expSource);
@@ -199,7 +122,7 @@ function LessonContent() {
   };
 
   const saveCompleted = (unitId: number) => {
-    const key = getUnitProgressKey(lesson1Data.id, unitId);
+    const key = getUnitProgressKey(lesson5Data.id, unitId);
     const newCompleted = new Set(completedUnits);
     newCompleted.add(key);
     setCompletedUnits(newCompleted);
@@ -244,9 +167,9 @@ function LessonContent() {
     setMode('study');
     setFlippedCards(new Set());
     
-    const key = `${lesson1Data.id}-unit${lesson1Data.units[unitIndex].id}-participation`;
+    const key = `${lesson5Data.id}-unit${lesson5Data.units[unitIndex].id}-participation`;
     if (!participationClaimed.has(key)) {
-      const exp = await awardParticipationExp(lesson1Data.units[unitIndex].id);
+      const exp = await awardParticipationExp(lesson5Data.units[unitIndex].id);
       if (exp) {
         setExpBreakdown(prev => ({ ...prev, participation: exp }));
         setShowExpDetail(true);
@@ -262,8 +185,10 @@ function LessonContent() {
     setWrongCount(0);
     setAnswered(false);
     setSelectedOption(null);
-    setQuizHistory([]);
-    setExpBreakdown({ participation: 0, assessment: 0 });
+  };
+
+  const startBuilder = () => {
+    setMode('builder');
   };
 
   const generateOptions = (correctWord: typeof currentUnitData.vocab[0]) => {
@@ -282,30 +207,12 @@ function LessonContent() {
     
     setSelectedOption(selected);
     setAnswered(true);
-    setQuizHistory(prev => [...prev, { correct: isCorrect, answer: selected }]);
-    
     if (isCorrect) {
       setScore(score + 1);
     } else {
       setWrongCount(wrongCount + 1);
     }
     playAudio(currentWord.hiragana);
-  };
-
-  const checkListeningAnswer = (selected: string) => {
-    if (listeningAnswered) return;
-    const currentQ = listeningQuiz[listeningIndex];
-    const isCorrect = selected === currentQ.correctAnswer;
-    
-    setListeningSelected(selected);
-    setListeningAnswered(true);
-    setListeningHistory(prev => [...prev, { correct: isCorrect, answer: selected }]);
-    
-    if (isCorrect) {
-      setListeningScore(listeningScore + 1);
-    } else {
-      setListeningWrong(listeningWrong + 1);
-    }
   };
 
   const nextQuestion = async () => {
@@ -319,20 +226,7 @@ function LessonContent() {
       const assessmentExp = await awardAssessmentExp(percentage);
       
       setExpBreakdown(prev => ({ ...prev, assessment: assessmentExp || 0 }));
-      setUnitExp((prev) => prev + (assessmentExp || 0));
       saveCompleted(currentUnitData.id);
-      setMode('result');
-    }
-  };
-
-  const nextListeningQuestion = () => {
-    if (listeningIndex < listeningQuiz.length - 1) {
-      setListeningIndex(listeningIndex + 1);
-      setListeningAnswered(false);
-      setListeningSelected(null);
-      // 自動播放下一題
-      setTimeout(() => playListeningAudio(listeningQuiz[listeningIndex + 1].audioText), 300);
-    } else {
       setMode('result');
     }
   };
@@ -342,6 +236,11 @@ function LessonContent() {
     setFlippedCards(new Set());
     setExpBreakdown({ participation: 0, assessment: 0 });
   };
+
+  // 積木造句機模式
+  if (mode === 'builder') {
+    return <SentenceBuilder />;
+  }
 
   // 選單模式
   if (mode === 'menu') {
@@ -415,8 +314,8 @@ function LessonContent() {
                 🔄 重置進度
               </button>
             </div>
-            <h1 className="text-2xl font-normal text-[#4A4A4A] mb-1">第1課：初次見面</h1>
-            <p className="text-sm text-[#8C8C8C]">4個微單元 • 完成學習獲參與分，測驗獲考核分</p>
+            <h1 className="text-2xl font-normal text-[#4A4A4A] mb-1">第5課：{lesson5Data.title}</h1>
+            <p className="text-sm text-[#8C8C8C]">4個微單元 • 積木造句機 • 完成學習獲參與分</p>
             
             <div className="mt-4 flex justify-between items-center">
               <button
@@ -431,40 +330,37 @@ function LessonContent() {
                 <span>廣東話諧音</span>
               </button>
               
-              {/* 聽力測驗按鈕 */}
+              {/* 積木造句機按鈕 */}
               <button
-                onClick={startListeningQuiz}
-                className="flex items-center gap-2 px-4 py-2 bg-[#E3F2FD] text-[#1976D2] rounded-full text-sm hover:bg-[#BBDEFB] transition-colors"
+                onClick={startBuilder}
+                className="flex items-center gap-2 px-4 py-2 bg-[#6B5B95] text-white rounded-full text-sm hover:bg-[#5A4A84] transition-colors"
               >
-                🎧 聽力測驗
+                🧱 積木造句機
               </button>
             </div>
           </div>
         </div>
 
         <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
-          {/* 積木造句機入口 */}
-          <Link href="/learn/n5/lesson-1/builder">
-            <motion.div
-              className="bg-gradient-to-r from-[#6B5B95] to-[#8B7BB5] rounded-xl p-5 text-white cursor-pointer shadow-md hover:shadow-lg transition-all"
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">🧱</span>
-                    <span className="font-medium">積木造句機</span>
-                  </div>
-                  <p className="text-sm text-white/80">組合詞彙，創造自己的句子</p>
-                </div>
-                <span className="text-2xl">→</span>
+          {/* 特色功能卡片 - 積木造句機 */}
+          <motion.button
+            onClick={startBuilder}
+            className="w-full rounded-xl p-5 text-left relative overflow-hidden border-2 border-[#6B5B95] bg-gradient-to-r from-[#6B5B95]/10 to-transparent hover:shadow-lg transition-all"
+            whileTap={{ scale: 0.98 }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🧱</span>
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-[#6B5B95]">積木造句機</h3>
+                <p className="text-sm text-[#8C8C8C]">組合時間、人物、交通工具，創造你的日文句子</p>
               </div>
-            </motion.div>
-          </Link>
+              <span className="text-[#6B5B95]">→</span>
+            </div>
+          </motion.button>
 
-          {lesson1Data.units.map((unit, index) => {
-            const isCompleted = completedUnits.has(getUnitProgressKey(lesson1Data.id, unit.id));
-            const hasParticipation = participationClaimed.has(`${lesson1Data.id}-unit${unit.id}-participation`);
+          {lesson5Data.units.map((unit, index) => {
+            const isCompleted = completedUnits.has(getUnitProgressKey(lesson5Data.id, unit.id));
+            const hasParticipation = participationClaimed.has(`${lesson5Data.id}-unit${unit.id}-participation`);
             
             return (
               <motion.button
@@ -494,7 +390,6 @@ function LessonContent() {
                 <div className="flex gap-2 mt-3">
                   <span className="text-xs px-2 py-0.5 bg-[#E3F2FD] text-[#1976D2] rounded">詞彙</span>
                   {unit.grammar && <span className="text-xs px-2 py-0.5 bg-[#F3E5F5] text-[#7B1FA2] rounded">文法</span>}
-                  {unit.listening && <span className="text-xs px-2 py-0.5 bg-[#E8F5E9] text-[#388E3C] rounded">聽力</span>}
                   {unit.dialogue && <span className="text-xs px-2 py-0.5 bg-[#FFF3E0] text-[#F57C00] rounded">對話</span>}
                 </div>
                 
@@ -509,137 +404,71 @@ function LessonContent() {
     );
   }
 
-  // 聽力測驗模式
-  if (mode === 'listening' && listeningQuiz.length > 0) {
-    const currentQ = listeningQuiz[listeningIndex];
-    const progress = ((listeningIndex + 1) / listeningQuiz.length) * 100;
-    
+  // 其他模式（學習、測驗、結果）與 Lesson 1 相同...
+  // 為了簡潔，這裡省略重複的代碼
+  // 學習模式
+  if (mode === 'study') {
     return (
       <div className="min-h-screen bg-[#F5F5F0] pb-20">
-        {/* 頂部導航 */}
-        <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50">
-          <div className="max-w-lg mx-auto flex justify-between items-center">
-            <button onClick={backToMenu} className="text-[#8C8C8C] text-sm">← 返回</button>
-            <span className="text-sm text-[#4A4A4A]">聽力測驗</span>
-            <span className="text-sm text-[#8C8C8C]">{listeningIndex + 1}/{listeningQuiz.length}</span>
+        <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50 flex justify-between items-center">
+          <button onClick={backToMenu} className="text-[#8C8C8C] text-sm">← 返回</button>
+          <div className="text-center">
+            <span className="text-sm text-[#4A4A4A]">{currentUnitData.title}</span>
+            <span className="text-xs text-[#8C8C8C] ml-2">單元 {currentUnitData.id}/4</span>
           </div>
+          <button onClick={startQuiz} className="text-sm bg-[#C4B9AC] text-white px-3 py-1.5 rounded-full">
+            測驗 →
+          </button>
         </div>
 
-        {/* 進度條同統計 */}
-        <div className="max-w-lg mx-auto px-4 pt-4">
-          <div className="flex justify-between text-xs text-[#8C8C8C] mb-2">
-            <span>進度: {listeningIndex + 1}/{listeningQuiz.length}</span>
-            <span>
-              <span className="text-green-600">✓ {listeningScore}</span>
-              {' · '}
-              <span className="text-red-500">✗ {listeningWrong}</span>
-            </span>
-          </div>
-          <div className="h-2 bg-[#E5E5E5] rounded-full overflow-hidden mb-6">
-            <div className="h-full bg-[#1976D2] rounded-full transition-all" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
-
-        <div className="max-w-lg mx-auto px-4">
-          {/* 播放按鈕 */}
-          <div className="bg-white rounded-xl p-8 shadow-sm border border-[#E8E8E8] text-center mb-6">
-            <button
-              onClick={() => playListeningAudio(currentQ.audioText)}
-              disabled={isPlaying}
-              className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 transition-all ${
-                isPlaying 
-                  ? 'bg-[#1976D2]/20 text-[#1976D2]' 
-                  : 'bg-[#1976D2] text-white hover:bg-[#1565C0]'
-              }`}
-            >
-              {isPlaying ? '🔊' : '▶️'}
-            </button>
-            <p className="text-sm text-[#8C8C8C]">
-              {isPlaying ? '播放中...' : '點擊播放，揀返啱嘅答案'}
-            </p>
-            <button
-              onClick={() => playListeningAudio(currentQ.audioText)}
-              className="mt-3 text-sm text-[#1976D2] hover:underline"
-            >
-              再播一次
-            </button>
-          </div>
-
-          {/* 選項 */}
-          <div className="space-y-3">
-            {currentQ.options.map((option, idx) => {
-              const isSelected = listeningSelected === option;
-              const isCorrect = option === currentQ.correctAnswer;
-              const showResult = listeningAnswered;
-              
-              let buttonClass = 'w-full p-4 text-left border-2 rounded-lg text-center text-base font-medium transition-all ';
-              
-              if (showResult) {
-                if (isCorrect) {
-                  buttonClass += 'bg-[#E8F5E9] border-[#4CAF50] text-[#4A4A4A]';
-                } else if (isSelected && !isCorrect) {
-                  buttonClass += 'bg-[#FFEBEE] border-[#F44336] text-[#4A4A4A]';
-                } else {
-                  buttonClass += 'bg-white border-[#E5E5E5] text-[#8C8C8C] opacity-50';
-                }
-              } else {
-                if (isSelected) {
-                  buttonClass += 'bg-[#E3F2FD] border-[#1976D2] text-[#1976D2]';
-                } else {
-                  buttonClass += 'bg-white border-[#E5E5E5] text-[#4A4A4A] hover:border-[#1976D2]';
-                }
-              }
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => checkListeningAnswer(option)}
-                  disabled={listeningAnswered}
-                  className={buttonClass}
-                >
-                  <div className="flex items-center justify-center gap-3">
-                    {showResult && isCorrect && <span className="text-green-600 text-xl">✓</span>}
-                    {showResult && isSelected && !isCorrect && <span className="text-red-500 text-xl">✗</span>}
-                    <span>{option}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 反饋 */}
-          <AnimatePresence>
-            {listeningAnswered && (
+        <div className="max-w-lg mx-auto px-4 py-6">
+          <p className="text-center text-sm text-[#8C8C8C] mb-4">👆 撳卡片睇答案 · 再撳聽發音</p>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {currentUnitData.vocab.map((word, index) => (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`mt-4 p-4 rounded-lg border-l-4 ${
-                  listeningSelected === currentQ.correctAnswer
-                    ? 'bg-[#E8F5E9] border-l-[#4CAF50]'
-                    : 'bg-[#FFEBEE] border-l-[#F44336]'
-                }`}
+                key={index}
+                onClick={() => toggleCard(index)}
+                className="relative aspect-[4/3] cursor-pointer"
+                style={{ perspective: '1000px' }}
+                whileTap={{ scale: 0.98 }}
               >
-                <p className="text-sm text-[#4A4A4A] font-medium">
-                  {listeningSelected === currentQ.correctAnswer
-                    ? '✓ 正確！'
-                    : `✗ 正確答案：${currentQ.correctAnswer}`
-                  }
-                </p>
-                <button
-                  onClick={nextListeningQuestion}
-                  className="w-full mt-3 py-3 bg-[#1976D2] text-white rounded-lg"
+                <motion.div
+                  className="w-full h-full relative"
+                  animate={{ rotateY: flippedCards.has(index) ? 180 : 0 }}
+                  transition={{ duration: 0.4 }}
+                  style={{ transformStyle: 'preserve-3d' }}
                 >
-                  {listeningIndex === listeningQuiz.length - 1 ? '看結果' : '下一題'}
-                </button>
+                  <div className="absolute inset-0 bg-white rounded-lg shadow-sm border border-[#E8E8E8] flex flex-col items-center justify-center p-3">
+                    {showCantonese && word.cantonese ? (
+                      <>
+                        <span className="text-xl text-[#4A4A4A]">{word.cantonese}</span>
+                        <span className="text-sm text-[#C4B9AC] mt-1">{word.hiragana}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl text-[#4A4A4A]">{word.hiragana}</span>
+                    )}
+                    <span className="text-xs text-[#C4B9AC] mt-2">點擊翻轉</span>
+                  </div>
+
+                  <div 
+                    className="absolute inset-0 bg-[#FAF8F5] rounded-lg shadow-sm border border-[#E0D5C7] flex flex-col items-center justify-center p-3"
+                    style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden' }}
+                  >
+                    <span className="text-lg text-[#4A4A4A] mb-1">{word.kanji}</span>
+                    <span className="text-base text-[#4A4A4A] font-medium text-center mb-1">{word.meaning}</span>
+                    {word.note && <span className="text-xs text-[#8C8C8C]">{word.note}</span>}
+                  </div>
+                </motion.div>
               </motion.div>
-            )}
-          </AnimatePresence>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  // 原有測驗模式
+  // 測驗模式
   if (mode === 'quiz') {
     const currentWord = currentUnitData.vocab[quizIndex];
     const progress = ((quizIndex + 1) / currentUnitData.vocab.length) * 100;
@@ -767,23 +596,10 @@ function LessonContent() {
           className="bg-white rounded-2xl p-8 max-w-sm w-full text-center border border-[#E8E8E8]"
         >
           <div className="w-24 h-24 rounded-full border-4 border-[#C4B9AC] flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl text-[#4A4A4A]">
-              {listeningQuiz.length > 0 
-                ? `${listeningScore}/${listeningQuiz.length}`
-                : `${score}/${currentUnitData.vocab.length}`
-              }
-            </span>
+            <span className="text-3xl text-[#4A4A4A]">{score}/{currentUnitData.vocab.length}</span>
           </div>
           
-          <h3 className="text-xl text-[#4A4A4A] mb-2">
-            {listeningQuiz.length > 0 ? '聽力測驗完成！' : '單元測驗完成！'}
-          </h3>
-          
-          {listeningQuiz.length > 0 && (
-            <p className="text-sm text-[#8C8C8C] mb-4">
-              正確 {listeningScore} 題 · 錯誤 {listeningWrong} 題
-            </p>
-          )}
+          <h3 className="text-xl text-[#4A4A4A] mb-2">單元測驗完成！</h3>
 
           <div className="space-y-2">
             <button onClick={backToMenu} className="w-full py-3 bg-[#C4B9AC] text-white rounded-lg">
@@ -795,107 +611,13 @@ function LessonContent() {
     );
   }
 
-  // 學習模式
-  return (
-    <div className="min-h-screen bg-[#F5F5F0] pb-20">
-      <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50 flex justify-between items-center">
-        <button onClick={backToMenu} className="text-[#8C8C8C] text-sm">← 返回</button>
-        <div className="text-center">
-          <span className="text-sm text-[#4A4A4A]">{currentUnitData.title}</span>
-          <span className="text-xs text-[#8C8C8C] ml-2">單元 {currentUnitData.id}/4</span>
-        </div>
-        <button onClick={startQuiz} className="text-sm bg-[#C4B9AC] text-white px-3 py-1.5 rounded-full">
-          測驗 →
-        </button>
-      </div>
-
-      <div className="max-w-lg mx-auto px-4 py-6">
-        {currentUnitData.grammar && (
-          <div className="bg-white rounded-xl p-4 mb-6 border border-[#E8E8E8]">
-            <h3 className="text-sm font-medium text-[#4A4A4A] mb-3">📚 文法重點</h3>
-            {currentUnitData.grammar.map((g, i) => (
-              <div key={i} className="mb-3 last:mb-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[#C4B9AC] font-medium">{g.pattern}</span>
-                  <span className="text-xs text-[#8C8C8C]">→ {g.meaning}</span>
-                </div>
-                <p className="text-sm text-[#4A4A4A] bg-[#F5F5F0] px-3 py-2 rounded">
-                  {g.example}
-                  <span className="text-[#8C8C8C] ml-2">({g.exampleMeaning})</span>
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <p className="text-center text-sm text-[#8C8C8C] mb-4">👆 撳卡片睇答案 · 再撳聽發音</p>
-        
-        <div className="grid grid-cols-2 gap-3">
-          {currentUnitData.vocab.map((word, index) => (
-            <motion.div
-              key={index}
-              onClick={() => toggleCard(index)}
-              className="relative aspect-[4/3] cursor-pointer"
-              style={{ perspective: '1000px' }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <motion.div
-                className="w-full h-full relative"
-                animate={{ rotateY: flippedCards.has(index) ? 180 : 0 }}
-                transition={{ duration: 0.4 }}
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                <div className="absolute inset-0 bg-white rounded-lg shadow-sm border border-[#E8E8E8] flex flex-col items-center justify-center p-3">
-                  {showCantonese && word.cantonese ? (
-                    <>
-                      <span className="text-xl text-[#4A4A4A]">{word.cantonese}</span>
-                      <span className="text-sm text-[#C4B9AC] mt-1">{word.hiragana}</span>
-                    </>
-                  ) : (
-                    <span className="text-2xl text-[#4A4A4A]">{word.hiragana}</span>
-                  )}
-                  <span className="text-xs text-[#C4B9AC] mt-2">點擊翻轉</span>
-                </div>
-
-                <div 
-                  className="absolute inset-0 bg-[#FAF8F5] rounded-lg shadow-sm border border-[#E0D5C7] flex flex-col items-center justify-center p-3"
-                  style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden' }}
-                >
-                  <span className="text-lg text-[#4A4A4A] mb-1">{word.kanji}</span>
-                  <span className="text-base text-[#4A4A4A] font-medium text-center mb-1">{word.meaning}</span>
-                  {word.note && <span className="text-xs text-[#8C8C8C]">{word.note}</span>}
-                </div>
-              </motion.div>
-            </motion.div>
-          ))}
-        </div>
-
-        {currentUnitData.dialogue && (
-          <div className="mt-6 bg-white rounded-xl p-4 border border-[#E8E8E8]">
-            <h3 className="text-sm font-medium text-[#4A4A4A] mb-3">💬 情境對話</h3>
-            {currentUnitData.dialogue.map((d, i) => (
-              <div key={i} className="mb-3 last:mb-0">
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-medium text-[#C4B9AC] w-12 shrink-0">{d.speaker}</span>
-                  <div className="flex-1">
-                    <p className="text-sm text-[#4A4A4A]">{d.japanese}</p>
-                    {showCantonese && d.cantonese && <p className="text-xs text-[#C4B9AC]">{d.cantonese}</p>}
-                    <p className="text-xs text-[#8C8C8C]">{d.meaning}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return null;
 }
 
-export default function Lesson1Page() {
+export default function Lesson5Page() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center"><div className="text-[#8C8C8C]">載入中...</div></div>}>
-      <LessonContent />
+      <Lesson5Content />
     </Suspense>
   );
 }

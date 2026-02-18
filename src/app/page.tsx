@@ -124,11 +124,25 @@ function HeroSection() {
   return (
     <div className="max-w-6xl mx-auto px-6 sm:px-8 py-12 bg-[#F5F5F0] min-h-screen">
       {/* 歡迎標語 */}
-      <div className="text-center mb-16">
+      <div className="text-center mb-12">
         <h1 className="text-2xl md:text-3xl font-light mb-4 text-[#4A4A4A] tracking-wider">
           歡迎回來
         </h1>
         <p className="text-[#8C8C8C] tracking-wide">選擇你喜歡的學習方式</p>
+      </div>
+
+      {/* 主要CTA按鈕 - 系統學 */}
+      <div className="max-w-md mx-auto mb-10">
+        <Link href="/learn/n5/lesson-1">
+          <div className="bg-[#6B5B95] text-white p-6 rounded-2xl shadow-lg hover:bg-[#5A4A84] transition-all text-center">
+            <div className="text-3xl mb-2">🎯</div>
+            <h2 className="text-xl font-medium mb-1">開始系統學習</h2>
+            <p className="text-white/80 text-sm">第1課：初次見面</p>
+            <div className="mt-3 text-sm bg-white/20 inline-block px-4 py-1 rounded-full">
+              立即開始 →
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* 兩個入口 */}
@@ -149,11 +163,11 @@ function HeroSection() {
         {/* 系統學入口 */}
         <Link href="/learn">
           <div className="group bg-[#FAF9F7] p-8 border-t border-[#E5E5E5] hover:bg-[#F0F0F0] transition-all">
-            <div className="text-4xl mb-6">🎯</div>
-            <h2 className="text-xl font-normal mb-2 text-[#4A4A4A] tracking-wide">系統學</h2>
-            <p className="text-[#8C8C8C] mb-6">課程學習，遊戲化進度</p>
+            <div className="text-4xl mb-6">🎓</div>
+            <h2 className="text-xl font-normal mb-2 text-[#4A4A4A] tracking-wide">課程列表</h2>
+            <p className="text-[#8C8C8C] mb-6">查看所有N5課程</p>
             <div className="flex items-center text-[#4A4A4A] group-hover:translate-x-2 transition-transform">
-              <span className="tracking-wide">開始學習</span>
+              <span className="tracking-wide">瀏覽課程</span>
               <span className="ml-2">→</span>
             </div>
           </div>

@@ -89,9 +89,33 @@ export default function PostsPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
       {/* 頁面標題 */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">📚 輕鬆學</h1>
         <p className="text-gray-600">閱讀有趣的日文文章，輕鬆學習</p>
+      </div>
+
+      {/* 積木造句機入口 */}
+      <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <a href="/learn/n5/lesson-1/builder" className="bg-gradient-to-r from-[#6B5B95] to-[#8B7BB5] text-white p-4 rounded-xl hover:shadow-lg transition-all">
+          <div className="text-xl mb-1">🧱</div>
+          <div className="font-medium text-sm">第1課造句</div>
+          <div className="text-xs text-white/70">初次見面</div>
+        </a>
+        <a href="/learn/n5/lesson-2/builder" className="bg-gradient-to-r from-[#5B7B95] to-[#7B9BB5] text-white p-4 rounded-xl hover:shadow-lg transition-all">
+          <div className="text-xl mb-1">🧱</div>
+          <div className="font-medium text-sm">第2課造句</div>
+          <div className="text-xs text-white/70">這是什麼</div>
+        </a>
+        <a href="/learn/n5/lesson-3/builder" className="bg-gradient-to-r from-[#5B957B] to-[#7BB59B] text-white p-4 rounded-xl hover:shadow-lg transition-all">
+          <div className="text-xl mb-1">🧱</div>
+          <div className="font-medium text-sm">第3課造句</div>
+          <div className="text-xs text-white/70">這裡是哪裡</div>
+        </a>
+        <a href="/learn/n5/lesson-4/builder" className="bg-gradient-to-r from-[#957B5B] to-[#B59B7B] text-white p-4 rounded-xl hover:shadow-lg transition-all">
+          <div className="text-xl mb-1">🧱</div>
+          <div className="font-medium text-sm">第4課造句</div>
+          <div className="text-xs text-white/70">現在幾點</div>
+        </a>
       </div>
 
       {/* 搜尋欄 */}
