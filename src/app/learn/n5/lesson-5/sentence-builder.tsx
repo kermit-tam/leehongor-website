@@ -147,51 +147,39 @@ export default function SentenceBuilder() {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(currentSentence.hiragana);
       utterance.lang = 'ja-JP';
+      utterance.rate = speechRate;
       
-      // 使用預加載的語音
-      if (availableVoices.length > 0) {
-        // 詳細記錄可用語音以便調試
-        console.log('可用日語語音:', availableVoices.map(v => ({ name: v.name, gender: v.name.toLowerCase() })));
+      // 根據性別設置語音
+      if (speechGender === 'female') {
+        // 女聲：高音調
+        utterance.pitch = 1.2;
         
-        // 嘗試找到匹配的語音
-        let selectedVoice = availableVoices[0]; // 默認第一個
-        let isMaleVoiceFound = false;
-        
-        if (speechGender === 'female') {
-          // 女聲：正常設置
+        // 嘗試搵女聲
+        if (availableVoices.length > 0) {
           const femaleVoice = availableVoices.find(v => {
             const name = v.name.toLowerCase();
-            return name.includes('female') || name.includes('nanami') || 
-                   (name.includes('japanese') && !name.includes('keita') && !name.includes('takumi') && !name.includes('male'));
+            return name.includes('female') || name.includes('nanami');
           });
-          if (femaleVoice) selectedVoice = femaleVoice;
-          utterance.pitch = 1.1;
-          utterance.rate = speechRate;
-        } else {
-          // 男聲：嘗試搵男聲
+          if (femaleVoice) utterance.voice = femaleVoice;
+        }
+      } else {
+        // 男聲：低音調
+        utterance.pitch = 0.6;
+        
+        // 嘗試搵男聲
+        if (availableVoices.length > 0) {
           const maleVoice = availableVoices.find(v => {
             const name = v.name.toLowerCase();
-            return name.includes('male') || name.includes('keita') || name.includes('takumi') || name.includes('hiroshi');
+            return name.includes('male') || name.includes('keita') || name.includes('takumi');
           });
           if (maleVoice) {
-            selectedVoice = maleVoice;
-            isMaleVoiceFound = true;
-            utterance.pitch = 0.9;
-            utterance.rate = speechRate;
-          } else {
-            // 搵唔到男聲，用超低 pitch 模擬
-            utterance.pitch = 0.5; // 大幅降低音調
-            utterance.rate = speechRate * 0.9; // 稍慢啲更像男聲
+            utterance.voice = maleVoice;
+            utterance.pitch = 0.8; // 有真正男聲就用較正常音調
           }
         }
-        
-        utterance.voice = selectedVoice;
-        console.log(`語音: ${selectedVoice.name}, 性別: ${speechGender}, 找到男聲: ${isMaleVoiceFound}, pitch: ${utterance.pitch}`);
-      } else {
-        // 無可用語音時，用pitch區分
-        utterance.pitch = speechGender === 'female' ? 1.1 : 0.5;
-        utterance.rate = speechRate;
       }
+      
+      console.log(`播放: ${speechGender}, pitch: ${utterance.pitch}, 語音: ${utterance.voice?.name || '默認'}`);
       
       utterance.onstart = () => setIsPlaying(true);
       utterance.onend = () => setIsPlaying(false);
