@@ -61,7 +61,7 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
   
   const [selected, setSelected] = useState<SelectedBlocks>(initialState);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speechRate, setSpeechRate] = useState<0.6 | 0.8 | 1>(0.8);
+  const [speechRate, setSpeechRate] = useState<0.5 | 0.7 | 0.9 | 1.1>(0.7);
   const [speechGender, setSpeechGender] = useState<'female' | 'male'>('female');
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   
@@ -296,15 +296,15 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
 
           {currentSentence.text && (
             <div className="space-y-2 mt-4 pt-4 border-t border-[#E5E5E5]">
-              <div className="flex items-center justify-center gap-4 mb-2">
+              <div className="flex items-center justify-center gap-2 mb-2 flex-wrap">
                 <div className="flex items-center gap-1 bg-[#F5F5F0] rounded-full px-2 py-1">
-                  <span className="text-xs text-[#8C8C8C]">速度:</span>
                   {[
-                    { val: 0.6, label: '慢' },
-                    { val: 0.8, label: '中' },
-                    { val: 1, label: '快' }
+                    { val: 0.5, label: '🐢 新手' },
+                    { val: 0.7, label: '📚 學習' },
+                    { val: 0.9, label: '✏️ 考試' },
+                    { val: 1.1, label: '💬 日常' }
                   ].map(({ val, label }) => (
-                    <button key={val} onClick={() => setSpeechRate(val as 0.6 | 0.8 | 1)}
+                    <button key={val} onClick={() => setSpeechRate(val as 0.5 | 0.7 | 0.9 | 1.1)}
                       className={`px-2 py-0.5 rounded-full text-xs ${speechRate === val ? 'bg-[#6B5B95] text-white' : 'text-[#8C8C8C]'}`}>{label}</button>
                   ))}
                 </div>

@@ -1,0 +1,37 @@
+{
+  "name": "利康哥日文 - 第5課",
+  "short_name": "第5課",
+  "description": "大家的日本語第5課：交通與移動 - 遊戲化學習",
+  "start_url": "/learn/n5/lesson-5",
+  "display": "standalone",
+  "background_color": "#F5F5F0",
+  "theme_color": "#C4B9AC",
+  "orientation": "portrait",
+  "scope": "/learn/n5/lesson-5",
+  "lang": "zh-HK",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "language learning"],
+  "screenshots": [
+    {
+      "src": "/screenshots/lesson5-1.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
