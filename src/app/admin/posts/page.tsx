@@ -26,14 +26,14 @@ const emptyVocabulary: Vocabulary = {
   meaning: '',
 };
 
-// 空的MC題模板
-const emptyQuiz: PostQuiz = {
-  id: '',
+// 創建獨立嘅 MC題（避免共用 array reference）
+const createEmptyQuiz = (id: string): PostQuiz => ({
+  id,
   question: '',
   options: ['', '', '', ''],
   correct: 0,
   explanation: '',
-};
+});
 
 export default function AdminPostsPage() {
   useRequireAdmin('/');
@@ -57,9 +57,9 @@ export default function AdminPostsPage() {
   
   // MC題列表（固定3題）
   const [quizzes, setQuizzes] = useState<PostQuiz[]>([
-    { ...emptyQuiz, id: 'q1' },
-    { ...emptyQuiz, id: 'q2' },
-    { ...emptyQuiz, id: 'q3' },
+    createEmptyQuiz('q1'),
+    createEmptyQuiz('q2'),
+    createEmptyQuiz('q3'),
   ]);
 
   // 加載文章
@@ -91,9 +91,9 @@ export default function AdminPostsPage() {
     });
     setVocabularies([]);
     setQuizzes([
-      { ...emptyQuiz, id: 'q1' },
-      { ...emptyQuiz, id: 'q2' },
-      { ...emptyQuiz, id: 'q3' },
+      createEmptyQuiz('q1'),
+      createEmptyQuiz('q2'),
+      createEmptyQuiz('q3'),
     ]);
     setEditingPost(null);
   };
@@ -112,9 +112,9 @@ export default function AdminPostsPage() {
     // 確保有3題MC
     const postQuizzes = post.quizzes || [];
     setQuizzes([
-      ...(postQuizzes[0] ? [{ ...postQuizzes[0] }] : [{ ...emptyQuiz, id: 'q1' }]),
-      ...(postQuizzes[1] ? [{ ...postQuizzes[1] }] : [{ ...emptyQuiz, id: 'q2' }]),
-      ...(postQuizzes[2] ? [{ ...postQuizzes[2] }] : [{ ...emptyQuiz, id: 'q3' }]),
+      ...(postQuizzes[0] ? [{ ...postQuizzes[0], options: [...postQuizzes[0].options] }] : [createEmptyQuiz('q1')]),
+      ...(postQuizzes[1] ? [{ ...postQuizzes[1], options: [...postQuizzes[1].options] }] : [createEmptyQuiz('q2')]),
+      ...(postQuizzes[2] ? [{ ...postQuizzes[2], options: [...postQuizzes[2].options] }] : [createEmptyQuiz('q3')]),
     ]);
     setShowForm(true);
     window.scrollTo(0, 0);
