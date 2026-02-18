@@ -112,31 +112,43 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(currentSentence.hiragana);
       utterance.lang = 'ja-JP';
-      utterance.rate = speechRate;
       
       if (availableVoices.length > 0) {
         let selectedVoice = availableVoices[0];
+        let isMaleVoiceFound = false;
         
         if (speechGender === 'female') {
+          // 女聲：正常設置
           const femaleVoice = availableVoices.find(v => {
             const name = v.name.toLowerCase();
             return name.includes('female') || name.includes('nanami') || 
                    (name.includes('japanese') && !name.includes('keita') && !name.includes('takumi') && !name.includes('male'));
           });
           if (femaleVoice) selectedVoice = femaleVoice;
+          utterance.pitch = 1.1;
+          utterance.rate = speechRate;
         } else {
+          // 男聲：嘗試搵男聲
           const maleVoice = availableVoices.find(v => {
             const name = v.name.toLowerCase();
-            return name.includes('male') || name.includes('keita') || name.includes('takumi');
+            return name.includes('male') || name.includes('keita') || name.includes('takumi') || name.includes('hiroshi');
           });
           if (maleVoice) {
             selectedVoice = maleVoice;
+            isMaleVoiceFound = true;
+            utterance.pitch = 0.9;
+            utterance.rate = speechRate;
           } else {
-            utterance.pitch = 0.7;
+            // 搵唔到男聲，用超低 pitch 模擬
+            utterance.pitch = 0.5; // 大幅降低音調
+            utterance.rate = speechRate * 0.9; // 稍慢啲更像男聲
           }
         }
         
         utterance.voice = selectedVoice;
+        
+        // 調試用：顯示用緊咩語音
+        console.log(`語音: ${selectedVoice.name}, 性別: ${speechGender}, 找到男聲: ${isMaleVoiceFound}, pitch: ${utterance.pitch}`);
       } else {
         utterance.pitch = speechGender === 'female' ? 1.1 : 0.7;
       }
@@ -309,6 +321,13 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
                   <button onClick={() => setSpeechGender('male')} className={`px-2 py-0.5 rounded-full text-xs ${speechGender === 'male' ? 'bg-[#2196F3] text-white' : 'text-[#8C8C8C]'}`}>👨</button>
                 </div>
               </div>
+              
+              {/* 男聲提示 */}
+              {speechGender === 'male' && (
+                <p className="text-xs text-[#8C8C8C] text-center mb-2">
+                  💡 瀏覽器限制：男聲會用較低音調模擬
+                </p>
+              )}
 
               <div className="flex gap-2">
                 <button onClick={playAudio} disabled={isPlaying} className="flex-1 py-2 bg-[#E3F2FD] text-[#1976D2] rounded-full text-sm">{isPlaying ? '🔊 播放中...' : '▶️ 播放'}</button>
