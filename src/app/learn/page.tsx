@@ -317,19 +317,19 @@ export default function LearnPage() {
             <ul className="space-y-2 text-sm text-[#8C8C8C]">
               <li className="flex justify-between">
                 <span>完成單元學習</span>
-                <span className="text-[#C4B9AC]">+{scoringConfig.unitBaseExp} EXP</span>
+                <span className="text-[#C4B9AC]">+{scoringConfig.participation.unitComplete.base} EXP</span>
               </li>
               <li className="flex justify-between">
                 <span>測驗 100% (⭐⭐⭐)</span>
-                <span className="text-[#C4B9AC]">+{scoringConfig.quizRewards.perfect.exp} EXP</span>
+                <span className="text-[#C4B9AC]">+{scoringConfig.assessment.quiz.perfect.exp} EXP</span>
               </li>
               <li className="flex justify-between">
                 <span>測驗 80-99% (⭐⭐)</span>
-                <span className="text-[#C4B9AC]">+{scoringConfig.quizRewards.excellent.exp} EXP</span>
+                <span className="text-[#C4B9AC]">+{scoringConfig.assessment.quiz.excellent.exp} EXP</span>
               </li>
               <li className="flex justify-between">
                 <span>完成整課 (4單元)</span>
-                <span className="text-[#C4B9AC]">+{scoringConfig.lessonComplete.base} EXP</span>
+                <span className="text-[#C4B9AC]">+{scoringConfig.assessment.completeAllUnits} EXP</span>
               </li>
             </ul>
           </div>

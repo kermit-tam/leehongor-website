@@ -245,57 +245,90 @@ export const n5LessonsList = [
 // 匯出第2-4課供課程頁面使用
 export { n5Lessons2to4 };
 
-// ==================== 計分系統配置 ====================
+// ==================== 雙軌計分系統 ====================
+// 參與分：鼓勵學習行為（唔考核能力）
+// 考核分：測驗得分（反映實際能力）
 
 export const scoringConfig = {
-  // 每個微單元的經驗值
-  unitBaseExp: 10,
-  
-  // 測驗得分獎勵
-  quizRewards: {
-    perfect: { min: 100, exp: 20, label: '完美！', stars: 3 },
-    excellent: { min: 80, exp: 15, label: '非常好！', stars: 2 },
-    good: { min: 60, exp: 10, label: '及格！', stars: 1 },
-    tryAgain: { min: 0, exp: 5, label: '再試一次', stars: 0 },
+  // ===== 參與分 (Participation Points) =====
+  // 完成單元學習（睇完卡片即算）
+  participation: {
+    unitComplete: {           // 完成單元學習
+      base: 5,                // 基礎參與分
+      vocabBonus: 2,          // 有詞彙部分
+      grammarBonus: 3,        // 有文法部分
+      dialogueBonus: 2,       // 有對話部分
+    },
+    dailyLogin: 3,            // 每日登入
+    streakBonus: {            // 連續學習獎勵
+      weekly: 10,             // 連續7天
+      monthly: 50,            // 連續30天
+    },
   },
   
-  // 完成單元類型獎勵
-  unitTypeRewards: {
-    vocab: 10,      // 詞彙學習
-    grammar: 15,    // 文法學習
-    listening: 15,  // 聽力練習
-    dialogue: 10,   // 情境對話
+  // ===== 考核分 (Assessment Points) =====
+  // 測驗得分（反映實際掌握程度）
+  assessment: {
+    quiz: {
+      perfect: { min: 100, exp: 25, label: '完美！', stars: 3 },      // 100%
+      excellent: { min: 90, exp: 20, label: '優秀！', stars: 3 },     // 90-99%
+      veryGood: { min: 80, exp: 15, label: '非常好！', stars: 2 },    // 80-89%
+      good: { min: 70, exp: 10, label: '良好！', stars: 2 },          // 70-79%
+      pass: { min: 60, exp: 5, label: '及格！', stars: 1 },           // 60-69%
+      fail: { min: 0, exp: 0, label: '再試一次', stars: 0 },          // <60%
+    },
+    // 完成所有單元測驗獎勵
+    completeAllUnits: 30,     // 完成一課所有單元測驗
+    perfectAllUnits: 50,      // 所有單元都100分
   },
   
-  // 連續學習獎勵
-  streakRewards: {
-    daily: 5,       // 每日登入
-    weekly: 30,     // 連續7天
-    monthly: 150,   // 連續30天
-  },
-  
-  // 完成整課獎勵
-  lessonComplete: {
-    base: 100,          // 基礎獎勵
-    allUnits: 50,       // 完成所有單元
-    perfectAll: 100,    // 所有測驗100分
-  },
-  
-  // 等級計算
+  // ===== 等級計算 =====
   levelCalculation: {
-    baseExp: 100,
-    multiplier: 1.2,
+    baseExp: 100,             // 第1級所需經驗
+    multiplier: 1.15,         // 每級增長15%
   },
 };
 
 // ==================== 輔助函數 ====================
 
+// 計算測驗考核分
 export function getQuizReward(percentage: number) {
-  const { quizRewards } = scoringConfig;
-  if (percentage >= quizRewards.perfect.min) return quizRewards.perfect;
-  if (percentage >= quizRewards.excellent.min) return quizRewards.excellent;
-  if (percentage >= quizRewards.good.min) return quizRewards.good;
-  return quizRewards.tryAgain;
+  const { quiz } = scoringConfig.assessment;
+  if (percentage >= quiz.perfect.min) return quiz.perfect;
+  if (percentage >= quiz.excellent.min) return quiz.excellent;
+  if (percentage >= quiz.veryGood.min) return quiz.veryGood;
+  if (percentage >= quiz.good.min) return quiz.good;
+  if (percentage >= quiz.pass.min) return quiz.pass;
+  return quiz.fail;
+}
+
+// 計算參與分
+export function calculateParticipationExp(unit: N5Unit): number {
+  const { unitComplete } = scoringConfig.participation;
+  let exp = unitComplete.base;
+  
+  if (unit.vocab.length > 0) exp += unitComplete.vocabBonus;
+  if (unit.grammar && unit.grammar.length > 0) exp += unitComplete.grammarBonus;
+  if (unit.dialogue && unit.dialogue.length > 0) exp += unitComplete.dialogueBonus;
+  
+  return exp;
+}
+
+// EXP 來源類型
+export interface ExpSource {
+  type: 'participation' | 'assessment';
+  action: string;
+  exp: number;
+  timestamp: Date;
+  lessonId?: string;
+  unitId?: number;
+}
+
+// 保存 EXP 記錄到 localStorage
+export function saveExpHistory(source: ExpSource) {
+  const history = JSON.parse(localStorage.getItem('n5-exp-history') || '[]');
+  history.push(source);
+  localStorage.setItem('n5-exp-history', JSON.stringify(history));
 }
 
 export function calculateLevel(exp: number) {

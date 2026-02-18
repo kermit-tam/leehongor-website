@@ -104,7 +104,7 @@ function LessonContent() {
       const finalScore = score + (selectedOption === currentUnitData.vocab[quizIndex].meaning ? 1 : 0);
       const percentage = Math.round((finalScore / currentUnitData.vocab.length) * 100);
       const reward = getQuizReward(percentage);
-      const totalExp = scoringConfig.unitBaseExp + reward.exp;
+      const totalExp = scoringConfig.participation.unitComplete.base + reward.exp;
       
       setUnitExp(totalExp);
       saveCompleted(currentUnitData.id);
