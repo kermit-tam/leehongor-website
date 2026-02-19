@@ -27,9 +27,18 @@ const QUESTION_WEIGHTS: { type: QuestionType; weight: number; minPerQuiz: number
 
 // ==================== 題目生成器 ====================
 
+// 全局變量存儲當前課程數據（用於第6-10課）
+let currentLessonVocab = lesson5Vocab;
+let currentGetVocabByUnit = getVocabByUnit;
+
+export function setLessonData(vocab: any[], getVocabFn: any) {
+  currentLessonVocab = vocab;
+  currentGetVocabByUnit = getVocabFn;
+}
+
 export function generateQuestionsForUnit(unitId: number, count: number = 10): GameQuestion[] {
-  const vocab = getVocabByUnit(unitId);
-  const allVocab = lesson5Vocab;
+  const vocab = currentGetVocabByUnit(unitId);
+  const allVocab = currentLessonVocab;
   const questions: GameQuestion[] = [];
   const usedTypes: QuestionType[] = [];
 

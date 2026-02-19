@@ -36,7 +36,7 @@ export async function hasCheckedInToday(userId: string): Promise<boolean> {
   if (!docSnap.exists()) return false;
   
   const data = docSnap.data() as CheckinData;
-  const lastCheckin = data.lastCheckin.toDate();
+  const lastCheckin = data.lastCheckin instanceof Date ? data.lastCheckin : new Date(data.lastCheckin);
   const now = new Date();
   
   // 檢查是否為同一天（以香港時間計算）
@@ -81,7 +81,7 @@ export async function performCheckin(userId: string): Promise<CheckinResult> {
   }
   
   const data = docSnap.data() as CheckinData;
-  const lastCheckin = data.lastCheckin.toDate();
+  const lastCheckin = data.lastCheckin instanceof Date ? data.lastCheckin : new Date(data.lastCheckin);
   const lastCheckinHK = new Date(lastCheckin.toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
   
   // 檢查今日是否已簽到

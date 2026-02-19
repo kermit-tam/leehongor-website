@@ -28,6 +28,9 @@ interface QuizEngineProps {
   unitId: number;
   onComplete: (result: QuizResult) => void;
   onExit: () => void;
+  // 可選：外部數據傳入（用於第6-10課）
+  lessonVocab?: any[];
+  lessonUnits?: any[];
 }
 
 export interface QuizResult {

@@ -7,10 +7,20 @@
 
 import { useState, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from 'framer-motion';
-import { GameVocab } from '../game-data';
+// 通用詞彙接口，兼容所有課程
+interface VocabItem {
+  id: string;
+  hiragana: string;
+  kanji: string;
+  meaning: string;
+  cantonese: string;
+  note?: string;
+  emoji?: string;
+  category?: string;
+}
 
 interface VocabFlashcardProps {
-  vocab: GameVocab[];
+  vocab: VocabItem[];
   showCantonese: boolean;
   onComplete: () => void;
 }

@@ -10,10 +10,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { SentenceBlock, SentenceTemplate, sentenceBlocks, sentenceTemplates, getBlocksByUnit } from '../game-data';
 
+// 通用積木接口
+interface BlockItem {
+  id: string;
+  text: string;
+  type: string;
+  meaning: string;
+  unitId: number;
+}
+
 interface SentenceBuilderProps {
   maxUnitId: number;
   savedSentences: SavedSentence[];
   onSaveSentence: (sentence: SavedSentence) => void;
+  // 可選：外部傳入積木數據
+  lessonBlocks?: BlockItem[];
 }
 
 export interface SavedSentence {
@@ -28,7 +39,7 @@ export interface SavedSentence {
 type GrammarRule = {
   id: string;
   description: string;
-  validate: (blocks: SentenceBlock[]) => { isValid: boolean; error?: string };
+  validate: (blocks: BlockItem[]) => { isValid: boolean; error?: string };
 };
 
 // 定義語法規則
@@ -36,7 +47,7 @@ const grammarRules: GrammarRule[] = [
   {
     id: 'particle-after-noun',
     description: '助詞必須跟在名詞後面',
-    validate: (blocks) => {
+    validate: (blocks: BlockItem[]) => {
       for (let i = 0; i < blocks.length; i++) {
         if (blocks[i].type === 'particle' && i > 0) {
           const prev = blocks[i - 1];
@@ -84,7 +95,7 @@ const typeOrderWeight: Record<string, number> = {
 };
 
 // 檢查積木順序是否合理的函數
-function checkBlockOrder(blocks: SentenceBlock[]): { isValid: boolean; warnings: string[] } {
+function checkBlockOrder(blocks: BlockItem[]): { isValid: boolean; warnings: string[] } {
   const warnings: string[] = [];
   
   // 檢查語法規則
@@ -112,9 +123,9 @@ function checkBlockOrder(blocks: SentenceBlock[]): { isValid: boolean; warnings:
   return { isValid: true, warnings };
 }
 
-export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: SentenceBuilderProps) {
-  const [availableBlocks, setAvailableBlocks] = useState<SentenceBlock[]>([]);
-  const [selectedBlocks, setSelectedBlocks] = useState<SentenceBlock[]>([]);
+export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence, lessonBlocks }: SentenceBuilderProps) {
+  const [availableBlocks, setAvailableBlocks] = useState<BlockItem[]>([]);
+  const [selectedBlocks, setSelectedBlocks] = useState<BlockItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
@@ -123,29 +134,40 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
   const [orderHints, setOrderHints] = useState<string[]>([]);
   const shareRef = useRef<HTMLDivElement>(null);
 
+  // 獲取積木數據（優先使用外部傳入）
+  const getBlocks = useCallback(() => {
+    if (lessonBlocks) {
+      return lessonBlocks.filter(b => b.unitId <= maxUnitId);
+    }
+    return getBlocksByUnit(maxUnitId);
+  }, [lessonBlocks, maxUnitId]);
+
   // 初始化可用語塊（閘門系統）
   useEffect(() => {
-    const blocks = getBlocksByUnit(maxUnitId);
+    const blocks = getBlocks();
     // 按類型順序排序語塊
     const sortedBlocks = [...blocks].sort((a, b) => {
       return (typeOrderWeight[a.type] || 99) - (typeOrderWeight[b.type] || 99);
     });
     setAvailableBlocks(sortedBlocks);
-  }, [maxUnitId]);
+  }, [maxUnitId, getBlocks]);
 
   // 計算推薦的下一個類型
   const recommendedNextType = useMemo(() => {
-    if (selectedBlocks.length === 0) return ['topic', 'time'];
+    if (selectedBlocks.length === 0) return ['topic', 'time', 'clothing', 'food'];
     
     const lastType = selectedBlocks[selectedBlocks.length - 1].type;
     const typeFlow: Record<string, string[]> = {
-      topic: ['time', 'person', 'transport', 'place'],
-      time: ['person', 'transport', 'place', 'particle'],
-      person: ['transport', 'place', 'particle'],
+      topic: ['time', 'person', 'transport', 'place', 'clothing', 'food'],
+      time: ['person', 'transport', 'place', 'particle', 'clothing'],
+      person: ['transport', 'place', 'particle', 'clothing'],
       transport: ['place', 'particle'],
       place: ['particle', 'verb'],
-      particle: ['verb', 'place'],
+      particle: ['verb', 'place', 'clothing', 'food'],
       verb: [],
+      clothing: ['color', 'particle'],
+      food: ['particle', 'taste'],
+      taste: [],
     };
     
     return typeFlow[lastType] || [];
@@ -166,7 +188,7 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
     ? availableBlocks 
     : availableBlocks.filter(b => b.type === activeCategory);
 
-  const handleBlockClick = useCallback((block: SentenceBlock) => {
+  const handleBlockClick = useCallback((block: BlockItem) => {
     // 檢查是否可以添加這個積木
     const newBlocks = [...selectedBlocks, block];
     const validation = checkBlockOrder(newBlocks);
@@ -241,7 +263,7 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
     window.speechSynthesis.speak(utterance);
   }, [selectedBlocks]);
 
-  const generateMeaning = useCallback((blocks: SentenceBlock[]): string => {
+  const generateMeaning = useCallback((blocks: BlockItem[]): string => {
     const meanings = blocks.map(b => b.meaning);
     return meanings.join('');
   }, []);
