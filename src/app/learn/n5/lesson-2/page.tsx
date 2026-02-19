@@ -24,8 +24,10 @@ import {
   SavedSentence,
   triggerConfetti,
 } from '../lesson-5/components';
+import { ReadingComprehension, ReadingResult } from '../components/reading';
+import { getReadingByUnit } from './reading-data';
 
-type Mode = 'menu' | 'study' | 'quiz' | 'builder';
+type Mode = 'menu' | 'study' | 'quiz' | 'builder' | 'reading';
 type Tab = 'units' | 'progress' | 'sentences';
 
 interface UnitProgress {
@@ -33,6 +35,7 @@ interface UnitProgress {
   completed: boolean;
   studyCompleted: boolean;
   quizCompleted: boolean;
+  readingCompleted: boolean;
   bestScore: number;
 }
 
@@ -51,6 +54,9 @@ export default function Lesson2Page() {
   // 測驗結果
   const [showResult, setShowResult] = useState(false);
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+  
+  // 閱讀結果
+  const [readingResult, setReadingResult] = useState<ReadingResult | null>(null);
 
   // 初始化本地存儲
   useEffect(() => {
@@ -64,6 +70,7 @@ export default function Lesson2Page() {
         completed: false,
         studyCompleted: false,
         quizCompleted: false,
+        readingCompleted: false,
         bestScore: 0,
       })));
     }
@@ -290,7 +297,21 @@ export default function Lesson2Page() {
                           : 'bg-[#C4B9AC] text-white hover:bg-[#A09088]'
                       }`}
                     >
-                      {progress?.quizCompleted ? `最高分: ${progress.bestScore}` : '測驗'}
+                      {progress?.quizCompleted ? `測驗✓` : '測驗'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedUnit(unit);
+                        setMode('reading');
+                      }}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        progress?.readingCompleted
+                          ? 'bg-blue-100 text-blue-600'
+                          : 'bg-blue-500 text-white hover:bg-blue-600'
+                      }`}
+                    >
+                      {progress?.readingCompleted ? '閱讀✓' : '閱讀'}
                     </button>
                   </div>
                 </motion.div>
@@ -517,6 +538,90 @@ export default function Lesson2Page() {
     );
   };
 
+  // 完成閱讀理解
+  const handleReadingComplete = useCallback((result: ReadingResult) => {
+    setReadingResult(result);
+
+    if (!selectedUnit) return;
+
+    // 計算EXP
+    const expEarned = Math.floor((result.correctCount / result.totalQuestions) * 20);
+    const newExp = totalExp + expEarned;
+    setTotalExp(newExp);
+    localStorage.setItem('lesson2-exp', newExp.toString());
+
+    // 更新進度
+    const updated = unitProgress.map(p => {
+      if (p.unitId === selectedUnit.id) {
+        return {
+          ...p,
+          readingCompleted: true,
+          completed: p.completed || (p.quizCompleted && p.studyCompleted),
+        };
+      }
+      return p;
+    });
+    saveProgress(updated);
+
+    // 同步到Firebase
+    if (user?.uid) {
+      UserService.updateUser(user.uid, {
+        achievementExp: (user.achievementExp || 0) + expEarned,
+      }).catch(console.error);
+    }
+
+    // 觸發confetti
+    if (result.correctCount >= result.totalQuestions * 0.6) {
+      triggerConfetti();
+    }
+  }, [selectedUnit, unitProgress, totalExp, user, saveProgress]);
+
+  // 渲染閱讀理解模式
+  const renderReading = () => {
+    if (!selectedUnit) return null;
+    const passage = getReadingByUnit(selectedUnit.id);
+    
+    if (!passage) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-[#8C8C8C]">此單元暫無閱讀練習</p>
+          <button
+            onClick={() => setMode('menu')}
+            className="mt-4 px-6 py-2 bg-[#C4B9AC] text-white rounded-lg"
+          >
+            返回
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* 頂部導航 */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setMode('menu')}
+            className="flex items-center gap-2 text-[#8C8C8C] hover:text-[#4A4A4A] transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            返回
+          </button>
+          <h2 className="text-lg font-bold text-[#4A4A4A]">{selectedUnit.title} - 閱讀理解</h2>
+          <div className="w-10" />
+        </div>
+
+        <ReadingComprehension
+          passage={passage}
+          onComplete={handleReadingComplete}
+          onExit={() => setMode('menu')}
+          showCantonese={showCantonese}
+        />
+      </div>
+    );
+  };
+
   // 渲染造句模式
   const renderBuilder = () => (
     <div className="space-y-6">
@@ -586,6 +691,16 @@ export default function Lesson2Page() {
               exit={{ opacity: 0, y: -50 }}
             >
               {renderBuilder()}
+            </motion.div>
+          )}
+          {mode === 'reading' && (
+            <motion.div
+              key="reading"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+            >
+              {renderReading()}
             </motion.div>
           )}
         </AnimatePresence>
