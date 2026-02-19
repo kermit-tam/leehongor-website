@@ -1,5 +1,5 @@
 /**
- * 第8課：形容詞 - 遊戲化版本
+ * 第7課：購物 - 遊戲化版本
  * Lesson 6: Food & Preferences - Gamified
  */
 
@@ -11,8 +11,8 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { UserService } from '@/lib/firestore';
 import { 
-  lesson8Vocab, 
-  lesson8Units, 
+  lesson7Vocab, 
+  lesson7Units, 
   GameUnit, 
   getVocabByUnit,
   sentenceBlocks,
@@ -52,11 +52,11 @@ export default function Lesson6Page() {
 
   // 初始化
   useEffect(() => {
-    const savedProgress = localStorage.getItem('lesson8-progress');
+    const savedProgress = localStorage.getItem('lesson7-progress');
     if (savedProgress) {
       setUnitProgress(JSON.parse(savedProgress));
     } else {
-      setUnitProgress(lesson8Units.map(u => ({
+      setUnitProgress(lesson7Units.map(u => ({
         unitId: u.id,
         completed: false,
         studyCompleted: false,
@@ -65,7 +65,7 @@ export default function Lesson6Page() {
       })));
     }
 
-    const saved = localStorage.getItem('lesson8-sentences');
+    const saved = localStorage.getItem('lesson7-sentences');
     if (saved) {
       setSavedSentences(JSON.parse(saved).map((s: any) => ({
         ...s,
@@ -73,7 +73,7 @@ export default function Lesson6Page() {
       })));
     }
 
-    const exp = localStorage.getItem('lesson8-exp');
+    const exp = localStorage.getItem('lesson7-exp');
     if (exp) {
       setTotalExp(parseInt(exp));
     }
@@ -81,17 +81,17 @@ export default function Lesson6Page() {
 
   const saveProgress = useCallback((progress: UnitProgress[]) => {
     setUnitProgress(progress);
-    localStorage.setItem('lesson8-progress', JSON.stringify(progress));
+    localStorage.setItem('lesson7-progress', JSON.stringify(progress));
   }, []);
 
   const saveSentence = useCallback((sentence: SavedSentence) => {
     const updated = [...savedSentences, sentence];
     setSavedSentences(updated);
-    localStorage.setItem('lesson8-sentences', JSON.stringify(updated));
+    localStorage.setItem('lesson7-sentences', JSON.stringify(updated));
     
     const newExp = totalExp + 5;
     setTotalExp(newExp);
-    localStorage.setItem('lesson8-exp', newExp.toString());
+    localStorage.setItem('lesson7-exp', newExp.toString());
   }, [savedSentences, totalExp]);
 
   const handleStudyComplete = useCallback(() => {
@@ -106,7 +106,7 @@ export default function Lesson6Page() {
 
     const newExp = totalExp + 10;
     setTotalExp(newExp);
-    localStorage.setItem('lesson8-exp', newExp.toString());
+    localStorage.setItem('lesson7-exp', newExp.toString());
 
     if (user?.uid) {
       UserService.updateUser(user.uid, {
@@ -126,7 +126,7 @@ export default function Lesson6Page() {
     const expEarned = Math.floor(result.score / 10) + result.timeBonus;
     const newExp = totalExp + expEarned;
     setTotalExp(newExp);
-    localStorage.setItem('lesson8-exp', newExp.toString());
+    localStorage.setItem('lesson7-exp', newExp.toString());
 
     const updated = unitProgress.map(p => {
       if (p.unitId === selectedUnit.id) {
@@ -153,7 +153,7 @@ export default function Lesson6Page() {
   }, [selectedUnit, unitProgress, totalExp, user, saveProgress]);
 
   const completedCount = unitProgress.filter(p => p.completed).length;
-  const progressPercent = (completedCount / lesson8Units.length) * 100;
+  const progressPercent = (completedCount / lesson7Units.length) * 100;
   const unlockedUnits = unitProgress.filter(p => p.completed || p.unitId === 1 || 
     unitProgress.find(up => up.unitId === p.unitId - 1)?.completed
   ).length;
@@ -165,8 +165,8 @@ export default function Lesson6Page() {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E5E5]">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-[#4A4A4A] mb-1">第8課：形容詞</h1>
-            <p className="text-[#8C8C8C]">日本料理、餐廳用語、味道表達</p>
+            <h1 className="text-2xl font-bold text-[#4A4A4A] mb-1">第7課：購物</h1>
+            <p className="text-[#8C8C8C]">服裝、顏色、購物對話</p>
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold text-[#A8B5A0]">🎯 {totalExp}</div>
@@ -177,7 +177,7 @@ export default function Lesson6Page() {
         {/* 進度條 */}
         <div className="flex justify-between text-sm text-[#8C8C8C] mb-2">
           <span>課程進度</span>
-          <span>{completedCount}/{lesson8Units.length} 單元</span>
+          <span>{completedCount}/{lesson7Units.length} 單元</span>
         </div>
         <div className="w-full h-3 bg-[#E5E5E5] rounded-full overflow-hidden">
           <motion.div
@@ -256,7 +256,7 @@ export default function Lesson6Page() {
             exit={{ opacity: 0, y: -10 }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
-            {lesson8Units.map((unit, index) => {
+            {lesson7Units.map((unit, index) => {
               const progress = unitProgress.find(p => p.unitId === unit.id);
               const isLocked = index >= unlockedUnits;
               const isCompleted = progress?.completed;
@@ -532,8 +532,8 @@ export default function Lesson6Page() {
 
         <QuizEngine
           unitId={selectedUnit.id}
-          lessonVocab={lesson8Vocab}
-          lessonUnits={lesson8Units}
+          lessonVocab={lesson7Vocab}
+          lessonUnits={lesson7Units}
           onComplete={handleQuizComplete}
           onExit={() => setMode('menu')}
         />
