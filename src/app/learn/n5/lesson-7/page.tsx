@@ -533,7 +533,7 @@ export default function Lesson6Page() {
         <QuizEngine
           unitId={selectedUnit.id}
           lessonVocab={lesson7Vocab}
-          lessonUnits={lesson7Units}
+          getVocabByUnit={getVocabByUnit}
           onComplete={handleQuizComplete}
           onExit={() => setMode('menu')}
         />

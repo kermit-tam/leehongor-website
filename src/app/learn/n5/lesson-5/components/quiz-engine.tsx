@@ -8,7 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameQuestion } from '../game-data';
-import { generateQuestionsForUnit } from '../question-generator';
+import { generateQuestionsForUnit, setLessonData } from '../question-generator';
 import { SpeedMatchGame } from './speed-match-game';
 import { AudioSelectGame } from './audio-select-game';
 import { SentencePuzzleGame } from './sentence-puzzle-game';
@@ -30,7 +30,7 @@ interface QuizEngineProps {
   onExit: () => void;
   // 可選：外部數據傳入（用於第6-10課）
   lessonVocab?: any[];
-  lessonUnits?: any[];
+  getVocabByUnit?: (unitId: number) => any[];
 }
 
 export interface QuizResult {
@@ -42,7 +42,7 @@ export interface QuizResult {
   timeBonus: number;
 }
 
-export function QuizEngine({ unitId, onComplete, onExit }: QuizEngineProps) {
+export function QuizEngine({ unitId, onComplete, onExit, lessonVocab, getVocabByUnit }: QuizEngineProps) {
   const [questions, setQuestions] = useState<GameQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -55,9 +55,13 @@ export function QuizEngine({ unitId, onComplete, onExit }: QuizEngineProps) {
 
   // 初始化題目
   useEffect(() => {
-    const qs = generateQuestionsForUnit(unitId, 7);
+    // 設置課程數據（如果提供了外部數據）
+    if (lessonVocab && getVocabByUnit) {
+      setLessonData(lessonVocab, getVocabByUnit);
+    }
+    const qs = generateQuestionsForUnit(unitId, 10);
     setQuestions(qs);
-  }, [unitId]);
+  }, [unitId, lessonVocab, getVocabByUnit]);
 
   const currentQuestion = questions[currentIndex];
 
