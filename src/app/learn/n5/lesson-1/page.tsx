@@ -1,901 +1,595 @@
+/**
+ * 第1課：初次見面 - 遊戲化版本
+ * Lesson 1: First Meeting - Gamified Version
+ */
+
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { lesson1Data, getQuizReward, getUnitProgressKey, scoringConfig, calculateParticipationExp, saveExpHistory, ExpSource } from '@/data/n5-lessons';
 import { useAuth } from '@/lib/auth-context';
 import { UserService } from '@/lib/firestore';
+import { 
+  lesson1Vocab, 
+  lesson1Units, 
+  GameUnit, 
+  getVocabByUnit,
+} from './game-data';
+import { 
+  QuizEngine, 
+  QuizResult,
+  VocabFlashcard,
+  SentenceBuilder,
+  SavedSentence,
+  triggerConfetti,
+} from '../lesson-5/components';
 
-// 聽力測驗題目類型
-type ListeningQuiz = {
-  id: number;
-  audioText: string;
-  correctAnswer: string;
-  options: string[];
-};
+type Mode = 'menu' | 'study' | 'quiz' | 'builder';
+type Tab = 'units' | 'progress' | 'sentences';
 
-// 生成聽力測驗（隨機15題）
-function generateListeningQuiz(): ListeningQuiz[] {
-  // 收集所有單元嘅詞彙
-  const allVocab = lesson1Data.units.flatMap(unit => unit.vocab);
-  
-  // 隨機排序選15個
-  const shuffled = [...allVocab].sort(() => Math.random() - 0.5).slice(0, 15);
-  
-  return shuffled.map((vocab, index) => {
-    // 生成錯誤選項（從其他詞彙隨機選3個）
-    const wrongOptions = allVocab
-      .filter(v => v.meaning !== vocab.meaning)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
-      .map(v => v.meaning);
-    
-    // 合併並隨機排序
-    const options = [vocab.meaning, ...wrongOptions].sort(() => Math.random() - 0.5);
-    
-    return {
-      id: index,
-      audioText: vocab.hiragana,
-      correctAnswer: vocab.meaning,
-      options,
-    };
-  });
-}
-
-function LessonContent() {
-  const { user } = useAuth();
-  const searchParams = useSearchParams();
-  const initialUnit = parseInt(searchParams.get('unit') || '1');
-  
-  const [currentUnit, setCurrentUnit] = useState(initialUnit - 1);
-  const [mode, setMode] = useState<'menu' | 'study' | 'quiz' | 'listening' | 'result'>('menu');
-  const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
-  const [showCantonese, setShowCantonese] = useState(true);
-  
-  // 測驗狀態
-  const [quizIndex, setQuizIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [wrongCount, setWrongCount] = useState(0);
-  const [answered, setAnswered] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [quizHistory, setQuizHistory] = useState<{correct: boolean; answer: string}[]>([]);
-  
-  // 聽力測驗狀態
-  const [listeningQuiz, setListeningQuiz] = useState<ListeningQuiz[]>([]);
-  const [listeningIndex, setListeningIndex] = useState(0);
-  const [listeningScore, setListeningScore] = useState(0);
-  const [listeningWrong, setListeningWrong] = useState(0);
-  const [listeningAnswered, setListeningAnswered] = useState(false);
-  const [listeningSelected, setListeningSelected] = useState<string | null>(null);
-  const [listeningHistory, setListeningHistory] = useState<{correct: boolean; answer: string}[]>([]);
-  const [isPlaying, setIsPlaying] = useState(false);
-  
-  // 進度
-  const [completedUnits, setCompletedUnits] = useState<Set<string>>(new Set());
-  const [participationClaimed, setParticipationClaimed] = useState<Set<string>>(new Set());
-  const [unitExp, setUnitExp] = useState(0);
-  const [expBreakdown, setExpBreakdown] = useState<{participation: number, assessment: number}>({ participation: 0, assessment: 0 });
-  const [showExpDetail, setShowExpDetail] = useState(false);
-  
-  // 重置確認
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-
-  const currentUnitData = lesson1Data.units[currentUnit];
-
-  useEffect(() => {
-    const savedCompleted = localStorage.getItem('n5-unit-completed');
-    if (savedCompleted) {
-      setCompletedUnits(new Set(JSON.parse(savedCompleted)));
-    }
-    const savedParticipation = localStorage.getItem('n5-participation-claimed');
-    if (savedParticipation) {
-      setParticipationClaimed(new Set(JSON.parse(savedParticipation)));
-    }
-  }, []);
-
-  // 播放聽力音頻
-  const playListeningAudio = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ja-JP';
-      utterance.rate = 0.7; // 聽力用慢啲速度
-      utterance.pitch = 1;
-      
-      utterance.onstart = () => setIsPlaying(true);
-      utterance.onend = () => setIsPlaying(false);
-      
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  // 開始聽力測驗
-  const startListeningQuiz = () => {
-    const quiz = generateListeningQuiz();
-    setListeningQuiz(quiz);
-    setListeningIndex(0);
-    setListeningScore(0);
-    setListeningWrong(0);
-    setListeningAnswered(false);
-    setListeningSelected(null);
-    setListeningHistory([]);
-    setMode('listening');
-    
-    // 自動播放第一題
-    setTimeout(() => playListeningAudio(quiz[0].audioText), 300);
-  };
-
-  // 給予參與分
-  const awardParticipationExp = async (unitId: number) => {
-    const key = `${lesson1Data.id}-unit${unitId}-participation`;
-    if (participationClaimed.has(key)) return;
-
-    const unit = lesson1Data.units.find(u => u.id === unitId);
-    if (!unit) return;
-
-    const exp = calculateParticipationExp(unit);
-    
-    const newClaimed = new Set(participationClaimed);
-    newClaimed.add(key);
-    setParticipationClaimed(newClaimed);
-    localStorage.setItem('n5-participation-claimed', JSON.stringify([...newClaimed]));
-
-    const expSource: ExpSource = {
-      type: 'participation',
-      action: `完成${unit.title}學習`,
-      exp,
-      timestamp: new Date(),
-      lessonId: lesson1Data.id,
-      unitId,
-    };
-    saveExpHistory(expSource);
-
-    if (user?.uid) {
-      try {
-        const userData = await UserService.getUser(user.uid);
-        if (userData) {
-          await UserService.updateUser(user.uid, {
-            achievementExp: userData.achievementExp + exp,
-          });
-        }
-      } catch (err) {
-        console.error('Failed to sync exp to Firestore:', err);
-      }
-    }
-
-    return exp;
-  };
-
-  // 給予考核分
-  const awardAssessmentExp = async (percentage: number) => {
-    const reward = getQuizReward(percentage);
-    
-    const expSource: ExpSource = {
-      type: 'assessment',
-      action: `測驗得分 ${percentage}%`,
-      exp: reward.exp,
-      timestamp: new Date(),
-      lessonId: lesson1Data.id,
-      unitId: currentUnitData.id,
-    };
-    saveExpHistory(expSource);
-
-    if (user?.uid) {
-      try {
-        const userData = await UserService.getUser(user.uid);
-        if (userData) {
-          await UserService.updateUser(user.uid, {
-            achievementExp: userData.achievementExp + reward.exp,
-          });
-        }
-      } catch (err) {
-        console.error('Failed to sync exp to Firestore:', err);
-      }
-    }
-
-    return reward.exp;
-  };
-
-  const saveCompleted = (unitId: number) => {
-    const key = getUnitProgressKey(lesson1Data.id, unitId);
-    const newCompleted = new Set(completedUnits);
-    newCompleted.add(key);
-    setCompletedUnits(newCompleted);
-    localStorage.setItem('n5-unit-completed', JSON.stringify([...newCompleted]));
-  };
-
-  // 重置進度
-  const resetProgress = () => {
-    localStorage.removeItem('n5-unit-completed');
-    localStorage.removeItem('n5-participation-claimed');
-    localStorage.removeItem('n5-exp-history');
-    localStorage.removeItem('n5-unit-scores');
-    setCompletedUnits(new Set());
-    setParticipationClaimed(new Set());
-    setShowResetConfirm(false);
-    window.location.reload();
-  };
-
-  const playAudio = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ja-JP';
-      utterance.rate = 0.8;
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const toggleCard = (index: number) => {
-    const newFlipped = new Set(flippedCards);
-    if (newFlipped.has(index)) {
-      newFlipped.delete(index);
-    } else {
-      newFlipped.add(index);
-      playAudio(currentUnitData.vocab[index].hiragana);
-    }
-    setFlippedCards(newFlipped);
-  };
-
-  const startStudy = async (unitIndex: number) => {
-    setCurrentUnit(unitIndex);
-    setMode('study');
-    setFlippedCards(new Set());
-    
-    const key = `${lesson1Data.id}-unit${lesson1Data.units[unitIndex].id}-participation`;
-    if (!participationClaimed.has(key)) {
-      const exp = await awardParticipationExp(lesson1Data.units[unitIndex].id);
-      if (exp) {
-        setExpBreakdown(prev => ({ ...prev, participation: exp }));
-        setShowExpDetail(true);
-        setTimeout(() => setShowExpDetail(false), 3000);
-      }
-    }
-  };
-
-  const startQuiz = () => {
-    setMode('quiz');
-    setQuizIndex(0);
-    setScore(0);
-    setWrongCount(0);
-    setAnswered(false);
-    setSelectedOption(null);
-    setQuizHistory([]);
-    setExpBreakdown({ participation: 0, assessment: 0 });
-  };
-
-  const generateOptions = (correctWord: typeof currentUnitData.vocab[0]) => {
-    const wrongOptions = currentUnitData.vocab
-      .filter(w => w.meaning !== correctWord.meaning)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
-      .map(w => w.meaning);
-    return [correctWord.meaning, ...wrongOptions].sort(() => Math.random() - 0.5);
-  };
-
-  const checkAnswer = (selected: string) => {
-    if (answered) return;
-    const currentWord = currentUnitData.vocab[quizIndex];
-    const isCorrect = selected === currentWord.meaning;
-    
-    setSelectedOption(selected);
-    setAnswered(true);
-    setQuizHistory(prev => [...prev, { correct: isCorrect, answer: selected }]);
-    
-    if (isCorrect) {
-      setScore(score + 1);
-    } else {
-      setWrongCount(wrongCount + 1);
-    }
-    playAudio(currentWord.hiragana);
-  };
-
-  const checkListeningAnswer = (selected: string) => {
-    if (listeningAnswered) return;
-    const currentQ = listeningQuiz[listeningIndex];
-    const isCorrect = selected === currentQ.correctAnswer;
-    
-    setListeningSelected(selected);
-    setListeningAnswered(true);
-    setListeningHistory(prev => [...prev, { correct: isCorrect, answer: selected }]);
-    
-    if (isCorrect) {
-      setListeningScore(listeningScore + 1);
-    } else {
-      setListeningWrong(listeningWrong + 1);
-    }
-  };
-
-  const nextQuestion = async () => {
-    if (quizIndex < currentUnitData.vocab.length - 1) {
-      setQuizIndex(quizIndex + 1);
-      setAnswered(false);
-      setSelectedOption(null);
-    } else {
-      const finalScore = score + (selectedOption === currentUnitData.vocab[quizIndex].meaning ? 1 : 0);
-      const percentage = Math.round((finalScore / currentUnitData.vocab.length) * 100);
-      const assessmentExp = await awardAssessmentExp(percentage);
-      
-      setExpBreakdown(prev => ({ ...prev, assessment: assessmentExp || 0 }));
-      setUnitExp((prev) => prev + (assessmentExp || 0));
-      saveCompleted(currentUnitData.id);
-      setMode('result');
-    }
-  };
-
-  const nextListeningQuestion = () => {
-    if (listeningIndex < listeningQuiz.length - 1) {
-      setListeningIndex(listeningIndex + 1);
-      setListeningAnswered(false);
-      setListeningSelected(null);
-      // 自動播放下一題
-      setTimeout(() => playListeningAudio(listeningQuiz[listeningIndex + 1].audioText), 300);
-    } else {
-      setMode('result');
-    }
-  };
-
-  const backToMenu = () => {
-    setMode('menu');
-    setFlippedCards(new Set());
-    setExpBreakdown({ participation: 0, assessment: 0 });
-  };
-
-  // 選單模式
-  if (mode === 'menu') {
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] pb-20">
-        {/* EXP 獲得提示 */}
-        <AnimatePresence>
-          {showExpDetail && (
-            <motion.div
-              initial={{ opacity: 0, y: -50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -50 }}
-              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-[#C4B9AC] text-white px-6 py-3 rounded-full shadow-lg"
-            >
-              🎉 +{expBreakdown.participation} 參與分！已加到個人資料
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* 重置確認對話框 */}
-        <AnimatePresence>
-          {showResetConfirm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            >
-              <motion.div
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.9 }}
-                className="bg-white rounded-2xl p-6 max-w-sm w-full"
-              >
-                <div className="text-center mb-4">
-                  <span className="text-4xl">⚠️</span>
-                  <h3 className="text-xl font-bold text-[#4A4A4A] mt-2">確定重置進度？</h3>
-                  <p className="text-sm text-[#8C8C8C] mt-2">
-                    此操作會清除所有學習進度、測驗記錄和已領取的經驗值，無法恢復。
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowResetConfirm(false)}
-                    className="flex-1 py-3 border border-[#E0E0E0] text-[#8C8C8C] rounded-lg"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={resetProgress}
-                    className="flex-1 py-3 bg-red-500 text-white rounded-lg"
-                  >
-                    確定重置
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="bg-white border-b border-[#E5E5E5] px-4 py-6 sticky top-0 z-40">
-          <div className="max-w-lg mx-auto">
-            <div className="flex justify-between items-start">
-              <Link href="/learn" className="text-[#8C8C8C] text-sm mb-2 inline-block">
-                ← 返回課程列表
-              </Link>
-              <button
-                onClick={() => setShowResetConfirm(true)}
-                className="text-xs text-red-400 hover:text-red-600"
-              >
-                🔄 重置進度
-              </button>
-            </div>
-            <h1 className="text-2xl font-normal text-[#4A4A4A] mb-1">第1課：初次見面</h1>
-            <p className="text-sm text-[#8C8C8C]">4個微單元 • 完成學習獲參與分，測驗獲考核分</p>
-            
-            <div className="mt-4 flex justify-between items-center">
-              <button
-                onClick={() => setShowCantonese(!showCantonese)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all ${
-                  showCantonese 
-                    ? 'bg-[#C4B9AC] text-white' 
-                    : 'bg-[#F5F5F0] text-[#8C8C8C] border border-[#E0E0E0]'
-                }`}
-              >
-                <span>🇭🇰</span>
-                <span>廣東話諧音</span>
-              </button>
-              
-              {/* 聽力測驗按鈕 */}
-              <button
-                onClick={startListeningQuiz}
-                className="flex items-center gap-2 px-4 py-2 bg-[#E3F2FD] text-[#1976D2] rounded-full text-sm hover:bg-[#BBDEFB] transition-colors"
-              >
-                🎧 聽力測驗
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
-          {/* 積木造句機入口 */}
-          <Link href="/learn/n5/lesson-1/builder">
-            <motion.div
-              className="bg-gradient-to-r from-[#6B5B95] to-[#8B7BB5] rounded-xl p-5 text-white cursor-pointer shadow-md hover:shadow-lg transition-all"
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">🧱</span>
-                    <span className="font-medium">積木造句機</span>
-                  </div>
-                  <p className="text-sm text-white/80">組合詞彙，創造自己的句子</p>
-                </div>
-                <span className="text-2xl">→</span>
-              </div>
-            </motion.div>
-          </Link>
-
-          {lesson1Data.units.map((unit, index) => {
-            const isCompleted = completedUnits.has(getUnitProgressKey(lesson1Data.id, unit.id));
-            const hasParticipation = participationClaimed.has(`${lesson1Data.id}-unit${unit.id}-participation`);
-            
-            return (
-              <motion.button
-                key={unit.id}
-                onClick={() => startStudy(index)}
-                className={`w-full rounded-xl p-5 text-left relative overflow-hidden border transition-all ${
-                  isCompleted 
-                    ? 'bg-[#E8F5E9] border-[#A5D6A7]' 
-                    : 'bg-white border-[#E8E8E8] hover:border-[#C4B9AC]'
-                }`}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <span className={`text-xs tracking-wider ${isCompleted ? 'text-[#4CAF50]' : 'text-[#C4B9AC]'}`}>
-                      單元 0{unit.id}
-                    </span>
-                    <h3 className="text-lg text-[#4A4A4A] mt-1">{unit.title}</h3>
-                    <p className="text-sm text-[#8C8C8C]">{unit.subtitle}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {isCompleted && <span className="text-2xl">✓</span>}
-                    {hasParticipation && <span className="text-xs text-[#C4B9AC]">已領參與分</span>}
-                  </div>
-                </div>
-                
-                <div className="flex gap-2 mt-3">
-                  <span className="text-xs px-2 py-0.5 bg-[#E3F2FD] text-[#1976D2] rounded">詞彙</span>
-                  {unit.grammar && <span className="text-xs px-2 py-0.5 bg-[#F3E5F5] text-[#7B1FA2] rounded">文法</span>}
-                  {unit.listening && <span className="text-xs px-2 py-0.5 bg-[#E8F5E9] text-[#388E3C] rounded">聽力</span>}
-                  {unit.dialogue && <span className="text-xs px-2 py-0.5 bg-[#FFF3E0] text-[#F57C00] rounded">對話</span>}
-                </div>
-                
-                <p className="text-xs text-[#8C8C8C] mt-2">
-                  學習獲 +{calculateParticipationExp(unit)} 參與分
-                </p>
-              </motion.button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // 聽力測驗模式
-  if (mode === 'listening' && listeningQuiz.length > 0) {
-    const currentQ = listeningQuiz[listeningIndex];
-    const progress = ((listeningIndex + 1) / listeningQuiz.length) * 100;
-    
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] pb-20">
-        {/* 頂部導航 */}
-        <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50">
-          <div className="max-w-lg mx-auto flex justify-between items-center">
-            <button onClick={backToMenu} className="text-[#8C8C8C] text-sm">← 返回</button>
-            <span className="text-sm text-[#4A4A4A]">聽力測驗</span>
-            <span className="text-sm text-[#8C8C8C]">{listeningIndex + 1}/{listeningQuiz.length}</span>
-          </div>
-        </div>
-
-        {/* 進度條同統計 */}
-        <div className="max-w-lg mx-auto px-4 pt-4">
-          <div className="flex justify-between text-xs text-[#8C8C8C] mb-2">
-            <span>進度: {listeningIndex + 1}/{listeningQuiz.length}</span>
-            <span>
-              <span className="text-green-600">✓ {listeningScore}</span>
-              {' · '}
-              <span className="text-red-500">✗ {listeningWrong}</span>
-            </span>
-          </div>
-          <div className="h-2 bg-[#E5E5E5] rounded-full overflow-hidden mb-6">
-            <div className="h-full bg-[#1976D2] rounded-full transition-all" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
-
-        <div className="max-w-lg mx-auto px-4">
-          {/* 播放按鈕 */}
-          <div className="bg-white rounded-xl p-8 shadow-sm border border-[#E8E8E8] text-center mb-6">
-            <button
-              onClick={() => playListeningAudio(currentQ.audioText)}
-              disabled={isPlaying}
-              className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 transition-all ${
-                isPlaying 
-                  ? 'bg-[#1976D2]/20 text-[#1976D2]' 
-                  : 'bg-[#1976D2] text-white hover:bg-[#1565C0]'
-              }`}
-            >
-              {isPlaying ? '🔊' : '▶️'}
-            </button>
-            <p className="text-sm text-[#8C8C8C]">
-              {isPlaying ? '播放中...' : '點擊播放，揀返啱嘅答案'}
-            </p>
-            <button
-              onClick={() => playListeningAudio(currentQ.audioText)}
-              className="mt-3 text-sm text-[#1976D2] hover:underline"
-            >
-              再播一次
-            </button>
-          </div>
-
-          {/* 選項 */}
-          <div className="space-y-3">
-            {currentQ.options.map((option, idx) => {
-              const isSelected = listeningSelected === option;
-              const isCorrect = option === currentQ.correctAnswer;
-              const showResult = listeningAnswered;
-              
-              let buttonClass = 'w-full p-4 text-left border-2 rounded-lg text-center text-base font-medium transition-all ';
-              
-              if (showResult) {
-                if (isCorrect) {
-                  buttonClass += 'bg-[#E8F5E9] border-[#4CAF50] text-[#4A4A4A]';
-                } else if (isSelected && !isCorrect) {
-                  buttonClass += 'bg-[#FFEBEE] border-[#F44336] text-[#4A4A4A]';
-                } else {
-                  buttonClass += 'bg-white border-[#E5E5E5] text-[#8C8C8C] opacity-50';
-                }
-              } else {
-                if (isSelected) {
-                  buttonClass += 'bg-[#E3F2FD] border-[#1976D2] text-[#1976D2]';
-                } else {
-                  buttonClass += 'bg-white border-[#E5E5E5] text-[#4A4A4A] hover:border-[#1976D2]';
-                }
-              }
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => checkListeningAnswer(option)}
-                  disabled={listeningAnswered}
-                  className={buttonClass}
-                >
-                  <div className="flex items-center justify-center gap-3">
-                    {showResult && isCorrect && <span className="text-green-600 text-xl">✓</span>}
-                    {showResult && isSelected && !isCorrect && <span className="text-red-500 text-xl">✗</span>}
-                    <span>{option}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 反饋 */}
-          <AnimatePresence>
-            {listeningAnswered && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`mt-4 p-4 rounded-lg border-l-4 ${
-                  listeningSelected === currentQ.correctAnswer
-                    ? 'bg-[#E8F5E9] border-l-[#4CAF50]'
-                    : 'bg-[#FFEBEE] border-l-[#F44336]'
-                }`}
-              >
-                <p className="text-sm text-[#4A4A4A] font-medium">
-                  {listeningSelected === currentQ.correctAnswer
-                    ? '✓ 正確！'
-                    : `✗ 正確答案：${currentQ.correctAnswer}`
-                  }
-                </p>
-                <button
-                  onClick={nextListeningQuestion}
-                  className="w-full mt-3 py-3 bg-[#1976D2] text-white rounded-lg"
-                >
-                  {listeningIndex === listeningQuiz.length - 1 ? '看結果' : '下一題'}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    );
-  }
-
-  // 原有測驗模式
-  if (mode === 'quiz') {
-    const currentWord = currentUnitData.vocab[quizIndex];
-    const progress = ((quizIndex + 1) / currentUnitData.vocab.length) * 100;
-    const options = generateOptions(currentWord);
-    
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] pb-20">
-        <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50">
-          <div className="max-w-lg mx-auto flex justify-between items-center">
-            <span className="text-sm text-[#8C8C8C]">測驗模式</span>
-            <span className="text-sm text-[#4A4A4A]">{quizIndex + 1}/{currentUnitData.vocab.length}</span>
-          </div>
-        </div>
-
-        <div className="max-w-lg mx-auto px-4 py-6">
-          {/* 進度同統計 */}
-          <div className="flex justify-between text-xs text-[#8C8C8C] mb-2">
-            <span>進度: {quizIndex + 1}/{currentUnitData.vocab.length}</span>
-            <span>
-              <span className="text-green-600">✓ {score}</span>
-              {' · '}
-              <span className="text-red-500">✗ {wrongCount}</span>
-            </span>
-          </div>
-          <div className="h-2 bg-[#E5E5E5] rounded-full mb-6 overflow-hidden">
-            <div className="h-full bg-[#C4B9AC] rounded-full transition-all" style={{ width: `${progress}%` }} />
-          </div>
-
-          <div className="bg-white rounded-xl p-8 shadow-sm border border-[#E8E8E8] text-center mb-6">
-            {showCantonese && currentWord.cantonese ? (
-              <>
-                <div className="text-3xl text-[#C4B9AC] mb-1">{currentWord.cantonese}</div>
-                <div className="text-lg text-[#8C8C8C] mb-2">{currentWord.hiragana}</div>
-              </>
-            ) : (
-              <div className="text-5xl text-[#4A4A4A] mb-2">{currentWord.hiragana}</div>
-            )}
-            <div className="text-sm text-[#C4B9AC]">這是什麼意思？</div>
-          </div>
-
-          <div className="space-y-3">
-            {options.map((option, idx) => {
-              const isSelected = selectedOption === option;
-              const isCorrect = option === currentWord.meaning;
-              const showResult = answered;
-              
-              let buttonClass = 'w-full p-4 text-left border-2 rounded-lg text-center text-base font-medium transition-all ';
-              
-              if (showResult) {
-                if (isCorrect) {
-                  buttonClass += 'bg-[#E8F5E9] border-[#4CAF50] text-[#4A4A4A]';
-                } else if (isSelected && !isCorrect) {
-                  buttonClass += 'bg-[#FFEBEE] border-[#F44336] text-[#4A4A4A]';
-                } else {
-                  buttonClass += 'bg-white border-[#E5E5E5] text-[#8C8C8C] opacity-50';
-                }
-              } else {
-                if (isSelected) {
-                  buttonClass += 'bg-[#E0D5C7] border-[#8C8C8C] text-[#4A4A4A]';
-                } else {
-                  buttonClass += 'bg-white border-[#E5E5E5] text-[#4A4A4A] hover:border-[#C4B9AC]';
-                }
-              }
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => checkAnswer(option)}
-                  disabled={answered}
-                  className={buttonClass}
-                >
-                  <div className="flex items-center justify-center gap-3">
-                    {showResult && isCorrect && <span className="text-green-600 text-xl">✓</span>}
-                    {showResult && isSelected && !isCorrect && <span className="text-red-500 text-xl">✗</span>}
-                    <span>{option}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <AnimatePresence>
-            {answered && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`mt-4 p-4 rounded-lg border-l-4 ${
-                  selectedOption === currentWord.meaning
-                    ? 'bg-[#E8F5E9] border-l-[#4CAF50]'
-                    : 'bg-[#FFEBEE] border-l-[#F44336]'
-                }`}
-              >
-                <p className="text-sm text-[#4A4A4A] font-medium">
-                  {selectedOption === currentWord.meaning
-                    ? '✓ 正確！'
-                    : <>
-                        ✗ 正確答案：<strong>{currentWord.kanji}</strong>（{currentWord.meaning}）
-                      </>
-                  }
-                </p>
-                {showCantonese && currentWord.cantonese && (
-                  <p className="text-xs text-[#C4B9AC] mt-1">廣東話諧音：{currentWord.cantonese}</p>
-                )}
-                <button
-                  onClick={nextQuestion}
-                  className="w-full mt-3 py-3 bg-[#8C8C8C] text-white rounded-lg"
-                >
-                  {quizIndex === currentUnitData.vocab.length - 1 ? '看結果' : '下一題'}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    );
-  }
-
-  // 結果模式
-  if (mode === 'result') {
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center p-4">
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-2xl p-8 max-w-sm w-full text-center border border-[#E8E8E8]"
-        >
-          <div className="w-24 h-24 rounded-full border-4 border-[#C4B9AC] flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl text-[#4A4A4A]">
-              {listeningQuiz.length > 0 
-                ? `${listeningScore}/${listeningQuiz.length}`
-                : `${score}/${currentUnitData.vocab.length}`
-              }
-            </span>
-          </div>
-          
-          <h3 className="text-xl text-[#4A4A4A] mb-2">
-            {listeningQuiz.length > 0 ? '聽力測驗完成！' : '單元測驗完成！'}
-          </h3>
-          
-          {listeningQuiz.length > 0 && (
-            <p className="text-sm text-[#8C8C8C] mb-4">
-              正確 {listeningScore} 題 · 錯誤 {listeningWrong} 題
-            </p>
-          )}
-
-          <div className="space-y-2">
-            <button onClick={backToMenu} className="w-full py-3 bg-[#C4B9AC] text-white rounded-lg">
-              返回單元列表
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // 學習模式
-  return (
-    <div className="min-h-screen bg-[#F5F5F0] pb-20">
-      <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50 flex justify-between items-center">
-        <button onClick={backToMenu} className="text-[#8C8C8C] text-sm">← 返回</button>
-        <div className="text-center">
-          <span className="text-sm text-[#4A4A4A]">{currentUnitData.title}</span>
-          <span className="text-xs text-[#8C8C8C] ml-2">單元 {currentUnitData.id}/4</span>
-        </div>
-        <button onClick={startQuiz} className="text-sm bg-[#C4B9AC] text-white px-3 py-1.5 rounded-full">
-          測驗 →
-        </button>
-      </div>
-
-      <div className="max-w-lg mx-auto px-4 py-6">
-        {currentUnitData.grammar && (
-          <div className="bg-white rounded-xl p-4 mb-6 border border-[#E8E8E8]">
-            <h3 className="text-sm font-medium text-[#4A4A4A] mb-3">📚 文法重點</h3>
-            {currentUnitData.grammar.map((g, i) => (
-              <div key={i} className="mb-3 last:mb-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[#C4B9AC] font-medium">{g.pattern}</span>
-                  <span className="text-xs text-[#8C8C8C]">→ {g.meaning}</span>
-                </div>
-                <p className="text-sm text-[#4A4A4A] bg-[#F5F5F0] px-3 py-2 rounded">
-                  {g.example}
-                  <span className="text-[#8C8C8C] ml-2">({g.exampleMeaning})</span>
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <p className="text-center text-sm text-[#8C8C8C] mb-4">👆 撳卡片睇答案 · 再撳聽發音</p>
-        
-        <div className="grid grid-cols-2 gap-3">
-          {currentUnitData.vocab.map((word, index) => (
-            <motion.div
-              key={index}
-              onClick={() => toggleCard(index)}
-              className="relative aspect-[4/3] cursor-pointer"
-              style={{ perspective: '1000px' }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <motion.div
-                className="w-full h-full relative"
-                animate={{ rotateY: flippedCards.has(index) ? 180 : 0 }}
-                transition={{ duration: 0.4 }}
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                <div className="absolute inset-0 bg-white rounded-lg shadow-sm border border-[#E8E8E8] flex flex-col items-center justify-center p-3">
-                  {showCantonese && word.cantonese ? (
-                    <>
-                      <span className="text-xl text-[#4A4A4A]">{word.cantonese}</span>
-                      <span className="text-sm text-[#C4B9AC] mt-1">{word.hiragana}</span>
-                    </>
-                  ) : (
-                    <span className="text-2xl text-[#4A4A4A]">{word.hiragana}</span>
-                  )}
-                  <span className="text-xs text-[#C4B9AC] mt-2">點擊翻轉</span>
-                </div>
-
-                <div 
-                  className="absolute inset-0 bg-[#FAF8F5] rounded-lg shadow-sm border border-[#E0D5C7] flex flex-col items-center justify-center p-3"
-                  style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden' }}
-                >
-                  <span className="text-lg text-[#4A4A4A] mb-1">{word.kanji}</span>
-                  <span className="text-base text-[#4A4A4A] font-medium text-center mb-1">{word.meaning}</span>
-                  {word.note && <span className="text-xs text-[#8C8C8C]">{word.note}</span>}
-                </div>
-              </motion.div>
-            </motion.div>
-          ))}
-        </div>
-
-        {currentUnitData.dialogue && (
-          <div className="mt-6 bg-white rounded-xl p-4 border border-[#E8E8E8]">
-            <h3 className="text-sm font-medium text-[#4A4A4A] mb-3">💬 情境對話</h3>
-            {currentUnitData.dialogue.map((d, i) => (
-              <div key={i} className="mb-3 last:mb-0">
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-medium text-[#C4B9AC] w-12 shrink-0">{d.speaker}</span>
-                  <div className="flex-1">
-                    <p className="text-sm text-[#4A4A4A]">{d.japanese}</p>
-                    {showCantonese && d.cantonese && <p className="text-xs text-[#C4B9AC]">{d.cantonese}</p>}
-                    <p className="text-xs text-[#8C8C8C]">{d.meaning}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+interface UnitProgress {
+  unitId: number;
+  completed: boolean;
+  studyCompleted: boolean;
+  quizCompleted: boolean;
+  bestScore: number;
 }
 
 export default function Lesson1Page() {
+  const { user } = useAuth();
+  const [mode, setMode] = useState<Mode>('menu');
+  const [activeTab, setActiveTab] = useState<Tab>('units');
+  const [selectedUnit, setSelectedUnit] = useState<GameUnit | null>(null);
+  const [showCantonese, setShowCantonese] = useState(true);
+  
+  // 進度追踪
+  const [unitProgress, setUnitProgress] = useState<UnitProgress[]>([]);
+  const [savedSentences, setSavedSentences] = useState<SavedSentence[]>([]);
+  const [totalExp, setTotalExp] = useState(0);
+  
+  // 測驗結果
+  const [showResult, setShowResult] = useState(false);
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+
+  // 初始化本地存儲
+  useEffect(() => {
+    const savedProgress = localStorage.getItem('lesson1-progress');
+    if (savedProgress) {
+      setUnitProgress(JSON.parse(savedProgress));
+    } else {
+      // 初始化進度
+      setUnitProgress(lesson1Units.map(u => ({
+        unitId: u.id,
+        completed: false,
+        studyCompleted: false,
+        quizCompleted: false,
+        bestScore: 0,
+      })));
+    }
+
+    const saved = localStorage.getItem('lesson1-sentences');
+    if (saved) {
+      setSavedSentences(JSON.parse(saved).map((s: any) => ({
+        ...s,
+        createdAt: new Date(s.createdAt),
+      })));
+    }
+
+    const exp = localStorage.getItem('lesson1-exp');
+    if (exp) {
+      setTotalExp(parseInt(exp));
+    }
+  }, []);
+
+  // 保存進度
+  const saveProgress = useCallback((progress: UnitProgress[]) => {
+    setUnitProgress(progress);
+    localStorage.setItem('lesson1-progress', JSON.stringify(progress));
+  }, []);
+
+  // 保存句子
+  const saveSentence = useCallback((sentence: SavedSentence) => {
+    const updated = [...savedSentences, sentence];
+    setSavedSentences(updated);
+    localStorage.setItem('lesson1-sentences', JSON.stringify(updated));
+    
+    // 加EXP
+    const newExp = totalExp + 5;
+    setTotalExp(newExp);
+    localStorage.setItem('lesson1-exp', newExp.toString());
+  }, [savedSentences, totalExp]);
+
+  // 完成學習
+  const handleStudyComplete = useCallback(() => {
+    if (!selectedUnit) return;
+
+    const updated = unitProgress.map(p => 
+      p.unitId === selectedUnit.id 
+        ? { ...p, studyCompleted: true, completed: p.quizCompleted || p.completed }
+        : p
+    );
+    saveProgress(updated);
+
+    // 加EXP
+    const newExp = totalExp + 10;
+    setTotalExp(newExp);
+    localStorage.setItem('lesson1-exp', newExp.toString());
+
+    // 同步到Firebase
+    if (user?.uid) {
+      UserService.updateUser(user.uid, {
+        achievementExp: (user.achievementExp || 0) + 10,
+      }).catch(console.error);
+    }
+
+    setMode('menu');
+  }, [selectedUnit, unitProgress, totalExp, user, saveProgress]);
+
+  // 完成測驗
+  const handleQuizComplete = useCallback((result: QuizResult) => {
+    setQuizResult(result);
+    setShowResult(true);
+
+    if (!selectedUnit) return;
+
+    // 計算EXP
+    const expEarned = Math.floor(result.score / 10) + result.timeBonus;
+    const newExp = totalExp + expEarned;
+    setTotalExp(newExp);
+    localStorage.setItem('lesson1-exp', newExp.toString());
+
+    // 更新進度
+    const updated = unitProgress.map(p => {
+      if (p.unitId === selectedUnit.id) {
+        return {
+          ...p,
+          quizCompleted: true,
+          completed: true,
+          bestScore: Math.max(p.bestScore, result.score),
+        };
+      }
+      return p;
+    });
+    saveProgress(updated);
+
+    // 同步到Firebase
+    if (user?.uid) {
+      UserService.updateUser(user.uid, {
+        achievementExp: (user.achievementExp || 0) + expEarned,
+      }).catch(console.error);
+    }
+
+    // 觸發confetti
+    if (result.score >= 60) {
+      triggerConfetti();
+    }
+  }, [selectedUnit, unitProgress, totalExp, user, saveProgress]);
+
+  // 計算總進度
+  const completedCount = unitProgress.filter(p => p.completed).length;
+  const progressPercent = (completedCount / lesson1Units.length) * 100;
+  // 第1課所有單元都解鎖
+  const unlockedUnits = lesson1Units.length;
+
+  // 渲染主選單
+  const renderMenu = () => (
+    <div className="space-y-6">
+      {/* 頂部資訊 */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E5E5]">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[#4A4A4A] mb-1">第1課：初次見面</h1>
+            <p className="text-[#8C8C8C]">人稱、職業、國家名稱、基本會話</p>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-[#A8B5A0]">🎯 {totalExp}</div>
+            <div className="text-sm text-[#8C8C8C]">EXP</div>
+          </div>
+        </div>
+        
+        {/* 進度條 */}
+        <div className="flex justify-between text-sm text-[#8C8C8C] mb-2">
+          <span>課程進度</span>
+          <span>{completedCount}/{lesson1Units.length} 單元</span>
+        </div>
+        <div className="w-full h-3 bg-[#E5E5E5] rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-[#A8B5A0] to-[#C4B9AC]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPercent}%` }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
+      </div>
+
+      {/* 標籤切換 */}
+      <div className="flex gap-2 border-b border-[#E5E5E5]">
+        {[
+          { id: 'units', label: '單元', icon: '📚' },
+          { id: 'progress', label: '進度', icon: '📊' },
+          { id: 'sentences', label: '句子簿', icon: '📝' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as Tab)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+              activeTab === tab.id
+                ? 'border-[#4A4A4A] text-[#4A4A4A]'
+                : 'border-transparent text-[#8C8C8C] hover:text-[#4A4A4A]'
+            }`}
+          >
+            <span>{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 內容區域 */}
+      <AnimatePresence mode="wait">
+        {activeTab === 'units' && (
+          <motion.div
+            key="units"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            {lesson1Units.map((unit, index) => {
+              const progress = unitProgress.find(p => p.unitId === unit.id);
+              const isCompleted = progress?.completed;
+
+              return (
+                <motion.div
+                  key={unit.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => setSelectedUnit(unit)}
+                  className={`bg-white rounded-xl p-5 border-2 transition-all cursor-pointer ${
+                    isCompleted
+                      ? 'border-[#A8B5A0] shadow-md'
+                      : 'border-[#C4B9AC] hover:shadow-lg'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="text-xs text-[#8C8C8C] mb-1">Unit {unit.id}</div>
+                      <h3 className="text-lg font-bold text-[#4A4A4A]">{unit.title}</h3>
+                      <p className="text-sm text-[#8C8C8C]">{unit.subtitle}</p>
+                    </div>
+                    <div className="text-2xl">
+                      {isCompleted ? '✅' : '📖'}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedUnit(unit);
+                        setMode('study');
+                      }}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        progress?.studyCompleted
+                          ? 'bg-[#A8B5A0]/20 text-[#A8B5A0]'
+                          : 'bg-[#F5F5F0] text-[#4A4A4A] hover:bg-[#E0D5C7]'
+                      }`}
+                    >
+                      {progress?.studyCompleted ? '✓ 已學習' : '學習'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedUnit(unit);
+                        setMode('quiz');
+                      }}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        progress?.quizCompleted
+                          ? 'bg-[#A8B5A0]/20 text-[#A8B5A0]'
+                          : 'bg-[#C4B9AC] text-white hover:bg-[#A09088]'
+                      }`}
+                    >
+                      {progress?.quizCompleted ? `最高分: ${progress.bestScore}` : '測驗'}
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        )}
+
+        {activeTab === 'progress' && (
+          <motion.div
+            key="progress"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-white rounded-xl p-6 border border-[#E5E5E5]"
+          >
+            <h3 className="text-lg font-bold text-[#4A4A4A] mb-4">學習統計</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-[#F5F5F0] rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-[#A8B5A0]">{completedCount}</div>
+                <div className="text-sm text-[#8C8C8C]">完成單元</div>
+              </div>
+              <div className="bg-[#F5F5F0] rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-[#C4B9AC]">{totalExp}</div>
+                <div className="text-sm text-[#8C8C8C]">總 EXP</div>
+              </div>
+              <div className="bg-[#F5F5F0] rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-[#8C8C8C]">{savedSentences.length}</div>
+                <div className="text-sm text-[#8C8C8C]">保存句子</div>
+              </div>
+              <div className="bg-[#F5F5F0] rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-[#8C8C8C]">
+                  {Math.max(...unitProgress.map(p => p.bestScore), 0)}
+                </div>
+                <div className="text-sm text-[#8C8C8C]">最高分</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'sentences' && (
+          <motion.div
+            key="sentences"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            {savedSentences.length === 0 ? (
+              <div className="bg-white rounded-xl p-8 border border-[#E5E5E5] text-center">
+                <div className="text-4xl mb-3">📝</div>
+                <h3 className="text-lg font-bold text-[#4A4A4A] mb-2">暫無保存的句子</h3>
+                <p className="text-[#8C8C8C] mb-4">在造句模式中創建並保存你的第一個句子</p>
+                <button
+                  onClick={() => setMode('builder')}
+                  className="px-6 py-2 bg-[#C4B9AC] text-white rounded-lg hover:bg-[#A09088] transition-colors"
+                >
+                  開始造句
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {savedSentences.map((sentence) => (
+                  <motion.div
+                    key={sentence.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="bg-white rounded-xl p-4 border border-[#E5E5E5]"
+                  >
+                    <div className="text-xl font-medium text-[#4A4A4A] mb-1">{sentence.fullText}</div>
+                    <div className="text-[#8C8C8C]">{sentence.meaning}</div>
+                    <div className="text-xs text-[#C4B9AC] mt-2">
+                      {new Date(sentence.createdAt).toLocaleDateString('zh-HK')}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 造句按鈕 */}
+      <div className="fixed bottom-6 right-6">
+        <button
+          onClick={() => setMode('builder')}
+          className="w-14 h-14 bg-[#8B7EC8] text-white rounded-full shadow-lg hover:bg-[#7A6DB7] transition-all hover:scale-110 flex items-center justify-center"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+
+  // 渲染學習模式
+  const renderStudy = () => {
+    if (!selectedUnit) return null;
+    const vocab = getVocabByUnit(selectedUnit.id);
+
+    return (
+      <div className="space-y-6">
+        {/* 頂部導航 */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setMode('menu')}
+            className="flex items-center gap-2 text-[#8C8C8C] hover:text-[#4A4A4A] transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            返回
+          </button>
+          <h2 className="text-lg font-bold text-[#4A4A4A]">{selectedUnit.title}</h2>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-[#8C8C8C]">廣東話</span>
+            <button
+              onClick={() => setShowCantonese(!showCantonese)}
+              className={`w-10 h-6 rounded-full transition-colors relative ${
+                showCantonese ? 'bg-[#A8B5A0]' : 'bg-[#E5E5E5]'
+              }`}
+            >
+              <motion.div
+                className="w-4 h-4 bg-white rounded-full absolute top-1"
+                animate={{ left: showCantonese ? 'calc(100% - 20px)' : '4px' }}
+                transition={{ duration: 0.2 }}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* 閃卡學習 */}
+        <VocabFlashcard
+          vocab={vocab}
+          showCantonese={showCantonese}
+          onComplete={handleStudyComplete}
+        />
+      </div>
+    );
+  };
+
+  // 渲染測驗模式
+  const renderQuiz = () => {
+    if (!selectedUnit) return null;
+
+    if (showResult && quizResult) {
+      return (
+        <div className="max-w-md mx-auto text-center py-12">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="text-6xl mb-4"
+          >
+            {quizResult.score >= 60 ? '🎉' : '💪'}
+          </motion.div>
+          <h2 className="text-2xl font-bold text-[#4A4A4A] mb-2">
+            {quizResult.score >= 60 ? '測驗完成！' : '再試一次！'}
+          </h2>
+          <div className="bg-white rounded-xl p-6 border border-[#E5E5E5] mb-6">
+            <div className="text-5xl font-bold text-[#A8B5A0] mb-2">{quizResult.score}</div>
+            <div className="text-[#8C8C8C]">總分</div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-[#F5F5F0] rounded-lg p-4">
+              <div className="text-xl font-bold text-[#4A4A4A]">{quizResult.correctCount}/{quizResult.totalQuestions}</div>
+              <div className="text-sm text-[#8C8C8C]">答對題數</div>
+            </div>
+            <div className="bg-[#F5F5F0] rounded-lg p-4">
+              <div className="text-xl font-bold text-[#4A4A4A]">🔥 {quizResult.combo}</div>
+              <div className="text-sm text-[#8C8C8C]">最高連擊</div>
+            </div>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                setShowResult(false);
+                setQuizResult(null);
+                setMode('menu');
+              }}
+              className="px-6 py-2 bg-[#8C8C8C] text-white rounded-lg hover:bg-[#6B6B6B] transition-colors"
+            >
+              返回目錄
+            </button>
+            <button
+              onClick={() => {
+                setShowResult(false);
+                setQuizResult(null);
+              }}
+              className="px-6 py-2 bg-[#C4B9AC] text-white rounded-lg hover:bg-[#A09088] transition-colors"
+            >
+              再試一次
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        {/* 頂部導航 */}
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => setMode('menu')}
+            className="flex items-center gap-2 text-[#8C8C8C] hover:text-[#4A4A4A] transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            退出
+          </button>
+          <h2 className="text-lg font-bold text-[#4A4A4A]">{selectedUnit.title} - 測驗</h2>
+          <div className="w-10" />
+        </div>
+
+        {/* 測驗引擎 */}
+        <QuizEngine
+          unitId={selectedUnit.id}
+          onComplete={handleQuizComplete}
+          onExit={() => setMode('menu')}
+          lessonVocab={lesson1Vocab}
+          getVocabByUnit={getVocabByUnit}
+        />
+      </div>
+    );
+  };
+
+  // 渲染造句模式
+  const renderBuilder = () => (
+    <div className="space-y-6">
+      {/* 頂部導航 */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setMode('menu')}
+          className="flex items-center gap-2 text-[#8C8C8C] hover:text-[#4A4A4A] transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          返回
+        </button>
+        <h2 className="text-lg font-bold text-[#4A4A4A]">積木造句機</h2>
+        <div className="w-10" />
+      </div>
+
+      {/* 造句機 */}
+      <SentenceBuilder
+        maxUnitId={unlockedUnits}
+        savedSentences={savedSentences}
+        onSaveSentence={saveSentence}
+      />
+    </div>
+  );
+
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center"><div className="text-[#8C8C8C]">載入中...</div></div>}>
-      <LessonContent />
-    </Suspense>
+    <div className="min-h-screen bg-[#F5F5F0]">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <AnimatePresence mode="wait">
+          {mode === 'menu' && (
+            <motion.div
+              key="menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {renderMenu()}
+            </motion.div>
+          )}
+          {mode === 'study' && (
+            <motion.div
+              key="study"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+            >
+              {renderStudy()}
+            </motion.div>
+          )}
+          {mode === 'quiz' && (
+            <motion.div
+              key="quiz"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+            >
+              {renderQuiz()}
+            </motion.div>
+          )}
+          {mode === 'builder' && (
+            <motion.div
+              key="builder"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+            >
+              {renderBuilder()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }

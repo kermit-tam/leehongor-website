@@ -1,419 +1,595 @@
+/**
+ * 第2課：這是什麼 - 遊戲化版本
+ * Lesson 2: What is this? - Gamified Version
+ */
+
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { n5Lessons2to4, getQuizReward, getUnitProgressKey, scoringConfig } from '@/data/n5-lessons';
+import { useAuth } from '@/lib/auth-context';
+import { UserService } from '@/lib/firestore';
+import { 
+  lesson2Vocab, 
+  lesson2Units, 
+  GameUnit, 
+  getVocabByUnit,
+} from './game-data';
+import { 
+  QuizEngine, 
+  QuizResult,
+  VocabFlashcard,
+  SentenceBuilder,
+  SavedSentence,
+  triggerConfetti,
+} from '../lesson-5/components';
 
-const lessonData = n5Lessons2to4[0];
+type Mode = 'menu' | 'study' | 'quiz' | 'builder';
+type Tab = 'units' | 'progress' | 'sentences';
 
-function LessonContent() {
-  const searchParams = useSearchParams();
-  const initialUnit = parseInt(searchParams.get('unit') || '1');
-  
-  const [currentUnit, setCurrentUnit] = useState(initialUnit - 1);
-  const [mode, setMode] = useState<'menu' | 'study' | 'quiz' | 'result'>('menu');
-  const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
-  const [showCantonese, setShowCantonese] = useState(true);
-  const [quizIndex, setQuizIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [answered, setAnswered] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [completedUnits, setCompletedUnits] = useState<Set<string>>(new Set());
-  const [unitExp, setUnitExp] = useState(0);
-
-  const currentUnitData = lessonData.units[currentUnit];
-
-  useEffect(() => {
-    const saved = localStorage.getItem('n5-unit-completed');
-    if (saved) {
-      setCompletedUnits(new Set(JSON.parse(saved)));
-    }
-  }, []);
-
-  const saveCompleted = (unitId: number) => {
-    const key = getUnitProgressKey(lessonData.id, unitId);
-    const newCompleted = new Set(completedUnits);
-    newCompleted.add(key);
-    setCompletedUnits(newCompleted);
-    localStorage.setItem('n5-unit-completed', JSON.stringify([...newCompleted]));
-  };
-
-  const playAudio = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ja-JP';
-      utterance.rate = 0.8;
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const toggleCard = (index: number) => {
-    const newFlipped = new Set(flippedCards);
-    if (newFlipped.has(index)) {
-      newFlipped.delete(index);
-    } else {
-      newFlipped.add(index);
-      playAudio(currentUnitData.vocab[index].hiragana);
-    }
-    setFlippedCards(newFlipped);
-  };
-
-  const startStudy = (unitIndex: number) => {
-    setCurrentUnit(unitIndex);
-    setMode('study');
-    setFlippedCards(new Set());
-  };
-
-  const startQuiz = () => {
-    setMode('quiz');
-    setQuizIndex(0);
-    setScore(0);
-    setAnswered(false);
-    setSelectedOption(null);
-  };
-
-  const generateOptions = (correctWord: typeof currentUnitData.vocab[0]) => {
-    const wrongOptions = currentUnitData.vocab
-      .filter(w => w.meaning !== correctWord.meaning)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
-      .map(w => w.meaning);
-    return [correctWord.meaning, ...wrongOptions].sort(() => Math.random() - 0.5);
-  };
-
-  const checkAnswer = (selected: string) => {
-    if (answered) return;
-    const currentWord = currentUnitData.vocab[quizIndex];
-    const isCorrect = selected === currentWord.meaning;
-    
-    setSelectedOption(selected);
-    setAnswered(true);
-    if (isCorrect) setScore(score + 1);
-    playAudio(currentWord.hiragana);
-  };
-
-  const nextQuestion = () => {
-    if (quizIndex < currentUnitData.vocab.length - 1) {
-      setQuizIndex(quizIndex + 1);
-      setAnswered(false);
-      setSelectedOption(null);
-    } else {
-      const finalScore = score + (selectedOption === currentUnitData.vocab[quizIndex].meaning ? 1 : 0);
-      const percentage = Math.round((finalScore / currentUnitData.vocab.length) * 100);
-      const reward = getQuizReward(percentage);
-      const totalExp = scoringConfig.participation.unitComplete.base + reward.exp;
-      
-      setUnitExp(totalExp);
-      saveCompleted(currentUnitData.id);
-      setMode('result');
-    }
-  };
-
-  const backToMenu = () => {
-    setMode('menu');
-    setFlippedCards(new Set());
-  };
-
-  if (mode === 'menu') {
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] pb-20">
-        <div className="bg-white border-b border-[#E5E5E5] px-4 py-6 sticky top-0 z-50">
-          <div className="max-w-lg mx-auto">
-            <Link href="/learn" className="text-[#8C8C8C] text-sm mb-2 inline-block">
-              ← 返回課程列表
-            </Link>
-            <h1 className="text-2xl font-normal text-[#4A4A4A] mb-1">第2課：這是什麼</h1>
-            <p className="text-sm text-[#8C8C8C]">選擇微單元開始學習</p>
-            
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => setShowCantonese(!showCantonese)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all ${
-                  showCantonese 
-                    ? 'bg-[#C4B9AC] text-white' 
-                    : 'bg-[#F5F5F0] text-[#8C8C8C] border border-[#E0E0E0]'
-                }`}
-              >
-                <span>🇭🇰</span>
-                <span>廣東話諧音</span>
-                <span className={`w-8 h-4 rounded-full relative transition-colors ${showCantonese ? 'bg-white/30' : 'bg-[#E0E0E0]'}`}>
-                  <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${showCantonese ? 'left-[18px]' : 'left-0.5'}`} />
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
-          {lessonData.units.map((unit, index) => {
-            const isCompleted = completedUnits.has(getUnitProgressKey(lessonData.id, unit.id));
-            
-            return (
-              <motion.button
-                key={unit.id}
-                onClick={() => startStudy(index)}
-                className={`w-full rounded-xl p-5 text-left relative overflow-hidden border transition-all ${
-                  isCompleted 
-                    ? 'bg-[#E8F5E9] border-[#A5D6A7]' 
-                    : 'bg-white border-[#E8E8E8] hover:border-[#C4B9AC]'
-                }`}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <span className={`text-xs tracking-wider ${isCompleted ? 'text-[#4CAF50]' : 'text-[#C4B9AC]'}`}>
-                      單元 0{unit.id}
-                    </span>
-                    <h3 className="text-lg text-[#4A4A4A] mt-1">{unit.title}</h3>
-                    <p className="text-sm text-[#8C8C8C]">{unit.subtitle}</p>
-                  </div>
-                  {isCompleted ? (
-                    <span className="text-2xl">✓</span>
-                  ) : (
-                    <span className="text-sm text-[#C4B9AC]">{unit.vocab.length}詞</span>
-                  )}
-                </div>
-                
-                <div className="flex gap-2 mt-3">
-                  {unit.vocab.slice(0, 3).map((v, i) => (
-                    <span key={i} className="text-xs bg-[#F5F5F0] px-2 py-1 rounded text-[#8C8C8C]">
-                      {showCantonese && v.cantonese ? v.cantonese : v.hiragana}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex gap-2 mt-3">
-                  <span className="text-xs px-2 py-0.5 bg-[#E3F2FD] text-[#1976D2] rounded">詞彙</span>
-                  {unit.grammar && <span className="text-xs px-2 py-0.5 bg-[#F3E5F5] text-[#7B1FA2] rounded">文法</span>}
-                  {unit.dialogue && <span className="text-xs px-2 py-0.5 bg-[#FFF3E0] text-[#F57C00] rounded">對話</span>}
-                </div>
-              </motion.button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === 'study') {
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] pb-20">
-        <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50 flex justify-between items-center">
-          <button onClick={backToMenu} className="text-[#8C8C8C] text-sm">← 返回</button>
-          <div className="text-center">
-            <span className="text-sm text-[#4A4A4A]">{currentUnitData.title}</span>
-            <span className="text-xs text-[#8C8C8C] ml-2">單元 {currentUnitData.id}/4</span>
-          </div>
-          <button onClick={startQuiz} className="text-sm bg-[#C4B9AC] text-white px-3 py-1.5 rounded-full">
-            測驗 →
-          </button>
-        </div>
-
-        <div className="max-w-lg mx-auto px-4 py-6">
-          {currentUnitData.grammar && (
-            <div className="bg-white rounded-xl p-4 mb-6 border border-[#E8E8E8]">
-              <h3 className="text-sm font-medium text-[#4A4A4A] mb-3">📚 文法重點</h3>
-              {currentUnitData.grammar.map((g, i) => (
-                <div key={i} className="mb-3 last:mb-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[#C4B9AC] font-medium">{g.pattern}</span>
-                    <span className="text-xs text-[#8C8C8C]">→ {g.meaning}</span>
-                  </div>
-                  <p className="text-sm text-[#4A4A4A] bg-[#F5F5F0] px-3 py-2 rounded">
-                    {g.example}
-                    <span className="text-[#8C8C8C] ml-2">({g.exampleMeaning})</span>
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <p className="text-center text-sm text-[#8C8C8C] mb-4">👆 撳卡片睇答案 • 再撳聽發音</p>
-          
-          <div className="grid grid-cols-2 gap-3">
-            {currentUnitData.vocab.map((word, index) => (
-              <motion.div
-                key={index}
-                onClick={() => toggleCard(index)}
-                className="relative aspect-[4/3] cursor-pointer"
-                style={{ perspective: '1000px' }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <motion.div
-                  className="w-full h-full relative"
-                  animate={{ rotateY: flippedCards.has(index) ? 180 : 0 }}
-                  transition={{ duration: 0.4 }}
-                  style={{ transformStyle: 'preserve-3d' }}
-                >
-                  <div className="absolute inset-0 bg-white rounded-lg shadow-sm border border-[#E8E8E8] flex flex-col items-center justify-center p-3">
-                    {showCantonese && word.cantonese ? (
-                      <>
-                        <span className="text-xl text-[#4A4A4A]">{word.cantonese}</span>
-                        <span className="text-sm text-[#C4B9AC] mt-1">{word.hiragana}</span>
-                      </>
-                    ) : (
-                      <span className="text-2xl text-[#4A4A4A]">{word.hiragana}</span>
-                    )}
-                    <span className="text-xs text-[#C4B9AC] mt-2">點擊翻轉</span>
-                  </div>
-
-                  <div 
-                    className="absolute inset-0 bg-[#FAF8F5] rounded-lg shadow-sm border border-[#E0D5C7] flex flex-col items-center justify-center p-3"
-                    style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden' }}
-                  >
-                    <span className="text-lg text-[#4A4A4A] mb-1">{word.kanji}</span>
-                    <span className="text-base text-[#4A4A4A] font-medium text-center mb-1">{word.meaning}</span>
-                    {word.note && <span className="text-xs text-[#8C8C8C]">{word.note}</span>}
-                  </div>
-                </motion.div>
-              </motion.div>
-            ))}
-          </div>
-
-          {currentUnitData.dialogue && (
-            <div className="mt-6 bg-white rounded-xl p-4 border border-[#E8E8E8]">
-              <h3 className="text-sm font-medium text-[#4A4A4A] mb-3">💬 情境對話</h3>
-              {currentUnitData.dialogue.map((d, i) => (
-                <div key={i} className="mb-3 last:mb-0">
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-medium text-[#C4B9AC] w-12 shrink-0">{d.speaker}</span>
-                    <div className="flex-1">
-                      <p className="text-sm text-[#4A4A4A]">{d.japanese}</p>
-                      {showCantonese && d.cantonese && <p className="text-xs text-[#C4B9AC]">{d.cantonese}</p>}
-                      <p className="text-xs text-[#8C8C8C]">{d.meaning}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === 'quiz') {
-    const currentWord = currentUnitData.vocab[quizIndex];
-    const progress = ((quizIndex + 1) / currentUnitData.vocab.length) * 100;
-    
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] pb-20">
-        <div className="bg-white border-b border-[#E5E5E5] px-4 py-3 sticky top-0 z-50">
-          <div className="max-w-lg mx-auto flex justify-between items-center">
-            <span className="text-sm text-[#8C8C8C]">測驗模式</span>
-            <span className="text-sm text-[#4A4A4A]">{quizIndex + 1}/{currentUnitData.vocab.length}</span>
-          </div>
-        </div>
-
-        <div className="max-w-lg mx-auto px-4 py-6">
-          <div className="h-2 bg-[#E5E5E5] rounded-full mb-6 overflow-hidden">
-            <div className="h-full bg-[#C4B9AC] rounded-full transition-all" style={{ width: `${progress}%` }} />
-          </div>
-
-          <div className="bg-white rounded-xl p-8 shadow-sm border border-[#E8E8E8] text-center mb-6">
-            {showCantonese && currentWord.cantonese ? (
-              <>
-                <div className="text-3xl text-[#C4B9AC] mb-1">{currentWord.cantonese}</div>
-                <div className="text-lg text-[#8C8C8C] mb-2">{currentWord.hiragana}</div>
-              </>
-            ) : (
-              <div className="text-5xl text-[#4A4A4A] mb-2">{currentWord.hiragana}</div>
-            )}
-            <div className="text-sm text-[#C4B9AC]">這是什麼意思？</div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {generateOptions(currentWord).map((option, idx) => (
-              <motion.button
-                key={idx}
-                onClick={() => checkAnswer(option)}
-                disabled={answered}
-                className={`p-4 rounded-lg border-2 text-center text-sm transition-all ${
-                  answered
-                    ? option === currentWord.meaning
-                      ? 'bg-[#F0F5F0] border-[#A8B5A0] text-[#4A4A4A]'
-                      : option === selectedOption
-                        ? 'bg-[#F5F0F0] border-[#D4C5B9] text-[#4A4A4A] opacity-60'
-                        : 'bg-white border-[#E5E5E5] text-[#4A4A4A] opacity-40'
-                    : 'bg-white border-[#E5E5E5] text-[#4A4A4A] hover:border-[#C4B9AC]'
-                }`}
-                whileTap={!answered ? { scale: 0.95 } : {}}
-              >
-                {option}
-              </motion.button>
-            ))}
-          </div>
-
-          <AnimatePresence>
-            {answered && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-4 p-4 bg-white rounded-lg border-l-4 border-[#C4B9AC]"
-              >
-                <p className="text-sm text-[#4A4A4A]">
-                  {selectedOption === currentWord.meaning ? '✓ 正確！' : <>
-                    正確答案：<strong>{currentWord.kanji}</strong>（{currentWord.meaning}）
-                  </>}
-                </p>
-                {showCantonese && currentWord.cantonese && <p className="text-xs text-[#C4B9AC] mt-1">廣東話諧音：{currentWord.cantonese}</p>}
-                <button onClick={nextQuestion} className="w-full mt-3 py-3 bg-[#8C8C8C] text-white rounded-lg">
-                  {quizIndex === currentUnitData.vocab.length - 1 ? '看結果' : '下一題'}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === 'result') {
-    const totalQuestions = currentUnitData.vocab.length;
-    const percentage = Math.round((score / totalQuestions) * 100);
-    const reward = getQuizReward(percentage);
-    const isNewCompletion = !completedUnits.has(getUnitProgressKey(lessonData.id, currentUnitData.id));
-    
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center p-4">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl p-8 max-w-sm w-full text-center border border-[#E8E8E8]">
-          <div className="w-24 h-24 rounded-full border-4 border-[#C4B9AC] flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl text-[#4A4A4A]">{percentage}%</span>
-          </div>
-          
-          <h3 className="text-xl text-[#4A4A4A] mb-2">{reward.label}</h3>
-          
-          <div className="flex justify-center gap-2 mb-3">
-            {[1, 2, 3].map((star) => <span key={star} className={`text-2xl ${star <= reward.stars ? 'text-[#FFC107]' : 'text-[#E0E0E0]'}`}>⭐</span>)}
-          </div>
-          
-          <p className="text-sm text-[#8C8C8C] mb-2">{currentUnitData.title} • {score}/{totalQuestions} 正確</p>
-
-          {isNewCompletion && (
-            <div className="bg-[#FFF8E1] rounded-lg p-3 mb-4">
-              <p className="text-sm text-[#4A4A4A]">🎉 獲得 <span className="font-bold text-[#C4B9AC]">+{unitExp} EXP</span></p>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <button onClick={backToMenu} className="w-full py-3 bg-[#C4B9AC] text-white rounded-lg">返回單元列表</button>
-            {percentage < 80 && <button onClick={() => { setMode('study'); setFlippedCards(new Set()); }} className="w-full py-3 border border-[#C4B9AC] text-[#C4B9AC] rounded-lg">重新溫習</button>}
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  return null;
+interface UnitProgress {
+  unitId: number;
+  completed: boolean;
+  studyCompleted: boolean;
+  quizCompleted: boolean;
+  bestScore: number;
 }
 
 export default function Lesson2Page() {
+  const { user } = useAuth();
+  const [mode, setMode] = useState<Mode>('menu');
+  const [activeTab, setActiveTab] = useState<Tab>('units');
+  const [selectedUnit, setSelectedUnit] = useState<GameUnit | null>(null);
+  const [showCantonese, setShowCantonese] = useState(true);
+  
+  // 進度追踪
+  const [unitProgress, setUnitProgress] = useState<UnitProgress[]>([]);
+  const [savedSentences, setSavedSentences] = useState<SavedSentence[]>([]);
+  const [totalExp, setTotalExp] = useState(0);
+  
+  // 測驗結果
+  const [showResult, setShowResult] = useState(false);
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+
+  // 初始化本地存儲
+  useEffect(() => {
+    const savedProgress = localStorage.getItem('lesson2-progress');
+    if (savedProgress) {
+      setUnitProgress(JSON.parse(savedProgress));
+    } else {
+      // 初始化進度
+      setUnitProgress(lesson2Units.map(u => ({
+        unitId: u.id,
+        completed: false,
+        studyCompleted: false,
+        quizCompleted: false,
+        bestScore: 0,
+      })));
+    }
+
+    const saved = localStorage.getItem('lesson2-sentences');
+    if (saved) {
+      setSavedSentences(JSON.parse(saved).map((s: any) => ({
+        ...s,
+        createdAt: new Date(s.createdAt),
+      })));
+    }
+
+    const exp = localStorage.getItem('lesson2-exp');
+    if (exp) {
+      setTotalExp(parseInt(exp));
+    }
+  }, []);
+
+  // 保存進度
+  const saveProgress = useCallback((progress: UnitProgress[]) => {
+    setUnitProgress(progress);
+    localStorage.setItem('lesson2-progress', JSON.stringify(progress));
+  }, []);
+
+  // 保存句子
+  const saveSentence = useCallback((sentence: SavedSentence) => {
+    const updated = [...savedSentences, sentence];
+    setSavedSentences(updated);
+    localStorage.setItem('lesson2-sentences', JSON.stringify(updated));
+    
+    // 加EXP
+    const newExp = totalExp + 5;
+    setTotalExp(newExp);
+    localStorage.setItem('lesson2-exp', newExp.toString());
+  }, [savedSentences, totalExp]);
+
+  // 完成學習
+  const handleStudyComplete = useCallback(() => {
+    if (!selectedUnit) return;
+
+    const updated = unitProgress.map(p => 
+      p.unitId === selectedUnit.id 
+        ? { ...p, studyCompleted: true, completed: p.quizCompleted || p.completed }
+        : p
+    );
+    saveProgress(updated);
+
+    // 加EXP
+    const newExp = totalExp + 10;
+    setTotalExp(newExp);
+    localStorage.setItem('lesson2-exp', newExp.toString());
+
+    // 同步到Firebase
+    if (user?.uid) {
+      UserService.updateUser(user.uid, {
+        achievementExp: (user.achievementExp || 0) + 10,
+      }).catch(console.error);
+    }
+
+    setMode('menu');
+  }, [selectedUnit, unitProgress, totalExp, user, saveProgress]);
+
+  // 完成測驗
+  const handleQuizComplete = useCallback((result: QuizResult) => {
+    setQuizResult(result);
+    setShowResult(true);
+
+    if (!selectedUnit) return;
+
+    // 計算EXP
+    const expEarned = Math.floor(result.score / 10) + result.timeBonus;
+    const newExp = totalExp + expEarned;
+    setTotalExp(newExp);
+    localStorage.setItem('lesson2-exp', newExp.toString());
+
+    // 更新進度
+    const updated = unitProgress.map(p => {
+      if (p.unitId === selectedUnit.id) {
+        return {
+          ...p,
+          quizCompleted: true,
+          completed: true,
+          bestScore: Math.max(p.bestScore, result.score),
+        };
+      }
+      return p;
+    });
+    saveProgress(updated);
+
+    // 同步到Firebase
+    if (user?.uid) {
+      UserService.updateUser(user.uid, {
+        achievementExp: (user.achievementExp || 0) + expEarned,
+      }).catch(console.error);
+    }
+
+    // 觸發confetti
+    if (result.score >= 60) {
+      triggerConfetti();
+    }
+  }, [selectedUnit, unitProgress, totalExp, user, saveProgress]);
+
+  // 計算總進度
+  const completedCount = unitProgress.filter(p => p.completed).length;
+  const progressPercent = (completedCount / lesson2Units.length) * 100;
+  // 第2課所有單元都解鎖
+  const unlockedUnits = lesson2Units.length;
+
+  // 渲染主選單
+  const renderMenu = () => (
+    <div className="space-y-6">
+      {/* 頂部資訊 */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E5E5]">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[#4A4A4A] mb-1">第2課：這是什麼</h1>
+            <p className="text-[#8C8C8C]">指示詞、日常用品、電器、會話</p>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-[#A8B5A0]">🎯 {totalExp}</div>
+            <div className="text-sm text-[#8C8C8C]">EXP</div>
+          </div>
+        </div>
+        
+        {/* 進度條 */}
+        <div className="flex justify-between text-sm text-[#8C8C8C] mb-2">
+          <span>課程進度</span>
+          <span>{completedCount}/{lesson2Units.length} 單元</span>
+        </div>
+        <div className="w-full h-3 bg-[#E5E5E5] rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-[#A8B5A0] to-[#C4B9AC]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPercent}%` }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
+      </div>
+
+      {/* 標籤切換 */}
+      <div className="flex gap-2 border-b border-[#E5E5E5]">
+        {[
+          { id: 'units', label: '單元', icon: '📚' },
+          { id: 'progress', label: '進度', icon: '📊' },
+          { id: 'sentences', label: '句子簿', icon: '📝' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as Tab)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-[2px] ${
+              activeTab === tab.id
+                ? 'border-[#4A4A4A] text-[#4A4A4A]'
+                : 'border-transparent text-[#8C8C8C] hover:text-[#4A4A4A]'
+            }`}
+          >
+            <span>{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 內容區域 */}
+      <AnimatePresence mode="wait">
+        {activeTab === 'units' && (
+          <motion.div
+            key="units"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            {lesson2Units.map((unit, index) => {
+              const progress = unitProgress.find(p => p.unitId === unit.id);
+              const isCompleted = progress?.completed;
+
+              return (
+                <motion.div
+                  key={unit.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => setSelectedUnit(unit)}
+                  className={`bg-white rounded-xl p-5 border-2 transition-all cursor-pointer ${
+                    isCompleted
+                      ? 'border-[#A8B5A0] shadow-md'
+                      : 'border-[#C4B9AC] hover:shadow-lg'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="text-xs text-[#8C8C8C] mb-1">Unit {unit.id}</div>
+                      <h3 className="text-lg font-bold text-[#4A4A4A]">{unit.title}</h3>
+                      <p className="text-sm text-[#8C8C8C]">{unit.subtitle}</p>
+                    </div>
+                    <div className="text-2xl">
+                      {isCompleted ? '✅' : '📖'}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedUnit(unit);
+                        setMode('study');
+                      }}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        progress?.studyCompleted
+                          ? 'bg-[#A8B5A0]/20 text-[#A8B5A0]'
+                          : 'bg-[#F5F5F0] text-[#4A4A4A] hover:bg-[#E0D5C7]'
+                      }`}
+                    >
+                      {progress?.studyCompleted ? '✓ 已學習' : '學習'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedUnit(unit);
+                        setMode('quiz');
+                      }}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        progress?.quizCompleted
+                          ? 'bg-[#A8B5A0]/20 text-[#A8B5A0]'
+                          : 'bg-[#C4B9AC] text-white hover:bg-[#A09088]'
+                      }`}
+                    >
+                      {progress?.quizCompleted ? `最高分: ${progress.bestScore}` : '測驗'}
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        )}
+
+        {activeTab === 'progress' && (
+          <motion.div
+            key="progress"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-white rounded-xl p-6 border border-[#E5E5E5]"
+          >
+            <h3 className="text-lg font-bold text-[#4A4A4A] mb-4">學習統計</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-[#F5F5F0] rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-[#A8B5A0]">{completedCount}</div>
+                <div className="text-sm text-[#8C8C8C]">完成單元</div>
+              </div>
+              <div className="bg-[#F5F5F0] rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-[#C4B9AC]">{totalExp}</div>
+                <div className="text-sm text-[#8C8C8C]">總 EXP</div>
+              </div>
+              <div className="bg-[#F5F5F0] rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-[#8C8C8C]">{savedSentences.length}</div>
+                <div className="text-sm text-[#8C8C8C]">保存句子</div>
+              </div>
+              <div className="bg-[#F5F5F0] rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-[#8C8C8C]">
+                  {Math.max(...unitProgress.map(p => p.bestScore), 0)}
+                </div>
+                <div className="text-sm text-[#8C8C8C]">最高分</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'sentences' && (
+          <motion.div
+            key="sentences"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            {savedSentences.length === 0 ? (
+              <div className="bg-white rounded-xl p-8 border border-[#E5E5E5] text-center">
+                <div className="text-4xl mb-3">📝</div>
+                <h3 className="text-lg font-bold text-[#4A4A4A] mb-2">暫無保存的句子</h3>
+                <p className="text-[#8C8C8C] mb-4">在造句模式中創建並保存你的第一個句子</p>
+                <button
+                  onClick={() => setMode('builder')}
+                  className="px-6 py-2 bg-[#C4B9AC] text-white rounded-lg hover:bg-[#A09088] transition-colors"
+                >
+                  開始造句
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {savedSentences.map((sentence) => (
+                  <motion.div
+                    key={sentence.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="bg-white rounded-xl p-4 border border-[#E5E5E5]"
+                  >
+                    <div className="text-xl font-medium text-[#4A4A4A] mb-1">{sentence.fullText}</div>
+                    <div className="text-[#8C8C8C]">{sentence.meaning}</div>
+                    <div className="text-xs text-[#C4B9AC] mt-2">
+                      {new Date(sentence.createdAt).toLocaleDateString('zh-HK')}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 造句按 */}
+      <div className="fixed bottom-6 right-6">
+        <button
+          onClick={() => setMode('builder')}
+          className="w-14 h-14 bg-[#8B7EC8] text-white rounded-full shadow-lg hover:bg-[#7A6DB7] transition-all hover:scale-110 flex items-center justify-center"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+
+  // 渲染學習模式
+  const renderStudy = () => {
+    if (!selectedUnit) return null;
+    const vocab = getVocabByUnit(selectedUnit.id);
+
+    return (
+      <div className="space-y-6">
+        {/* 頂部導航 */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setMode('menu')}
+            className="flex items-center gap-2 text-[#8C8C8C] hover:text-[#4A4A4A] transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            返回
+          </button>
+          <h2 className="text-lg font-bold text-[#4A4A4A]">{selectedUnit.title}</h2>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-[#8C8C8C]">廣東話</span>
+            <button
+              onClick={() => setShowCantonese(!showCantonese)}
+              className={`w-10 h-6 rounded-full transition-colors relative ${
+                showCantonese ? 'bg-[#A8B5A0]' : 'bg-[#E5E5E5]'
+              }`}
+            >
+              <motion.div
+                className="w-4 h-4 bg-white rounded-full absolute top-1"
+                animate={{ left: showCantonese ? 'calc(100% - 20px)' : '4px' }}
+                transition={{ duration: 0.2 }}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* 閃卡學習 */}
+        <VocabFlashcard
+          vocab={vocab}
+          showCantonese={showCantonese}
+          onComplete={handleStudyComplete}
+        />
+      </div>
+    );
+  };
+
+  // 渲染測驗模式
+  const renderQuiz = () => {
+    if (!selectedUnit) return null;
+
+    if (showResult && quizResult) {
+      return (
+        <div className="max-w-md mx-auto text-center py-12">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="text-6xl mb-4"
+          >
+            {quizResult.score >= 60 ? '🎉' : '💪'}
+          </motion.div>
+          <h2 className="text-2xl font-bold text-[#4A4A4A] mb-2">
+            {quizResult.score >= 60 ? '測驗完成！' : '再試一次！'}
+          </h2>
+          <div className="bg-white rounded-xl p-6 border border-[#E5E5E5] mb-6">
+            <div className="text-5xl font-bold text-[#A8B5A0] mb-2">{quizResult.score}</div>
+            <div className="text-[#8C8C8C]">總分</div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-[#F5F5F0] rounded-lg p-4">
+              <div className="text-xl font-bold text-[#4A4A4A]">{quizResult.correctCount}/{quizResult.totalQuestions}</div>
+              <div className="text-sm text-[#8C8C8C]">答對題數</div>
+            </div>
+            <div className="bg-[#F5F5F0] rounded-lg p-4">
+              <div className="text-xl font-bold text-[#4A4A4A]">🔥 {quizResult.combo}</div>
+              <div className="text-sm text-[#8C8C8C]">最高連擊</div>
+            </div>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                setShowResult(false);
+                setQuizResult(null);
+                setMode('menu');
+              }}
+              className="px-6 py-2 bg-[#8C8C8C] text-white rounded-lg hover:bg-[#6B6B6B] transition-colors"
+            >
+              返回目錄
+            </button>
+            <button
+              onClick={() => {
+                setShowResult(false);
+                setQuizResult(null);
+              }}
+              className="px-6 py-2 bg-[#C4B9AC] text-white rounded-lg hover:bg-[#A09088] transition-colors"
+            >
+              再試一次
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        {/* 頂部導航 */}
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => setMode('menu')}
+            className="flex items-center gap-2 text-[#8C8C8C] hover:text-[#4A4A4A] transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            退出
+          </button>
+          <h2 className="text-lg font-bold text-[#4A4A4A]">{selectedUnit.title} - 測驗</h2>
+          <div className="w-10" />
+        </div>
+
+        {/* 測驗引擎 */}
+        <QuizEngine
+          unitId={selectedUnit.id}
+          onComplete={handleQuizComplete}
+          onExit={() => setMode('menu')}
+          lessonVocab={lesson2Vocab}
+          getVocabByUnit={getVocabByUnit}
+        />
+      </div>
+    );
+  };
+
+  // 渲染造句模式
+  const renderBuilder = () => (
+    <div className="space-y-6">
+      {/* 頂部導航 */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setMode('menu')}
+          className="flex items-center gap-2 text-[#8C8C8C] hover:text-[#4A4A4A] transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          返回
+        </button>
+        <h2 className="text-lg font-bold text-[#4A4A4A]">積木造句機</h2>
+        <div className="w-10" />
+      </div>
+
+      {/* 造句機 */}
+      <SentenceBuilder
+        maxUnitId={unlockedUnits}
+        savedSentences={savedSentences}
+        onSaveSentence={saveSentence}
+      />
+    </div>
+  );
+
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center"><div className="text-[#8C8C8C]">載入中...</div></div>}>
-      <LessonContent />
-    </Suspense>
+    <div className="min-h-screen bg-[#F5F5F0]">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <AnimatePresence mode="wait">
+          {mode === 'menu' && (
+            <motion.div
+              key="menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {renderMenu()}
+            </motion.div>
+          )}
+          {mode === 'study' && (
+            <motion.div
+              key="study"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+            >
+              {renderStudy()}
+            </motion.div>
+          )}
+          {mode === 'quiz' && (
+            <motion.div
+              key="quiz"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+            >
+              {renderQuiz()}
+            </motion.div>
+          )}
+          {mode === 'builder' && (
+            <motion.div
+              key="builder"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+            >
+              {renderBuilder()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
