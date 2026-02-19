@@ -1,11 +1,11 @@
 /**
- * 積木造句機組件
- * Sentence Builder Component
+ * 積木造句機組件 - 帶語法驗證
+ * Sentence Builder Component with Grammar Validation
  */
 
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { SentenceBlock, SentenceTemplate, sentenceBlocks, sentenceTemplates, getBlocksByUnit } from '../game-data';
@@ -24,6 +24,94 @@ export interface SavedSentence {
   createdAt: Date;
 }
 
+// 日語語法規則驗證
+type GrammarRule = {
+  id: string;
+  description: string;
+  validate: (blocks: SentenceBlock[]) => { isValid: boolean; error?: string };
+};
+
+// 定義語法規則
+const grammarRules: GrammarRule[] = [
+  {
+    id: 'particle-after-noun',
+    description: '助詞必須跟在名詞後面',
+    validate: (blocks) => {
+      for (let i = 0; i < blocks.length; i++) {
+        if (blocks[i].type === 'particle' && i > 0) {
+          const prev = blocks[i - 1];
+          if (prev.type === 'particle') {
+            return { isValid: false, error: '「' + blocks[i].text + '」不能接在助詞後面' };
+          }
+        }
+      }
+      return { isValid: true };
+    },
+  },
+  {
+    id: 'verb-at-end',
+    description: '動詞通常在句尾',
+    validate: (blocks) => {
+      const lastBlock = blocks[blocks.length - 1];
+      if (lastBlock && lastBlock.type !== 'verb' && blocks.some(b => b.type === 'verb')) {
+        // 這只是警告，不是錯誤
+        // return { isValid: false, error: '句子建議以動詞結尾' };
+      }
+      return { isValid: true };
+    },
+  },
+  {
+    id: 'topic-first',
+    description: '主題通常在句首',
+    validate: (blocks) => {
+      if (blocks.length > 1 && blocks[0].type === 'particle') {
+        return { isValid: false, error: '句子不應以助詞開頭' };
+      }
+      return { isValid: true };
+    },
+  },
+];
+
+// 定義積木類型的正確順序權重（越小越靠前）
+const typeOrderWeight: Record<string, number> = {
+  topic: 1,
+  time: 2,
+  person: 3,
+  transport: 4,
+  place: 5,
+  particle: 6,
+  verb: 7,
+};
+
+// 檢查積木順序是否合理的函數
+function checkBlockOrder(blocks: SentenceBlock[]): { isValid: boolean; warnings: string[] } {
+  const warnings: string[] = [];
+  
+  // 檢查語法規則
+  for (const rule of grammarRules) {
+    const result = rule.validate(blocks);
+    if (!result.isValid) {
+      return { isValid: false, warnings: [result.error || '語法錯誤'] };
+    }
+  }
+
+  // 檢查順序提示
+  for (let i = 1; i < blocks.length; i++) {
+    const current = blocks[i];
+    const prev = blocks[i - 1];
+    
+    const currentWeight = typeOrderWeight[current.type] || 99;
+    const prevWeight = typeOrderWeight[prev.type] || 99;
+    
+    // 如果當前類型應該在前面，給出警告
+    if (currentWeight < prevWeight) {
+      warnings.push(`${current.meaning}通常放在${prev.meaning}前面`);
+    }
+  }
+
+  return { isValid: true, warnings };
+}
+
 export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: SentenceBuilderProps) {
   const [availableBlocks, setAvailableBlocks] = useState<SentenceBlock[]>([]);
   const [selectedBlocks, setSelectedBlocks] = useState<SentenceBlock[]>([]);
@@ -31,13 +119,37 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [orderHints, setOrderHints] = useState<string[]>([]);
   const shareRef = useRef<HTMLDivElement>(null);
 
   // 初始化可用語塊（閘門系統）
   useEffect(() => {
     const blocks = getBlocksByUnit(maxUnitId);
-    setAvailableBlocks(blocks);
+    // 按類型順序排序語塊
+    const sortedBlocks = [...blocks].sort((a, b) => {
+      return (typeOrderWeight[a.type] || 99) - (typeOrderWeight[b.type] || 99);
+    });
+    setAvailableBlocks(sortedBlocks);
   }, [maxUnitId]);
+
+  // 計算推薦的下一個類型
+  const recommendedNextType = useMemo(() => {
+    if (selectedBlocks.length === 0) return ['topic', 'time'];
+    
+    const lastType = selectedBlocks[selectedBlocks.length - 1].type;
+    const typeFlow: Record<string, string[]> = {
+      topic: ['time', 'person', 'transport', 'place'],
+      time: ['person', 'transport', 'place', 'particle'],
+      person: ['transport', 'place', 'particle'],
+      transport: ['place', 'particle'],
+      place: ['particle', 'verb'],
+      particle: ['verb', 'place'],
+      verb: [],
+    };
+    
+    return typeFlow[lastType] || [];
+  }, [selectedBlocks]);
 
   const categories = [
     { id: 'all', label: '全部', color: 'bg-[#8C8C8C]' },
@@ -55,19 +167,61 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
     : availableBlocks.filter(b => b.type === activeCategory);
 
   const handleBlockClick = useCallback((block: SentenceBlock) => {
-    setSelectedBlocks(prev => [...prev, block]);
+    // 檢查是否可以添加這個積木
+    const newBlocks = [...selectedBlocks, block];
+    const validation = checkBlockOrder(newBlocks);
+    
+    if (!validation.isValid) {
+      // 顯示錯誤但不阻止添加，讓用戶自己調整
+      setValidationError(validation.warnings[0]);
+      setTimeout(() => setValidationError(null), 3000);
+    } else if (validation.warnings.length > 0) {
+      setOrderHints(validation.warnings);
+      setTimeout(() => setOrderHints([]), 5000);
+    }
+
+    setSelectedBlocks(newBlocks);
     setAvailableBlocks(prev => prev.filter(b => b.id !== block.id));
-  }, []);
+  }, [selectedBlocks]);
 
   const handleRemoveBlock = useCallback((index: number) => {
     const block = selectedBlocks[index];
     setSelectedBlocks(prev => prev.filter((_, i) => i !== index));
-    setAvailableBlocks(prev => [...prev, block]);
+    
+    // 將移除的積木放回正確位置（保持排序）
+    setAvailableBlocks(prev => {
+      const newBlocks = [...prev, block];
+      return newBlocks.sort((a, b) => {
+        return (typeOrderWeight[a.type] || 99) - (typeOrderWeight[b.type] || 99);
+      });
+    });
+    
+    setValidationError(null);
   }, [selectedBlocks]);
 
   const handleClear = useCallback(() => {
-    setAvailableBlocks(prev => [...prev, ...selectedBlocks]);
+    setAvailableBlocks(prev => {
+      const newBlocks = [...prev, ...selectedBlocks];
+      return newBlocks.sort((a, b) => {
+        return (typeOrderWeight[a.type] || 99) - (typeOrderWeight[b.type] || 99);
+      });
+    });
     setSelectedBlocks([]);
+    setValidationError(null);
+    setOrderHints([]);
+  }, [selectedBlocks]);
+
+  // 智能排序：根據日語語法自動排列當前選中的積木
+  const handleAutoSort = useCallback(() => {
+    if (selectedBlocks.length < 2) return;
+    
+    const sorted = [...selectedBlocks].sort((a, b) => {
+      const weightA = typeOrderWeight[a.type] || 99;
+      const weightB = typeOrderWeight[b.type] || 99;
+      return weightA - weightB;
+    });
+    
+    setSelectedBlocks(sorted);
   }, [selectedBlocks]);
 
   const playSentence = useCallback(() => {
@@ -88,13 +242,19 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
   }, [selectedBlocks]);
 
   const generateMeaning = useCallback((blocks: SentenceBlock[]): string => {
-    // 簡易意思生成
     const meanings = blocks.map(b => b.meaning);
     return meanings.join('');
   }, []);
 
   const handleSave = useCallback(() => {
     if (selectedBlocks.length === 0) return;
+
+    // 檢查語法
+    const validation = checkBlockOrder(selectedBlocks);
+    if (!validation.isValid) {
+      setValidationError('句子有語法錯誤，請調整後再保存');
+      return;
+    }
 
     const sentence: SavedSentence = {
       id: Date.now().toString(),
@@ -107,9 +267,8 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
     onSaveSentence(sentence);
     
     // 清空
-    setAvailableBlocks(prev => [...prev, ...selectedBlocks]);
-    setSelectedBlocks([]);
-  }, [selectedBlocks, generateMeaning, onSaveSentence]);
+    handleClear();
+  }, [selectedBlocks, generateMeaning, onSaveSentence, handleClear]);
 
   const generateShareImage = useCallback(async () => {
     if (!shareRef.current) return;
@@ -132,15 +291,15 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
     }
   }, []);
 
-  const getBlockColor = (type: string) => {
+  const getBlockColor = (type: string, isRecommended: boolean = false) => {
     const colors: Record<string, string> = {
-      time: 'bg-[#E0DDD5] border-[#C4B9AC]',
-      person: 'bg-[#D5E0D7] border-[#A8B5A0]',
-      transport: 'bg-[#D5D7E0] border-[#A8A8B5]',
-      place: 'bg-[#E0D5D5] border-[#C4A8A8]',
-      verb: 'bg-[#D5D5E0] border-[#A8A8B5]',
-      particle: 'bg-[#E0D5C7] border-[#C4B9AC]',
-      topic: 'bg-[#D5E0E0] border-[#A8B5B5]',
+      time: isRecommended ? 'bg-[#E0DDD5] border-[#A8B5A0] ring-2 ring-[#A8B5A0]' : 'bg-[#E0DDD5] border-[#C4B9AC]',
+      person: isRecommended ? 'bg-[#D5E0D7] border-[#A8B5A0] ring-2 ring-[#A8B5A0]' : 'bg-[#D5E0D7] border-[#A8B5A0]',
+      transport: isRecommended ? 'bg-[#D5D7E0] border-[#A8B5A0] ring-2 ring-[#A8B5A0]' : 'bg-[#D5D7E0] border-[#A8A8B5]',
+      place: isRecommended ? 'bg-[#E0D5D5] border-[#A8B5A0] ring-2 ring-[#A8B5A0]' : 'bg-[#E0D5D5] border-[#C4A8A8]',
+      verb: isRecommended ? 'bg-[#D5D5E0] border-[#A8B5A0] ring-2 ring-[#A8B5A0]' : 'bg-[#D5D5E0] border-[#A8A8B5]',
+      particle: isRecommended ? 'bg-[#E0D5C7] border-[#A8B5A0] ring-2 ring-[#A8B5A0]' : 'bg-[#E0D5C7] border-[#C4B9AC]',
+      topic: isRecommended ? 'bg-[#D5E0E0] border-[#A8B5A0] ring-2 ring-[#A8B5A0]' : 'bg-[#D5E0E0] border-[#A8B5B5]',
     };
     return colors[type] || 'bg-white border-[#E5E5E5]';
   };
@@ -150,6 +309,38 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4">
+      {/* 語法錯誤提示 */}
+      <AnimatePresence>
+        {validationError && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-4 p-3 bg-[#B8A8A0]/20 border border-[#B8A8A0] rounded-lg text-[#4A4A4A] text-sm flex items-center gap-2"
+          >
+            <span>⚠️</span>
+            {validationError}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 順序提示 */}
+      <AnimatePresence>
+        {orderHints.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-4 p-3 bg-[#E0D5C7] border border-[#C4B9AC] rounded-lg text-[#4A4A4A] text-sm"
+          >
+            <div className="font-medium mb-1">💡 語法建議：</div>
+            {orderHints.map((hint, i) => (
+              <div key={i} className="text-sm text-[#8C8C8C]">• {hint}</div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 分類標籤 */}
       <div className="flex flex-wrap gap-2 mb-4">
         {categories.map(cat => (
@@ -167,6 +358,16 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
         ))}
       </div>
 
+      {/* 推薦提示 */}
+      {selectedBlocks.length > 0 && recommendedNextType.length > 0 && (
+        <div className="mb-3 text-sm text-[#8C8C8C]">
+          💡 推薦下一個：{recommendedNextType.map(t => {
+            const cat = categories.find(c => c.id === t);
+            return cat?.label;
+          }).filter(Boolean).join(' 或 ')}
+        </div>
+      )}
+
       {/* 語塊選擇區 */}
       <div className="bg-[#F5F5F0] rounded-xl p-4 mb-4 min-h-[120px]">
         <div className="text-sm text-[#8C8C8C] mb-2">
@@ -174,31 +375,50 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence }: S
         </div>
         <div className="flex flex-wrap gap-2">
           <AnimatePresence mode="popLayout">
-            {filteredBlocks.map((block) => (
-              <motion.button
-                key={block.id}
-                layout
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                onClick={() => handleBlockClick(block)}
-                whileTap={{ scale: 0.9 }}
-                className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all
-                  ${getBlockColor(block.type)}
-                  hover:shadow-md
-                `}
-              >
-                <span className="text-[#4A4A4A]">{block.text}</span>
-                <span className="text-xs text-[#8C8C8C] ml-1">{block.meaning}</span>
-              </motion.button>
-            ))}
+            {filteredBlocks.map((block) => {
+              const isRecommended = recommendedNextType.includes(block.type);
+              return (
+                <motion.button
+                  key={block.id}
+                  layout
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  onClick={() => handleBlockClick(block)}
+                  whileTap={{ scale: 0.9 }}
+                  className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all
+                    ${getBlockColor(block.type, isRecommended)}
+                    hover:shadow-md
+                    ${isRecommended ? 'animate-pulse-glow' : ''}
+                  `}
+                >
+                  <span className="text-[#4A4A4A]">{block.text}</span>
+                  <span className="text-xs text-[#8C8C8C] ml-1">{block.meaning}</span>
+                  {isRecommended && <span className="ml-1 text-[#A8B5A0]">✨</span>}
+                </motion.button>
+              );
+            })}
           </AnimatePresence>
         </div>
       </div>
 
       {/* 句子組合區 */}
       <div className="bg-white border-2 border-[#C4B9AC] rounded-xl p-4 mb-4 min-h-[100px]">
-        <div className="text-sm text-[#8C8C8C] mb-2">你的句子</div>
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-sm text-[#8C8C8C]">你的句子</div>
+          {selectedBlocks.length > 1 && (
+            <button
+              onClick={handleAutoSort}
+              className="text-xs text-[#A8B5A0] hover:text-[#8FA088] flex items-center gap-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
+              自動排序
+            </button>
+          )}
+        </div>
+        
         {selectedBlocks.length === 0 ? (
           <div className="text-center text-[#8C8C8C] py-4">點擊上方語塊開始造句</div>
         ) : (

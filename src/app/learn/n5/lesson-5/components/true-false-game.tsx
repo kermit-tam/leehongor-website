@@ -14,8 +14,10 @@ interface TrueFalseGameProps {
   onComplete: (correct: boolean, timeLeft: number) => void;
 }
 
+const TIME_LIMIT = 10; // 10秒限制
+
 export function TrueFalseGame({ question, onComplete }: TrueFalseGameProps) {
-  const [timeLeft, setTimeLeft] = useState(5);
+  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
   const [selectedAnswer, setSelectedAnswer] = useState<boolean | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
 
@@ -50,7 +52,7 @@ export function TrueFalseGame({ question, onComplete }: TrueFalseGameProps) {
       {/* 計時器 */}
       <div className="flex justify-between items-center mb-6">
         <div className="text-lg font-medium text-[#4A4A4A]">
-          真假快打 <span className="text-sm text-[#8C8C8C]">限時5秒！</span>
+          真假快打 <span className="text-sm text-[#8C8C8C]">限時{TIME_LIMIT}秒！</span>
         </div>
         <div className={`text-2xl font-bold ${timeLeft <= 2 ? 'text-red-500 animate-pulse' : 'text-[#4A4A4A]'}`}>
           {timeLeft}s
@@ -62,7 +64,7 @@ export function TrueFalseGame({ question, onComplete }: TrueFalseGameProps) {
         <motion.div
           className="h-full bg-gradient-to-r from-[#A8B5A0] to-[#C4B9AC]"
           initial={{ width: '100%' }}
-          animate={{ width: `${(timeLeft / 5) * 100}%` }}
+          animate={{ width: `${(timeLeft / TIME_LIMIT) * 100}%` }}
           transition={{ duration: 0.5 }}
         />
       </div>

@@ -27,7 +27,7 @@ const QUESTION_WEIGHTS: { type: QuestionType; weight: number; minPerQuiz: number
 
 // ==================== 題目生成器 ====================
 
-export function generateQuestionsForUnit(unitId: number, count: number = 7): GameQuestion[] {
+export function generateQuestionsForUnit(unitId: number, count: number = 10): GameQuestion[] {
   const vocab = getVocabByUnit(unitId);
   const allVocab = lesson5Vocab;
   const questions: GameQuestion[] = [];
@@ -118,7 +118,7 @@ function generateSpeedMatch(vocab: GameVocab[], unitId: number, index: number): 
       meaning: v.meaning,
       cantonese: v.cantonese,
     })),
-    timeLimit: 10,
+    timeLimit: 15, // 增加到15秒
   };
 }
 
