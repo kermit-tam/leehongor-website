@@ -236,17 +236,40 @@ export default function LearnPage() {
             
             setUserData(fetchedUser);
             
-            // 計算學習進度（基於完成的課程）
-            const completedLessons = fetchedUser.completedLessons || [];
-            const totalLessons = 15;
+            // 讀取本地微單元進度（第1-4課）
+            const lesson1Progress = JSON.parse(localStorage.getItem('lesson1-progress') || '[]');
+            const lesson2Progress = JSON.parse(localStorage.getItem('lesson2-progress') || '[]');
+            const lesson3Progress = JSON.parse(localStorage.getItem('lesson3-progress') || '[]');
+            const lesson4Progress = JSON.parse(localStorage.getItem('lesson4-progress') || '[]');
+            
+            // 計算完成的微單元數
+            const completedUnitCount = [
+              ...lesson1Progress.filter((p: any) => p.completed),
+              ...lesson2Progress.filter((p: any) => p.completed),
+              ...lesson3Progress.filter((p: any) => p.completed),
+              ...lesson4Progress.filter((p: any) => p.completed),
+            ].length;
+            
+            // 總微單元數（第1-4課）
+            const totalUnitCount = 26; // 第1課4個 + 第2課5個 + 第3課7個 + 第4課10個
+            
+            // 計算學習時數（估算：每個單元約15分鐘）
+            const estimatedStudyTime = completedUnitCount * 15;
+            
+            // 更新學習進度顯示
+            setLearningProgress(prev => ({
+              ...prev,
+              totalTimeSpent: estimatedStudyTime,
+            }));
             
             setLearningStats({
-              rate: Math.round((completedLessons.length / totalLessons) * 100),
-              completedCount: completedLessons.length,
-              totalCount: totalLessons,
-              status: completedLessons.length >= 10 ? 'dedicated' : 
-                      completedLessons.length >= 5 ? 'active' : 
-                      completedLessons.length >= 1 ? 'beginner' : 'beginner',
+              rate: Math.round((completedUnitCount / totalUnitCount) * 100),
+              completedCount: completedUnitCount,
+              totalCount: totalUnitCount,
+              status: completedUnitCount >= 20 ? 'master' : 
+                      completedUnitCount >= 13 ? 'dedicated' : 
+                      completedUnitCount >= 6 ? 'active' : 
+                      completedUnitCount >= 1 ? 'beginner' : 'beginner',
             });
             
             // 計算熟練度（基於測驗記錄或用戶能力分數）
