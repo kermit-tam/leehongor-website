@@ -11,6 +11,7 @@ import { lesson2Reading } from '@/app/learn/n5/lesson-2/reading-data';
 import { lesson3Reading } from '@/app/learn/n5/lesson-3/reading-data';
 import { lesson4Reading } from '@/app/learn/n5/lesson-4/reading-data';
 import { lesson5Reading } from '@/app/learn/n5/lesson-5/reading-data';
+import { getListeningDialogues, ListeningDialogue } from './listening-dialogues';
 
 // ==================== 考試類型 ====================
 
@@ -304,11 +305,59 @@ function generateLanguageQuestions(lessons: N5Lesson[], upToLesson: number): Exa
 
 // ==================== 聆聽題目生成器 ====================
 
+// 聆聽題目額外數據（用於組件顯示對話）
+export interface ListeningQuestionData {
+  dialogue: Array<{ speaker: string; text: string }>;
+}
+
+// 存儲聆聽題目的額外數據
+export const listeningQuestionData: Map<string, ListeningQuestionData> = new Map();
+
 function generateListeningQuestions(lessons: N5Lesson[], upToLesson: number): ExamQuestion[] {
+  const questions: ExamQuestion[] = [];
+  
+  // 獲取合適的聆聽對話
+  const availableDialogues = getListeningDialogues(upToLesson);
+  
+  if (availableDialogues.length === 0) {
+    // 如果沒有對話，回退到舊的詞彙題（但隱藏日文）
+    return generateFallbackListeningQuestions(lessons, upToLesson);
+  }
+  
+  // 隨機選擇最多8題
+  const shuffled = [...availableDialogues]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 8);
+  
+  shuffled.forEach((d, index) => {
+    const questionId = `listen-dialogue-${d.id}`;
+    
+    // 存儲對話數據供組件使用
+    listeningQuestionData.set(questionId, {
+      dialogue: d.dialogue,
+    });
+    
+    questions.push({
+      id: questionId,
+      section: 'listening',
+      type: 'multiple-choice',
+      question: d.question,
+      options: d.options,
+      correctAnswer: d.correctIndex,
+      explanation: d.explanation,
+      sourceLesson: d.lessonRange[0],
+      difficulty: d.difficulty,
+    });
+  });
+  
+  return questions;
+}
+
+// 備用：舊的詞彙題（但唔顯示日文）
+function generateFallbackListeningQuestions(lessons: N5Lesson[], upToLesson: number): ExamQuestion[] {
   const questions: ExamQuestion[] = [];
   const targetLessons = lessons.filter(l => l.lessonNum <= upToLesson);
   
-  // 收集所有詞彙
   const allVocab: Array<{ vocab: N5Vocab; lessonNum: number; unitId: number }> = [];
   targetLessons.forEach(lesson => {
     lesson.units.forEach(unit => {
@@ -320,7 +369,6 @@ function generateListeningQuestions(lessons: N5Lesson[], upToLesson: number): Ex
   
   if (allVocab.length < 4) return questions;
   
-  // 生成聆聽理解題（顯示日文詞彙，選中文意思）
   const usedIndices = new Set<number>();
   let questionCount = 0;
   
@@ -332,7 +380,6 @@ function generateListeningQuestions(lessons: N5Lesson[], upToLesson: number): Ex
     const target = allVocab[randomIndex];
     const targetVocab = target.vocab;
     
-    // 選3個干擾項
     const otherVocabs = allVocab
       .filter((_, i) => i !== randomIndex)
       .sort(() => Math.random() - 0.5)
@@ -342,11 +389,18 @@ function generateListeningQuestions(lessons: N5Lesson[], upToLesson: number): Ex
     const options = [...otherVocabs, targetVocab.meaning].sort(() => Math.random() - 0.5);
     const correctIndex = options.indexOf(targetVocab.meaning);
     
+    const questionId = `listen-fallback-${target.lessonNum}-${target.unitId}-${questionCount}`;
+    
+    // 存儲詞彙供組件播放
+    listeningQuestionData.set(questionId, {
+      dialogue: [{ speaker: '音声', text: targetVocab.hiragana }],
+    });
+    
     questions.push({
-      id: `listen-${target.lessonNum}-${target.unitId}-${questionCount}`,
+      id: questionId,
       section: 'listening',
       type: 'multiple-choice',
-      question: `請聽以下詞彙，選擇正確的意思：\n🔊 「${targetVocab.hiragana}」${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''}`,
+      question: '請聽以下詞彙，選擇正確的意思：',
       options,
       correctAnswer: correctIndex,
       explanation: `「${targetVocab.hiragana}${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''}」的意思是「${targetVocab.meaning}」。`,

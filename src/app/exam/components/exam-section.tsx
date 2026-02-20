@@ -7,8 +7,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExamSectionData, ExamQuestion } from '../exam-data';
+import { ExamSectionData, ExamQuestion, listeningQuestionData } from '../exam-data';
 import { Button } from '@/components/ui/button';
+import { AudioPlayer, DialoguePlayer } from './audio-player';
 
 interface ExamSectionProps {
   section: ExamSectionData;
@@ -184,6 +185,31 @@ export function ExamSectionComponent({
             <h3 className="text-lg text-gray-900 whitespace-pre-line leading-relaxed">
               {currentQuestion?.question}
             </h3>
+            
+            {/* 聆聽音頻播放器 */}
+            {section.id === 'listening' && currentQuestion && (
+              <div className="mt-6">
+                {(() => {
+                  const data = listeningQuestionData.get(currentQuestion.id);
+                  if (!data) return null;
+                  
+                  // 如果有多句對話，用 DialoguePlayer
+                  if (data.dialogue.length > 1) {
+                    return <DialoguePlayer lines={data.dialogue} />;
+                  }
+                  
+                  // 單句用 AudioPlayer
+                  return (
+                    <div className="bg-amber-50 rounded-xl p-4 text-center">
+                      <AudioPlayer 
+                        text={data.dialogue[0]?.text || ''} 
+                        autoPlay={false}
+                      />
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
           
           {/* 選項 */}
