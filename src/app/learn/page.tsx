@@ -14,6 +14,7 @@ import { LevelCard, StatCard } from '@/components/ui/card';
 import { AbilityRadarChart } from '@/components/charts/radar-chart';
 import { lesson1Data, calculateLevel, scoringConfig, getUnitProgressKey, calculateLessonProgress, n5LessonsList } from '@/data/n5-lessons';
 import { loadLearningProgress, loadProficiencyData, calculateLearningRate, calculateProficiency } from '@/data/progress-system';
+import { getTotalStudyTime } from '@/lib/study-timer';
 import { DualProgressDisplay } from '@/components/progress/dual-progress';
 import type { User } from '@/types';
 
@@ -72,7 +73,7 @@ function UnitCard({
 
       {/* 單元編號 */}
       <div className="text-xs text-[#C4B9AC] mb-1 tracking-wider">
-        單元 {unit.id}/4
+        微單元 {unit.id}/4
       </div>
 
       {/* 標題 */}
@@ -153,7 +154,7 @@ function Lesson1Card({
             </div>
           </div>
           <span className="text-sm text-[#8C8C8C] whitespace-nowrap">
-            {completedCount}/4 單元
+            {completedCount}/4 微單元
           </span>
         </div>
       </div>
@@ -253,13 +254,13 @@ export default function LearnPage() {
             // 總微單元數（第1-4課）
             const totalUnitCount = 26; // 第1課4個 + 第2課5個 + 第3課7個 + 第4課10個
             
-            // 計算學習時數（估算：每個單元約15分鐘）
-            const estimatedStudyTime = completedUnitCount * 15;
+            // 獲取真正學習時數（從計時器）
+            const actualStudyTime = getTotalStudyTime();
             
             // 更新學習進度顯示
             setLearningProgress(prev => ({
               ...prev,
-              totalTimeSpent: estimatedStudyTime,
+              totalTimeSpent: actualStudyTime,
             }));
             
             setLearningStats({
@@ -272,21 +273,43 @@ export default function LearnPage() {
                       completedUnitCount >= 1 ? 'beginner' : 'beginner',
             });
             
-            // 計算熟練度（基於測驗記錄或用戶能力分數）
+            // 計算熟練度（基於測驗記錄、微單元分數或用戶能力分數）
             const scores = fetchedUser.abilityScores;
             const hasAbilityScores = scores && Object.values(scores).some(s => s && s.best > 0);
             
+            // 讀取微單元測驗分數
+            const unitScores = JSON.parse(localStorage.getItem('n5-unit-scores') || '{}');
+            const unitScoreValues = Object.values(unitScores) as number[];
+            const hasUnitScores = unitScoreValues.length > 0;
+            
+            // 合併所有分數來源計算平均分
+            let totalScoreSum = 0;
+            let totalScoreCount = 0;
+            
+            // 1. 正式測驗分數
             if (practiceRecords.length > 0) {
-              // 有測驗記錄，使用測驗平均分
-              const avgScore = Math.round(
-                practiceRecords.reduce((sum, r) => sum + (r.scores?.overall || 0), 0) / practiceRecords.length
-              );
-              setQuizAvg(avgScore);
+              const practiceAvg = practiceRecords.reduce((sum, r) => sum + (r.scores?.overall || 0), 0) / practiceRecords.length;
+              totalScoreSum += practiceAvg * practiceRecords.length;
+              totalScoreCount += practiceRecords.length;
+            }
+            
+            // 2. 微單元測驗分數
+            if (hasUnitScores) {
+              const unitAvg = unitScoreValues.reduce((a, b) => a + b, 0) / unitScoreValues.length;
+              totalScoreSum += unitAvg * unitScoreValues.length;
+              totalScoreCount += unitScoreValues.length;
+            }
+            
+            const finalAvgScore = totalScoreCount > 0 ? Math.round(totalScoreSum / totalScoreCount) : 0;
+            setQuizAvg(finalAvgScore);
+            
+            if (practiceRecords.length > 0 || hasUnitScores) {
+              // 有測驗記錄或微單元分數
               
-              // 使用 abilityScores 或測驗分數計算各項能力
+              // 使用 abilityScores 或平均分計算各項能力
               const overall = hasAbilityScores 
                 ? Math.round(Object.values(scores).reduce((sum, s) => sum + (s?.best || 0), 0) / 6)
-                : avgScore;
+                : finalAvgScore;
               
               let level = 'N5-Beginner';
               if (overall >= 95) level = 'N5-Master';
@@ -469,7 +492,7 @@ export default function LearnPage() {
             {lesson.units.length > 0 ? (
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-xs text-[#C4B9AC]">
-                  {lesson.units.length} 單元 • {lesson.totalVocab} 詞彙
+                  {lesson.units.length} 微單元 • {lesson.totalVocab} 詞彙
                 </span>
                 <span className="text-sm text-[#C4B9AC]">→</span>
               </div>
@@ -491,7 +514,7 @@ export default function LearnPage() {
             <h3 className="text-sm font-medium text-[#4A4A4A] mb-3">經驗值獲取</h3>
             <ul className="space-y-2 text-sm text-[#8C8C8C]">
               <li className="flex justify-between">
-                <span>完成單元學習</span>
+                <span>完成微單元學習</span>
                 <span className="text-[#C4B9AC]">+{scoringConfig.participation.unitComplete.base} EXP</span>
               </li>
               <li className="flex justify-between">
@@ -503,7 +526,7 @@ export default function LearnPage() {
                 <span className="text-[#C4B9AC]">+{scoringConfig.assessment.quiz.excellent.exp} EXP</span>
               </li>
               <li className="flex justify-between">
-                <span>完成整課 (4單元)</span>
+                <span>完成整課 (4微單元)</span>
                 <span className="text-[#C4B9AC]">+{scoringConfig.assessment.completeAllUnits} EXP</span>
               </li>
             </ul>
@@ -586,9 +609,9 @@ export default function LearnPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
               icon="📖"
-              label="已完成單元"
+              label="已完成微單元"
               value={completedUnits.size}
-              subtext="共4單元"
+              subtext="共26微單元"
               color="earth"
             />
             <StatCard

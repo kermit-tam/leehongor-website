@@ -64,11 +64,11 @@ export function DualProgressDisplay({
         <div className="grid grid-cols-4 gap-4">
           <div className="text-center p-3 bg-[#FAFAFA] rounded-lg">
             <p className="text-2xl font-bold text-[#4A4A4A]">{completedUnits}</p>
-            <p className="text-xs text-[#8C8C8C]">已完成單元</p>
+            <p className="text-xs text-[#8C8C8C]">已完成微單元</p>
           </div>
           <div className="text-center p-3 bg-[#FAFAFA] rounded-lg">
             <p className="text-2xl font-bold text-[#4A4A4A]">{totalUnits}</p>
-            <p className="text-xs text-[#8C8C8C]">總單元數</p>
+            <p className="text-xs text-[#8C8C8C]">總微單元數</p>
           </div>
           <div className="text-center p-3 bg-[#FAFAFA] rounded-lg">
             <p className="text-2xl font-bold text-[#4A4A4A]">{Math.round(studyTime / 60)}</p>
@@ -148,7 +148,7 @@ export function DualProgressDisplay({
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="font-medium text-[#1976D2]">📚 學習率</p>
-            <p className="text-[#8C8C8C]">反映學習參與度，完成單元即可提升。鼓勵持續學習！</p>
+            <p className="text-[#8C8C8C]">反映學習參與度，完成微單元即可提升。鼓勵持續學習！</p>
           </div>
           <div>
             <p className="font-medium text-[#7B1FA2]">🎯 熟練度</p>

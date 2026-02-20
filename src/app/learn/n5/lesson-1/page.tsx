@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { startStudyTimer, pauseStudyTimer, updateActiveTime } from '@/lib/study-timer';
 import { UserService } from '@/lib/firestore';
 import { updateN5AbilityScores } from '@/lib/n5-ability-service';
 import { 
@@ -55,6 +56,29 @@ export default function Lesson1Page() {
   
   // 能力分數更新提示
   const [updatedAbilities, setUpdatedAbilities] = useState<string[]>([]);
+
+  // 開始學習計時
+  useEffect(() => {
+    startStudyTimer('lesson-1');
+    
+    // 用戶活躍時更新時間
+    const handleActivity = () => updateActiveTime();
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    
+    // 頁面離開時暫停計時
+    const handleBeforeUnload = () => pauseStudyTimer();
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      pauseStudyTimer();
+    };
+  }, []);
 
   // 初始化本地存儲
   useEffect(() => {
