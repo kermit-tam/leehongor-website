@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { UserService } from '@/lib/firestore';
+import { updateN5AbilityScores } from '@/lib/n5-ability-service';
 import { 
   lesson5Vocab, 
   lesson5Units, 
@@ -49,6 +50,7 @@ export default function Lesson5Page() {
   // 測驗結果
   const [showResult, setShowResult] = useState(false);
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+  const [updatedAbilities, setUpdatedAbilities] = useState<string[]>([]);
 
   // PWA 支持
   const { isOffline, isInstallable, install, isInstalled } = usePWA();
@@ -159,6 +161,17 @@ export default function Lesson5Page() {
       UserService.updateUser(user.uid, {
         achievementExp: (user.achievementExp || 0) + expEarned,
       }).catch(console.error);
+      
+      // 更新能力分數（六角雷達）
+      if (selectedUnit) {
+        updateN5AbilityScores(user.uid, 5, selectedUnit.id, result.score)
+          .then(({ updatedDimensions }) => {
+            if (updatedDimensions.length > 0) {
+              setUpdatedAbilities(updatedDimensions);
+            }
+          })
+          .catch(console.error);
+      }
     }
 
     // 觸發confetti
@@ -516,11 +529,41 @@ export default function Lesson5Page() {
               <div className="text-sm text-[#8C8C8C]">最高連擊</div>
             </div>
           </div>
+          {/* 能力分數更新提示 */}
+          {updatedAbilities.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 mb-6 border border-indigo-100"
+            >
+              <div className="text-lg mb-2">🎉 能力分數更新！</div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {updatedAbilities.map((ability) => (
+                  <span
+                    key={ability}
+                    className="px-3 py-1 bg-white rounded-full text-sm text-indigo-700 font-medium shadow-sm"
+                  >
+                    {ability === 'pronunciation' && '發音'}
+                    {ability === 'kanji' && '漢字'}
+                    {ability === 'vocabulary' && '詞彙'}
+                    {ability === 'grammar' && '文法'}
+                    {ability === 'listening' && '聽力'}
+                    {ability === 'application' && '應用'}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-indigo-500 mt-2">
+                前往個人中心查看六角雷達圖
+              </p>
+            </motion.div>
+          )}
+          
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => {
                 setShowResult(false);
                 setQuizResult(null);
+                setUpdatedAbilities([]);
                 setMode('menu');
               }}
               className="px-6 py-2 bg-[#8C8C8C] text-white rounded-lg hover:bg-[#6B6B6B] transition-colors"
@@ -531,6 +574,7 @@ export default function Lesson5Page() {
               onClick={() => {
                 setShowResult(false);
                 setQuizResult(null);
+                setUpdatedAbilities([]);
               }}
               className="px-6 py-2 bg-[#C4B9AC] text-white rounded-lg hover:bg-[#A09088] transition-colors"
             >

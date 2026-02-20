@@ -10,6 +10,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from './button';
+import { StreakDisplay } from '@/components/checkin';
 
 export function Navbar() {
   const { user, isAdmin, logout } = useAuth();
@@ -18,6 +19,7 @@ export function Navbar() {
   const navItems: { label: string; href: string; icon: string; highlight?: boolean }[] = [
     { label: '輕鬆學', href: '/posts', icon: '📚' },
     { label: '系統學', href: '/learn', icon: '🎯', highlight: true },
+    { label: '考試模式', href: '/exam', icon: '📝' },
     { label: '排行榜', href: '/leaderboard', icon: '🏆' },
   ];
 
@@ -59,6 +61,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
+                <StreakDisplay size="sm" />
                 <Link href="/profile" className="flex items-center space-x-3 hover:bg-[#FAF9F7] px-3 py-2 transition-colors">
                   <div className="relative w-8 h-8 bg-[#E0D5C7] flex items-center justify-center text-[#4A4A4A] text-sm">
                     {user.avatar ? (

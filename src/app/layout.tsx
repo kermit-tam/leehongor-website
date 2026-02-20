@@ -8,6 +8,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
 import { Navbar } from '@/components/ui/navbar';
+import { CheckinModal } from '@/components/checkin';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,6 +29,7 @@ export default function RootLayout({
           <div className="min-h-screen bg-gray-50">
             <Navbar />
             <main>{children}</main>
+            <CheckinModal />
           </div>
         </AuthProvider>
       </body>

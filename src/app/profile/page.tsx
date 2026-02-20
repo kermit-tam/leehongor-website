@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAuth, useRequireAuth } from '@/lib/auth-context';
 import { UserService } from '@/lib/firestore';
+import { getCheckinStats, CheckinData } from '@/lib/daily-checkin';
 import { LevelCard, StatCard } from '@/components/ui/card';
 import { AbilityRadarChart, AbilityScoresGrid } from '@/components/charts/radar-chart';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ const BADGES = [
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const [userData, setUserData] = useState<User | null>(null);
+  const [checkinData, setCheckinData] = useState<CheckinData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // 確保已登入
@@ -41,8 +43,12 @@ export default function ProfilePage() {
       
       try {
         setIsLoading(true);
-        const data = await UserService.getUser(user.uid);
+        const [data, checkinStats] = await Promise.all([
+          UserService.getUser(user.uid),
+          getCheckinStats(user.uid),
+        ]);
         setUserData(data);
+        setCheckinData(checkinStats as CheckinData);
       } catch (err) {
         console.error('Error loading user data:', err);
       } finally {
@@ -167,8 +173,9 @@ export default function ProfilePage() {
         <StatCard
           icon="🔥"
           label="連續登入"
-          value={`${displayUser.streakDays}天`}
-          color="gray"
+          value={`${checkinData?.streak || 0}天`}
+          subtext={`總共 ${checkinData?.totalCheckins || 0} 次`}
+          color="warm"
         />
       </div>
 

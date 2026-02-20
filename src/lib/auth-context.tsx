@@ -22,6 +22,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 import { UserService } from './firestore';
+import { performCheckin, CheckinResult } from './daily-checkin';
 import type { User } from '@/types';
 
 // ==================== Admin 用戶配置 ====================
@@ -43,6 +44,11 @@ interface AuthContextType {
   
   // 輔助函數
   refreshUser: () => Promise<void>;
+  
+  // 簽到功能
+  checkin: () => Promise<CheckinResult | null>;
+  checkinResult: CheckinResult | null;
+  clearCheckinResult: () => void;
 }
 
 // ==================== 創建 Context ====================
@@ -59,6 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [checkinResult, setCheckinResult] = useState<CheckinResult | null>(null);
 
   // 監聽認證狀態變化
   useEffect(() => {
@@ -140,6 +147,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // 刷新用戶資料
       await refreshUser();
+      
+      // 執行每日簽到
+      try {
+        const result = await performCheckin(firebaseUser.uid);
+        setCheckinResult(result);
+        // 刷新用戶資料以獲取更新後的 EXP
+        if (result.expEarned > 0) {
+          await refreshUser();
+        }
+      } catch (checkinError) {
+        console.error('Checkin error:', checkinError);
+        // 簽到失敗不影響登入流程
+      }
     } catch (error) {
       console.error('Google login error:', error);
       throw error;
@@ -166,6 +186,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // 手動觸發簽到（用於已登入用戶）
+  const checkin = async (): Promise<CheckinResult | null> => {
+    if (!firebaseUser) return null;
+    try {
+      const result = await performCheckin(firebaseUser.uid);
+      setCheckinResult(result);
+      if (result.expEarned > 0) {
+        await refreshUser();
+      }
+      return result;
+    } catch (error) {
+      console.error('Checkin error:', error);
+      return null;
+    }
+  };
+  
+  // 清除簽到結果
+  const clearCheckinResult = () => {
+    setCheckinResult(null);
+  };
+  
   const value: AuthContextType = {
     firebaseUser,
     user,
@@ -174,6 +215,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loginWithGoogle,
     logout,
     refreshUser,
+    checkin,
+    checkinResult,
+    clearCheckinResult,
   };
 
   return (
