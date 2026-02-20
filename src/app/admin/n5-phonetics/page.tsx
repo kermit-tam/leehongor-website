@@ -7,15 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRequireAdmin } from '@/lib/auth-context';
-import { lesson1Data, N5Vocab } from '@/data/n5-lessons';
-
-// 所有課程的詞彙數據
-import { n5Lessons2to4 } from '@/data/n5-lessons-full';
-
-const allLessonsData = [
-  lesson1Data,
-  ...n5Lessons2to4,
-];
+import { lesson1Data, N5Vocab, n5LessonsList } from '@/data/n5-lessons';
 
 interface EditableVocab extends N5Vocab {
   lessonId: string;
@@ -40,7 +32,7 @@ export default function N5PhoneticsAdminPage() {
     }
   }, []);
 
-  const allVocab: EditableVocab[] = allLessonsData.flatMap(lesson =>
+  const allVocab: EditableVocab[] = n5LessonsList.flatMap(lesson =>
     lesson.units.flatMap(unit =>
       unit.vocab.map((vocab, index) => ({
         ...vocab,
@@ -103,7 +95,7 @@ export default function N5PhoneticsAdminPage() {
       const unitId = parseInt(unitStr.replace('unit', ''));
       const vocabIndex = parseInt(vocabStr.replace('vocab', ''));
       
-      const lesson = allLessonsData.find(l => l.id === lessonId);
+      const lesson = n5LessonsList.find(l => l.id === lessonId);
       const unit = lesson?.units.find(u => u.id === unitId);
       const vocab = unit?.vocab[vocabIndex];
       
@@ -129,7 +121,7 @@ export default function N5PhoneticsAdminPage() {
   const copyUpdatedCode = () => {
     let code = `// 更新後的 n5-lessons.ts 詞彙數據\n\n`;
     
-    allLessonsData.forEach(lesson => {
+    n5LessonsList.forEach(lesson => {
       code += `// 第${lesson.lessonNum}課\n`;
       lesson.units.forEach(unit => {
         code += `// 單元 ${unit.id}: ${unit.title}\n`;
@@ -192,7 +184,7 @@ export default function N5PhoneticsAdminPage() {
             className="px-4 py-2 border border-[#E0E0E0] rounded-lg focus:border-[#C4B9AC] focus:outline-none"
           >
             <option value="all">所有課程</option>
-            {allLessonsData.map(lesson => (
+            {n5LessonsList.map(lesson => (
               <option key={lesson.id} value={lesson.id}>第{lesson.lessonNum}課</option>
             ))}
           </select>

@@ -19,7 +19,7 @@ import { ExamSectionComponent } from './components/exam-section';
 import { ExamResultComponent } from './components/exam-result';
 import { AbilityRadarChart } from '@/components/charts/radar-chart';
 
-type ExamMode = 'menu' | 'exam' | 'result';
+type ExamMode = 'menu' | 'section-select' | 'exam' | 'result';
 
 export default function ExamPage() {
   const { user } = useAuth();
@@ -28,6 +28,7 @@ export default function ExamPage() {
   const [mode, setMode] = useState<ExamMode>('menu');
   const [exams, setExams] = useState<Exam[]>([]);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [sectionOrder, setSectionOrder] = useState<number[]>([]);
   const [currentSection, setCurrentSection] = useState<number>(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
@@ -39,9 +40,35 @@ export default function ExamPage() {
     setExams(availableExams);
   }, []);
   
-  // 開始考試
+  // 選擇考試，進入部分選擇界面
+  const selectExam = (exam: Exam) => {
+    setSelectedExam(exam);
+    // 默認順序：0, 1, 2...
+    setSectionOrder(exam.sections.map((_, i) => i));
+    setCurrentSection(0);
+    setAnswers({});
+    setMode('section-select');
+  };
+  
+  // 開始考試（從選中的部分開始）
+  const startExamFromSection = (sectionIndex: number) => {
+    // 重新排序：把選中的部分放到第一個
+    const newOrder = [...sectionOrder];
+    const selectedIdx = newOrder.indexOf(sectionIndex);
+    if (selectedIdx > -1) {
+      newOrder.splice(selectedIdx, 1);
+      newOrder.unshift(sectionIndex);
+    }
+    setSectionOrder(newOrder);
+    setCurrentSection(0);
+    setStartTime(new Date());
+    setMode('exam');
+  };
+  
+  // 開始考試（默認順序）
   const startExam = (exam: Exam) => {
     setSelectedExam(exam);
+    setSectionOrder(exam.sections.map((_, i) => i));
     setCurrentSection(0);
     setAnswers({});
     setStartTime(new Date());
@@ -60,7 +87,7 @@ export default function ExamPage() {
   const nextSection = () => {
     if (!selectedExam) return;
     
-    if (currentSection < selectedExam.sections.length - 1) {
+    if (currentSection < sectionOrder.length - 1) {
       setCurrentSection(prev => prev + 1);
     } else {
       // 考試完成
@@ -153,7 +180,7 @@ export default function ExamPage() {
                   ? 'border-indigo-100 hover:border-indigo-300 cursor-pointer' 
                   : 'border-gray-100 opacity-60'
               }`}
-              onClick={() => isUnlocked && startExam(exam)}
+              onClick={() => isUnlocked && selectExam(exam)}
             >
               {/* 頂部色塊 */}
               <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
@@ -263,12 +290,138 @@ export default function ExamPage() {
     </div>
   );
   
+  // 渲染部分選擇界面
+  const renderSectionSelect = () => {
+    if (!selectedExam) return null;
+    
+    const sectionIcons: Record<string, string> = {
+      reading: '📖',
+      language: '✏️',
+      listening: '🎧',
+    };
+    
+    const sectionColors: Record<string, string> = {
+      reading: 'blue',
+      language: 'green',
+      listening: 'amber',
+    };
+    
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        <div className="text-center mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-6xl mb-4"
+          >
+            🎯
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-3xl font-bold text-gray-900 mb-3"
+          >
+            選擇開始部分
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-gray-600"
+          >
+            {selectedExam.title} - 你想先做哪個部分？
+          </motion.p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {selectedExam.sections.map((section, index) => {
+            const icon = sectionIcons[section.id] || '📝';
+            const color = sectionColors[section.id] || 'gray';
+            
+            const colorClasses: Record<string, { bg: string; hover: string; text: string; border: string }> = {
+              blue: { bg: 'bg-blue-50', hover: 'hover:bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+              green: { bg: 'bg-green-50', hover: 'hover:bg-green-100', text: 'text-green-700', border: 'border-green-200' },
+              amber: { bg: 'bg-amber-50', hover: 'hover:bg-amber-100', text: 'text-amber-700', border: 'border-amber-200' },
+              gray: { bg: 'bg-gray-50', hover: 'hover:bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' },
+            };
+            
+            const c = colorClasses[color];
+            
+            return (
+              <motion.button
+                key={section.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => startExamFromSection(index)}
+                className={`${c.bg} ${c.hover} border-2 ${c.border} rounded-2xl p-6 text-left transition-all hover:shadow-md`}
+              >
+                <div className="text-4xl mb-4">{icon}</div>
+                <h3 className={`text-xl font-bold ${c.text} mb-2`}>{section.title}</h3>
+                <p className="text-sm text-gray-600 mb-4">{section.titleJp}</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">題數</span>
+                    <span className="font-medium text-gray-900">{section.questionCount} 題</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">時間</span>
+                    <span className="font-medium text-gray-900">{section.timeLimit} 分鐘</span>
+                  </div>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+        
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={() => {
+              setSelectedExam(null);
+              setMode('menu');
+            }}
+            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200"
+          >
+            ← 返回選單
+          </button>
+          <button
+            onClick={() => startExam(selectedExam)}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
+          >
+            按默認順序開始 →
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
   // 渲染考試
   const renderExam = () => {
     if (!selectedExam) return null;
     
-    const section = selectedExam.sections[currentSection];
-    const progress = ((currentSection + 1) / selectedExam.sections.length) * 100;
+    // 檢查是否有 section
+    if (selectedExam.sections.length === 0) {
+      return (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 text-center">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">暫無可用題目</h2>
+            <p className="text-gray-600 mb-6">此課程暫時沒有生成考試題目，請稍後再試。</p>
+            <button
+              onClick={backToMenu}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
+            >
+              返回選單
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    const actualSectionIndex = sectionOrder[currentSection];
+    const section = selectedExam.sections[actualSectionIndex];
+    const progress = ((currentSection + 1) / sectionOrder.length) * 100;
     
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -306,11 +459,12 @@ export default function ExamPage() {
         
         {/* 考試部分 */}
         <ExamSectionComponent
+          key={section.id}
           section={section}
           answers={answers}
           onSubmitAnswer={submitAnswer}
           onNext={nextSection}
-          isLastSection={currentSection === selectedExam.sections.length - 1}
+          isLastSection={currentSection === sectionOrder.length - 1}
         />
       </div>
     );
@@ -343,6 +497,17 @@ export default function ExamPage() {
             exit={{ opacity: 0 }}
           >
             {renderMenu()}
+          </motion.div>
+        )}
+        
+        {mode === 'section-select' && (
+          <motion.div
+            key="section-select"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+          >
+            {renderSectionSelect()}
           </motion.div>
         )}
         

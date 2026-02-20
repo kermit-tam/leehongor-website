@@ -7,6 +7,10 @@
  */
 
 import { N5Lesson, N5Unit, N5Vocab } from '@/data/n5-lessons';
+import { lesson2Reading } from '@/app/learn/n5/lesson-2/reading-data';
+import { lesson3Reading } from '@/app/learn/n5/lesson-3/reading-data';
+import { lesson4Reading } from '@/app/learn/n5/lesson-4/reading-data';
+import { lesson5Reading } from '@/app/learn/n5/lesson-5/reading-data';
 
 // ==================== 考試類型 ====================
 
@@ -62,7 +66,67 @@ export interface ExamResult {
 
 // ==================== 閱讀理解題目生成器 ====================
 
+// 所有閱讀理解短文數據
+const allReadingPassages = [
+  ...lesson2Reading,
+  ...lesson3Reading,
+  ...lesson4Reading,
+  ...lesson5Reading,
+];
+
 function generateReadingQuestions(lessons: N5Lesson[], upToLesson: number): ExamQuestion[] {
+  const questions: ExamQuestion[] = [];
+  
+  // 篩選符合課程進度的閱讀理解短文
+  const availablePassages = allReadingPassages.filter(
+    passage => passage.vocabFromLessons.every(l => l <= upToLesson)
+  );
+  
+  // 如果沒有合適的短文，回退到詞彙題
+  if (availablePassages.length === 0) {
+    return generateVocabReadingQuestions(lessons, upToLesson);
+  }
+  
+  // 隨機選擇最多3篇短文
+  const shuffledPassages = [...availablePassages]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
+  
+  let questionCount = 0;
+  
+  shuffledPassages.forEach((passage, passageIndex) => {
+    passage.questions.forEach((q, qIndex) => {
+      if (questionCount >= 10) return;
+      
+      questions.push({
+        id: `read-${passage.id}-q${qIndex}`,
+        section: 'reading',
+        type: 'multiple-choice',
+        question: `【${passage.title}】\n\n${passage.japanese}\n\n問題：${q.question}`,
+        options: q.options,
+        correctAnswer: q.correctIndex,
+        explanation: `${q.explanation}\n\n文章粵語翻譯：${passage.cantonese}`,
+        sourceLesson: passage.lessonId,
+        sourceUnit: passage.unitId,
+        difficulty: passage.difficulty === 'easy' ? 1 : passage.difficulty === 'medium' ? 2 : 3,
+      });
+      
+      questionCount++;
+    });
+  });
+  
+  // 如果閱讀理解題目不夠10題，補充詞彙題
+  if (questions.length < 10) {
+    const vocabQuestions = generateVocabReadingQuestions(lessons, upToLesson);
+    const remaining = 10 - questions.length;
+    questions.push(...vocabQuestions.slice(0, remaining));
+  }
+  
+  return questions;
+}
+
+// 詞彙理解題（備用）
+function generateVocabReadingQuestions(lessons: N5Lesson[], upToLesson: number): ExamQuestion[] {
   const questions: ExamQuestion[] = [];
   const targetLessons = lessons.filter(l => l.lessonNum <= upToLesson);
   
@@ -78,7 +142,11 @@ function generateReadingQuestions(lessons: N5Lesson[], upToLesson: number): Exam
   
   if (allVocab.length < 4) return questions;
   
-  // 生成詞彙理解題（日文詞彙 → 選中文意思）
+  // 過濾掉英文干擾項（國家名的英文 kanji）
+  const isEnglish = (str: string): boolean => {
+    return /^[a-zA-Z\s]+$/.test(str);
+  };
+  
   const usedIndices = new Set<number>();
   let questionCount = 0;
   
@@ -90,24 +158,27 @@ function generateReadingQuestions(lessons: N5Lesson[], upToLesson: number): Exam
     const target = allVocab[randomIndex];
     const targetVocab = target.vocab;
     
-    // 選3個干擾項
+    // 選3個干擾項（過濾英文）
     const otherVocabs = allVocab
-      .filter((_, i) => i !== randomIndex)
+      .filter((v, i) => i !== randomIndex && !isEnglish(v.vocab.meaning))
       .sort(() => Math.random() - 0.5)
       .slice(0, 3)
       .map(v => v.vocab.meaning);
+    
+    // 如果找不到足夠的非英文選項，跳過
+    if (otherVocabs.length < 3) continue;
     
     const options = [...otherVocabs, targetVocab.meaning].sort(() => Math.random() - 0.5);
     const correctIndex = options.indexOf(targetVocab.meaning);
     
     questions.push({
-      id: `read-${target.lessonNum}-${target.unitId}-${questionCount}`,
+      id: `read-vocab-${target.lessonNum}-${target.unitId}-${questionCount}`,
       section: 'reading',
       type: 'multiple-choice',
-      question: `「${targetVocab.hiragana}」${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''} 的意思是什麼？`,
+      question: `「${targetVocab.hiragana}」${targetVocab.kanji && !isEnglish(targetVocab.kanji) ? `（${targetVocab.kanji}）` : ''} 的意思是什麼？`,
       options,
       correctAnswer: correctIndex,
-      explanation: `「${targetVocab.hiragana}${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''}」的意思是「${targetVocab.meaning}」。`,
+      explanation: `「${targetVocab.hiragana}${targetVocab.kanji && !isEnglish(targetVocab.kanji) ? `（${targetVocab.kanji}）` : ''}」的意思是「${targetVocab.meaning}」。`,
       sourceLesson: target.lessonNum,
       sourceUnit: target.unitId,
       difficulty: targetVocab.note ? 2 : 1,
@@ -297,6 +368,45 @@ export function generateExam(lessons: N5Lesson[], lessonNum: number): Exam {
   const languageQuestions = generateLanguageQuestions(lessons, lessonNum);
   const listeningQuestions = generateListeningQuestions(lessons, lessonNum);
   
+  // 只包含有題目的 section
+  const sections: ExamSectionData[] = [];
+  
+  if (readingQuestions.length > 0) {
+    sections.push({
+      id: 'reading',
+      title: '閱讀理解',
+      titleJp: '読解',
+      description: '閱讀詞彙並回答問題，測試你對日文詞彙的理解。',
+      timeLimit: 10 + (lessonNum * 2),
+      questionCount: readingQuestions.length,
+      questions: readingQuestions,
+    });
+  }
+  
+  if (languageQuestions.length > 0) {
+    sections.push({
+      id: 'language',
+      title: '語文運用',
+      titleJp: '文法・語彙',
+      description: '測試助詞使用和句子結構。',
+      timeLimit: 12 + (lessonNum * 2),
+      questionCount: languageQuestions.length,
+      questions: languageQuestions,
+    });
+  }
+  
+  if (listeningQuestions.length > 0) {
+    sections.push({
+      id: 'listening',
+      title: '聆聽理解',
+      titleJp: '聴解',
+      description: '聆聽詞彙，選擇正確意思。',
+      timeLimit: 8 + lessonNum,
+      questionCount: listeningQuestions.length,
+      questions: listeningQuestions,
+    });
+  }
+  
   const totalQuestions = readingQuestions.length + languageQuestions.length + listeningQuestions.length;
   const maxScore = totalQuestions * 10;
   const passScore = Math.floor(maxScore * 0.6);
@@ -309,35 +419,7 @@ export function generateExam(lessons: N5Lesson[], lessonNum: number): Exam {
     totalTime: 30 + (lessonNum * 5),
     totalQuestions,
     passScore,
-    sections: [
-      {
-        id: 'reading',
-        title: '閱讀理解',
-        titleJp: '読解',
-        description: '閱讀詞彙並回答問題，測試你對日文詞彙的理解。',
-        timeLimit: 10 + (lessonNum * 2),
-        questionCount: readingQuestions.length,
-        questions: readingQuestions,
-      },
-      {
-        id: 'language',
-        title: '語文運用',
-        titleJp: '文法・語彙',
-        description: '測試助詞使用和句子結構。',
-        timeLimit: 12 + (lessonNum * 2),
-        questionCount: languageQuestions.length,
-        questions: languageQuestions,
-      },
-      {
-        id: 'listening',
-        title: '聆聽理解',
-        titleJp: '聴解',
-        description: '聆聽詞彙，選擇正確意思。',
-        timeLimit: 8 + lessonNum,
-        questionCount: listeningQuestions.length,
-        questions: listeningQuestions,
-      },
-    ],
+    sections,
   };
 }
 

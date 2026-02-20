@@ -29,9 +29,11 @@ export function ExamSectionComponent({
   const [timeLeft, setTimeLeft] = useState(section.timeLimit * 60); // 轉換為秒
   const [showConfirm, setShowConfirm] = useState(false);
   
-  const currentQuestion = section.questions[currentQuestionIndex];
+  // 安全檢查：確保有題目
+  const hasQuestions = section.questions.length > 0;
+  const currentQuestion = hasQuestions ? section.questions[currentQuestionIndex] : null;
   const answeredCount = section.questions.filter(q => answers[q.id] !== undefined).length;
-  const progress = ((currentQuestionIndex + 1) / section.questions.length) * 100;
+  const progress = hasQuestions ? ((currentQuestionIndex + 1) / section.questions.length) * 100 : 0;
   
   // 倒計時
   useEffect(() => {
@@ -57,6 +59,7 @@ export function ExamSectionComponent({
   
   // 選擇答案
   const selectAnswer = (answer: number) => {
+    if (!currentQuestion) return;
     onSubmitAnswer(currentQuestion.id, answer);
   };
   
@@ -140,9 +143,22 @@ export function ExamSectionComponent({
       </div>
       
       {/* 題目 */}
+      {!hasQuestions ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">此部分暫無題目</h3>
+          <p className="text-gray-500 mb-4">可能是課程數據加載失敗，請稍後再試。</p>
+          <button
+            onClick={onNext}
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            進入下一部分
+          </button>
+        </div>
+      ) : (
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentQuestion.id}
+          key={currentQuestion?.id}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
@@ -154,27 +170,27 @@ export function ExamSectionComponent({
               <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm">
                 第 {currentQuestionIndex + 1} 題
               </span>
-              {currentQuestion.difficulty === 1 && (
+              {currentQuestion?.difficulty === 1 && (
                 <span className="px-2 py-1 bg-green-100 text-green-600 rounded text-xs">簡單</span>
               )}
-              {currentQuestion.difficulty === 2 && (
+              {currentQuestion?.difficulty === 2 && (
                 <span className="px-2 py-1 bg-yellow-100 text-yellow-600 rounded text-xs">中等</span>
               )}
-              {currentQuestion.difficulty === 3 && (
+              {currentQuestion?.difficulty === 3 && (
                 <span className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs">困難</span>
               )}
             </div>
             
             <h3 className="text-lg text-gray-900 whitespace-pre-line leading-relaxed">
-              {currentQuestion.question}
+              {currentQuestion?.question}
             </h3>
           </div>
           
           {/* 選項 */}
-          {currentQuestion.options && (
+          {currentQuestion?.options && (
             <div className="space-y-3">
               {currentQuestion.options.map((option, index) => {
-                const isSelected = answers[currentQuestion.id] === index;
+                const isSelected = answers[currentQuestion!.id] === index;
                 
                 return (
                   <button
@@ -205,14 +221,14 @@ export function ExamSectionComponent({
           )}
           
           {/* 填空題 */}
-          {currentQuestion.type === 'fill-in-blank' && (
+          {currentQuestion?.type === 'fill-in-blank' && (
             <div className="flex flex-wrap gap-2">
               {currentQuestion.options?.map((option, index) => (
                 <button
                   key={index}
                   onClick={() => selectAnswer(index)}
                   className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                    answers[currentQuestion.id] === index
+                    answers[currentQuestion!.id] === index
                       ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
                       : 'border-gray-200 hover:border-indigo-200 hover:bg-gray-50'
                   }`}
@@ -224,6 +240,7 @@ export function ExamSectionComponent({
           )}
         </motion.div>
       </AnimatePresence>
+      )}
       
       {/* 導航按鈕 */}
       <div className="flex justify-between items-center">
