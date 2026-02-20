@@ -7,7 +7,7 @@ interface DualProgressProps {
   learningRate: number;
   completedUnits: number;
   totalUnits: number;
-  studyTime: number;
+  studyMinutes: number;
   streakDays: number;
   proficiency: number;
   level: string;
@@ -21,7 +21,7 @@ export function DualProgressDisplay({
   learningRate,
   completedUnits,
   totalUnits,
-  studyTime,
+  studyMinutes,
   streakDays,
   proficiency,
   level,
@@ -71,8 +71,8 @@ export function DualProgressDisplay({
             <p className="text-xs text-[#8C8C8C]">總微單元數</p>
           </div>
           <div className="text-center p-3 bg-[#FAFAFA] rounded-lg">
-            <p className="text-2xl font-bold text-[#4A4A4A]">{Math.round(studyTime / 60)}</p>
-            <p className="text-xs text-[#8C8C8C]">學習時數</p>
+            <p className="text-2xl font-bold text-[#4A4A4A]">{studyMinutes}</p>
+            <p className="text-xs text-[#8C8C8C]">學習分鐘</p>
           </div>
           <div className="text-center p-3 bg-[#FAFAFA] rounded-lg">
             <p className="text-2xl font-bold text-[#4A4A4A]">{streakDays}</p>

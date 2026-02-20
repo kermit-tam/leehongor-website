@@ -199,6 +199,9 @@ export default function LearnPage() {
   const [learningStats, setLearningStats] = useState<{ rate: number; completedCount: number; totalCount: number; status: 'beginner' | 'active' | 'dedicated' | 'master' }>({ rate: 0, completedCount: 0, totalCount: 0, status: 'beginner' });
   const [proficiencyStats, setProficiencyStats] = useState({ overall: 0, level: 'N5-Beginner', weakAreas: [] as string[], strongAreas: [] as string[] });
   const [quizAvg, setQuizAvg] = useState(0);
+  const [quizCount, setQuizCount] = useState(0);
+  const [streakDays, setStreakDays] = useState(0);
+  const [studyMinutes, setStudyMinutes] = useState(0);
 
   // 記錄用戶最後訪問頁面
   useEffect(() => {
@@ -254,8 +257,12 @@ export default function LearnPage() {
             // 總微單元數（第1-4課）
             const totalUnitCount = 26; // 第1課4個 + 第2課5個 + 第3課7個 + 第4課10個
             
-            // 獲取真正學習時數（從計時器）
+            // 獲取真正學習時數（從計時器，單位：分鐘）
             const actualStudyTime = getTotalStudyTime();
+            setStudyMinutes(actualStudyTime);
+            
+            // 獲取連續天數（從用戶數據）
+            setStreakDays(fetchedUser.streakDays || 0);
             
             // 更新學習進度顯示
             setLearningProgress(prev => ({
@@ -282,21 +289,25 @@ export default function LearnPage() {
             const unitScoreValues = Object.values(unitScores) as number[];
             const hasUnitScores = unitScoreValues.length > 0;
             
+            // 計算測驗數量（正式測驗 + 微單元測驗）
+            const totalQuizCount = practiceRecords.length + unitScoreValues.length;
+            setQuizCount(totalQuizCount);
+            
             // 合併所有分數來源計算平均分
             let totalScoreSum = 0;
             let totalScoreCount = 0;
             
             // 1. 正式測驗分數
             if (practiceRecords.length > 0) {
-              const practiceAvg = practiceRecords.reduce((sum, r) => sum + (r.scores?.overall || 0), 0) / practiceRecords.length;
-              totalScoreSum += practiceAvg * practiceRecords.length;
+              const practiceTotal = practiceRecords.reduce((sum, r) => sum + (r.scores?.overall || 0), 0);
+              totalScoreSum += practiceTotal;
               totalScoreCount += practiceRecords.length;
             }
             
             // 2. 微單元測驗分數
             if (hasUnitScores) {
-              const unitAvg = unitScoreValues.reduce((a, b) => a + b, 0) / unitScoreValues.length;
-              totalScoreSum += unitAvg * unitScoreValues.length;
+              const unitTotal = unitScoreValues.reduce((a, b) => a + b, 0);
+              totalScoreSum += unitTotal;
               totalScoreCount += unitScoreValues.length;
             }
             
@@ -390,6 +401,9 @@ export default function LearnPage() {
           setQuizAvg(pd.quizResults.length > 0
             ? Math.round(pd.quizResults.reduce((sum, r) => sum + r.score, 0) / pd.quizResults.length)
             : 0);
+          setQuizCount(pd.quizResults.length);
+          setStreakDays(0);
+          setStudyMinutes(0);
         }
       } catch (err) {
         console.error('Error loading learn page:', err);
@@ -440,11 +454,11 @@ export default function LearnPage() {
           learningRate={learningStats.rate}
           completedUnits={learningStats.completedCount}
           totalUnits={learningStats.totalCount}
-          studyTime={learningProgress.totalTimeSpent}
-          streakDays={learningProgress.streakDays}
+          studyMinutes={studyMinutes}
+          streakDays={streakDays}
           proficiency={proficiencyStats.overall}
           level={proficiencyStats.level}
-          quizCount={proficiencyData.quizResults.length}
+          quizCount={quizCount}
           averageScore={quizAvg}
           weakAreas={proficiencyStats.weakAreas}
           strongAreas={proficiencyStats.strongAreas}
