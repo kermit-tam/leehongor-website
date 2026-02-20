@@ -223,88 +223,75 @@ export default function LearnPage() {
         
         // 如果用戶已登入，從 Firebase 加載數據
         if (user?.uid) {
-          const [fetchedUser, practiceRecords] = await Promise.all([
-            UserService.getUser(user.uid),
-            QuizService.getUserRecords(user.uid),
-          ]);
-          
-          setUserData(fetchedUser);
-          
-          // 計算學習進度（基於完成的課程）
-          const completedLessons = fetchedUser?.completedLessons || [];
-          const totalLessons = 15; // N5 共15課
-          
-          setLearningStats({
-            rate: Math.round((completedLessons.length / totalLessons) * 100),
-            completedCount: completedLessons.length,
-            totalCount: totalLessons,
-            status: completedLessons.length >= 10 ? 'dedicated' : 
-                    completedLessons.length >= 5 ? 'active' : 
-                    completedLessons.length >= 1 ? 'beginner' : 'beginner',
-          });
-          
-          // 計算熟練度（基於測驗記錄）
-          if (practiceRecords.length > 0) {
-            const avgScore = Math.round(
-              practiceRecords.reduce((sum, r) => sum + r.scores.overall, 0) / practiceRecords.length
-            );
-            setQuizAvg(avgScore);
+          try {
+            const [fetchedUser, practiceRecords] = await Promise.all([
+              UserService.getUser(user.uid),
+              QuizService.getUserRecords(user.uid).catch(() => []),
+            ]);
             
-            // 計算各項能力平均分
-            const dimensionScores = {
-              vocabulary: [] as number[],
-              grammar: [] as number[],
-              listening: [] as number[],
-              pronunciation: [] as number[],
-              kanji: [] as number[],
-              application: [] as number[],
-            };
+            if (!fetchedUser) {
+              console.error('User data not found');
+              return;
+            }
             
-            practiceRecords.forEach(r => {
-              Object.entries(r.scores).forEach(([dim, score]) => {
-                if (dim !== 'overall' && score !== undefined) {
-                  dimensionScores[dim as keyof typeof dimensionScores].push(score);
-                }
+            setUserData(fetchedUser);
+            
+            // 計算學習進度（基於完成的課程）
+            const completedLessons = fetchedUser.completedLessons || [];
+            const totalLessons = 15;
+            
+            setLearningStats({
+              rate: Math.round((completedLessons.length / totalLessons) * 100),
+              completedCount: completedLessons.length,
+              totalCount: totalLessons,
+              status: completedLessons.length >= 10 ? 'dedicated' : 
+                      completedLessons.length >= 5 ? 'active' : 
+                      completedLessons.length >= 1 ? 'beginner' : 'beginner',
+            });
+            
+            // 計算熟練度（基於測驗記錄或用戶能力分數）
+            const scores = fetchedUser.abilityScores;
+            const hasAbilityScores = scores && Object.values(scores).some(s => s && s.best > 0);
+            
+            if (practiceRecords.length > 0) {
+              // 有測驗記錄，使用測驗平均分
+              const avgScore = Math.round(
+                practiceRecords.reduce((sum, r) => sum + (r.scores?.overall || 0), 0) / practiceRecords.length
+              );
+              setQuizAvg(avgScore);
+              
+              // 使用 abilityScores 或測驗分數計算各項能力
+              const overall = hasAbilityScores 
+                ? Math.round(Object.values(scores).reduce((sum, s) => sum + (s?.best || 0), 0) / 6)
+                : avgScore;
+              
+              let level = 'N5-Beginner';
+              if (overall >= 95) level = 'N5-Master';
+              else if (overall >= 85) level = 'N5-Advanced';
+              else if (overall >= 70) level = 'N5-Intermediate';
+              else if (overall >= 50) level = 'N5-Elementary';
+              
+              const vocabScore = scores?.vocabulary?.best || 0;
+              const grammarScore = scores?.grammar?.best || 0;
+              const listeningScore = scores?.listening?.best || 0;
+              
+              const weakAreas = [];
+              const strongAreas = [];
+              if (vocabScore < 60) weakAreas.push('詞彙');
+              if (vocabScore >= 80) strongAreas.push('詞彙');
+              if (grammarScore < 60) weakAreas.push('文法');
+              if (grammarScore >= 80) strongAreas.push('文法');
+              if (listeningScore < 60) weakAreas.push('聽力');
+              if (listeningScore >= 80) strongAreas.push('聽力');
+              
+              setProficiencyStats({
+                overall,
+                level,
+                weakAreas,
+                strongAreas,
               });
-            });
-            
-            const avgVocab = dimensionScores.vocabulary.length > 0 
-              ? Math.round(dimensionScores.vocabulary.reduce((a, b) => a + b, 0) / dimensionScores.vocabulary.length) 
-              : 0;
-            const avgGrammar = dimensionScores.grammar.length > 0 
-              ? Math.round(dimensionScores.grammar.reduce((a, b) => a + b, 0) / dimensionScores.grammar.length) 
-              : 0;
-            const avgListening = dimensionScores.listening.length > 0 
-              ? Math.round(dimensionScores.listening.reduce((a, b) => a + b, 0) / dimensionScores.listening.length) 
-              : 0;
-            
-            const overall = Math.round((avgVocab + avgGrammar + avgListening + avgScore) / 4);
-            
-            let level = 'N5-Beginner';
-            if (overall >= 95) level = 'N5-Master';
-            else if (overall >= 85) level = 'N5-Advanced';
-            else if (overall >= 70) level = 'N5-Intermediate';
-            else if (overall >= 50) level = 'N5-Elementary';
-            
-            const weakAreas = [];
-            const strongAreas = [];
-            if (avgVocab < 60) weakAreas.push('詞彙');
-            if (avgVocab >= 80) strongAreas.push('詞彙');
-            if (avgGrammar < 60) weakAreas.push('文法');
-            if (avgGrammar >= 80) strongAreas.push('文法');
-            if (avgListening < 60) weakAreas.push('聽力');
-            if (avgListening >= 80) strongAreas.push('聽力');
-            
-            setProficiencyStats({
-              overall,
-              level,
-              weakAreas,
-              strongAreas,
-            });
-          } else {
-            // 無測驗記錄時使用能力分數
-            if (fetchedUser?.abilityScores) {
-              const scores = fetchedUser.abilityScores;
+            } else if (hasAbilityScores) {
+              // 無測驗記錄但有能力分數
               const dims = ['vocabulary', 'grammar', 'listening', 'pronunciation', 'kanji', 'application'] as const;
               const values = dims.map(d => scores[d]?.best || 0);
               const overall = Math.round(values.reduce((a, b) => a + b, 0) / dims.length);
@@ -331,7 +318,18 @@ export default function LearnPage() {
                 strongAreas,
               });
               setQuizAvg(0);
+            } else {
+              // 無任何數據，設置默認值
+              setProficiencyStats({
+                overall: 0,
+                level: 'N5-Beginner',
+                weakAreas: [],
+                strongAreas: [],
+              });
+              setQuizAvg(0);
             }
+          } catch (err) {
+            console.error('Error loading user data:', err);
           }
         } else {
           // 未登入用戶使用本地數據
@@ -514,7 +512,7 @@ export default function LearnPage() {
               <LevelCard
                 level={level}
                 exp={userExp}
-                streakDays={userData.streakDays}
+                streakDays={userData.streakDays || 0}
               />
             </div>
 
@@ -522,33 +520,40 @@ export default function LearnPage() {
               <h2 className="text-lg font-bold text-[#4A4A4A] mb-4">📊 實力分析</h2>
               <div className="flex flex-col md:flex-row items-center justify-center gap-8">
                 <AbilityRadarChart
-                  abilityScores={userData.abilityScores}
+                  abilityScores={userData.abilityScores || {
+                    pronunciation: { best: 0, attempts: 0 },
+                    kanji: { best: 0, attempts: 0 },
+                    vocabulary: { best: 0, attempts: 0 },
+                    grammar: { best: 0, attempts: 0 },
+                    listening: { best: 0, attempts: 0 },
+                    application: { best: 0, attempts: 0 },
+                  }}
                   size={200}
                 />
                 <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full bg-violet-500 mr-2" />
-                    <span className="text-[#8C8C8C]">發音 {userData.abilityScores.pronunciation.best}分</span>
+                    <span className="text-[#8C8C8C]">發音 {(userData.abilityScores?.pronunciation?.best || 0)}分</span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full bg-pink-500 mr-2" />
-                    <span className="text-[#8C8C8C]">漢字 {userData.abilityScores.kanji.best}分</span>
+                    <span className="text-[#8C8C8C]">漢字 {(userData.abilityScores?.kanji?.best || 0)}分</span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full bg-amber-500 mr-2" />
-                    <span className="text-[#8C8C8C]">詞彙 {userData.abilityScores.vocabulary.best}分</span>
+                    <span className="text-[#8C8C8C]">詞彙 {(userData.abilityScores?.vocabulary?.best || 0)}分</span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full bg-emerald-500 mr-2" />
-                    <span className="text-[#8C8C8C]">文法 {userData.abilityScores.grammar.best}分</span>
+                    <span className="text-[#8C8C8C]">文法 {(userData.abilityScores?.grammar?.best || 0)}分</span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full bg-blue-500 mr-2" />
-                    <span className="text-[#8C8C8C]">聽力 {userData.abilityScores.listening.best}分</span>
+                    <span className="text-[#8C8C8C]">聽力 {(userData.abilityScores?.listening?.best || 0)}分</span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full bg-red-500 mr-2" />
-                    <span className="text-[#8C8C8C]">應用 {userData.abilityScores.application.best}分</span>
+                    <span className="text-[#8C8C8C]">應用 {(userData.abilityScores?.application?.best || 0)}分</span>
                   </div>
                 </div>
               </div>

@@ -16,9 +16,9 @@ export function Navbar() {
   const { user, isAdmin, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const navItems: { label: string; href: string; icon: string; highlight?: boolean }[] = [
+  const navItems: { label: string; href: string; icon: string }[] = [
     { label: '輕鬆學', href: '/posts', icon: '📚' },
-    { label: '系統學', href: '/learn', icon: '🎯', highlight: true },
+    { label: '系統學', href: '/learn', icon: '🎯' },
     { label: '考試模式', href: '/exam', icon: '📝' },
     { label: '排行榜', href: '/leaderboard', icon: '🏆' },
   ];
@@ -45,11 +45,7 @@ export function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-4 py-2 transition-colors tracking-wide rounded-full ${
-                  item.highlight 
-                    ? 'bg-[#6B5B95] text-white hover:bg-[#5A4A84]' 
-                    : 'text-[#8C8C8C] hover:text-[#4A4A4A]'
-                }`}
+                className="px-4 py-2 transition-colors tracking-wide text-[#8C8C8C] hover:text-[#4A4A4A]"
               >
                 {item.icon && <span className="mr-1">{item.icon}</span>}
                 {item.label}
@@ -120,11 +116,7 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`block px-4 py-3 transition-colors ${
-                    item.highlight
-                      ? 'bg-[#6B5B95] text-white'
-                      : 'text-[#8C8C8C] hover:text-[#4A4A4A] hover:bg-[#FAF9F7]'
-                  }`}
+                  className="block px-4 py-3 transition-colors text-[#8C8C8C] hover:text-[#4A4A4A] hover:bg-[#FAF9F7]"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <span className="mr-2">{item.icon}</span>
