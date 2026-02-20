@@ -3,7 +3,7 @@
  * Daily Check-in System
  */
 
-import { doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
 const CHECKIN_COLLECTION = 'daily_checkins';
@@ -35,8 +35,14 @@ export async function hasCheckedInToday(userId: string): Promise<boolean> {
   
   if (!docSnap.exists()) return false;
   
-  const data = docSnap.data() as CheckinData;
-  const lastCheckin = data.lastCheckin instanceof Date ? data.lastCheckin : new Date(data.lastCheckin);
+  const data = docSnap.data();
+  // 正確處理 Firestore Timestamp
+  const lastCheckinRaw = data.lastCheckin;
+  const lastCheckin = lastCheckinRaw instanceof Timestamp 
+    ? lastCheckinRaw.toDate() 
+    : lastCheckinRaw instanceof Date 
+      ? lastCheckinRaw 
+      : new Date(lastCheckinRaw);
   const now = new Date();
   
   // 檢查是否為同一天（以香港時間計算）
@@ -80,8 +86,14 @@ export async function performCheckin(userId: string): Promise<CheckinResult> {
     };
   }
   
-  const data = docSnap.data() as CheckinData;
-  const lastCheckin = data.lastCheckin instanceof Date ? data.lastCheckin : new Date(data.lastCheckin);
+  const data = docSnap.data();
+  // 正確處理 Firestore Timestamp
+  const lastCheckinRaw = data.lastCheckin;
+  const lastCheckin = lastCheckinRaw instanceof Timestamp 
+    ? lastCheckinRaw.toDate() 
+    : lastCheckinRaw instanceof Date 
+      ? lastCheckinRaw 
+      : new Date(lastCheckinRaw);
   const lastCheckinHK = new Date(lastCheckin.toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
   
   // 檢查今日是否已簽到
