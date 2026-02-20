@@ -72,7 +72,7 @@ export function DualProgressDisplay({
           </div>
           <div className="text-center p-3 bg-[#FAFAFA] rounded-lg">
             <p className="text-2xl font-bold text-[#4A4A4A]">{studyMinutes}</p>
-            <p className="text-xs text-[#8C8C8C]">學習分鐘</p>
+            <p className="text-xs text-[#8C8C8C]">學習時數</p>
           </div>
           <div className="text-center p-3 bg-[#FAFAFA] rounded-lg">
             <p className="text-2xl font-bold text-[#4A4A4A]">{streakDays}</p>

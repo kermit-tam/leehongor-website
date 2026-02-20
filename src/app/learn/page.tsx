@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import { UserService, QuizService } from '@/lib/firestore';
+import { getCheckinStats } from '@/lib/daily-checkin';
 import { LevelCard, StatCard } from '@/components/ui/card';
 import { AbilityRadarChart } from '@/components/charts/radar-chart';
 import { lesson1Data, calculateLevel, scoringConfig, getUnitProgressKey, calculateLessonProgress, n5LessonsList } from '@/data/n5-lessons';
@@ -261,8 +262,9 @@ export default function LearnPage() {
             const actualStudyTime = getTotalStudyTime();
             setStudyMinutes(actualStudyTime);
             
-            // 獲取連續天數（從用戶數據）
-            setStreakDays(fetchedUser.streakDays || 0);
+            // 獲取連續天數（從簽到記錄）
+            const checkinStats = await getCheckinStats(user.uid);
+            setStreakDays(checkinStats?.streak || 0);
             
             // 更新學習進度顯示
             setLearningProgress(prev => ({
@@ -284,13 +286,17 @@ export default function LearnPage() {
             const scores = fetchedUser.abilityScores;
             const hasAbilityScores = scores && Object.values(scores).some(s => s && s.best > 0);
             
-            // 讀取微單元測驗分數
-            const unitScores = JSON.parse(localStorage.getItem('n5-unit-scores') || '{}');
-            const unitScoreValues = Object.values(unitScores) as number[];
-            const hasUnitScores = unitScoreValues.length > 0;
+            // 收集所有微單元分數（使用已讀取嘅進度）
+            const allUnitScores: number[] = [
+              ...lesson1Progress.filter((p: any) => p.bestScore > 0).map((p: any) => p.bestScore),
+              ...lesson2Progress.filter((p: any) => p.bestScore > 0).map((p: any) => p.bestScore),
+              ...lesson3Progress.filter((p: any) => p.bestScore > 0).map((p: any) => p.bestScore),
+              ...lesson4Progress.filter((p: any) => p.bestScore > 0).map((p: any) => p.bestScore),
+            ];
+            const hasUnitScores = allUnitScores.length > 0;
             
             // 計算測驗數量（正式測驗 + 微單元測驗）
-            const totalQuizCount = practiceRecords.length + unitScoreValues.length;
+            const totalQuizCount = practiceRecords.length + allUnitScores.length;
             setQuizCount(totalQuizCount);
             
             // 合併所有分數來源計算平均分
@@ -306,9 +312,9 @@ export default function LearnPage() {
             
             // 2. 微單元測驗分數
             if (hasUnitScores) {
-              const unitTotal = unitScoreValues.reduce((a, b) => a + b, 0);
+              const unitTotal = allUnitScores.reduce((a, b) => a + b, 0);
               totalScoreSum += unitTotal;
-              totalScoreCount += unitScoreValues.length;
+              totalScoreCount += allUnitScores.length;
             }
             
             const finalAvgScore = totalScoreCount > 0 ? Math.round(totalScoreSum / totalScoreCount) : 0;
