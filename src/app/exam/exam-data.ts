@@ -15,16 +15,14 @@ export type ExamSection = 'reading' | 'language' | 'listening';
 export interface ExamQuestion {
   id: string;
   section: ExamSection;
-  type: 'multiple-choice' | 'fill-in-blank' | 'matching' | 'ordering';
+  type: 'multiple-choice' | 'fill-in-blank';
   question: string;
-  options?: string[];
-  correctAnswer: string | number;
+  options: string[];
+  correctAnswer: number; // 選項索引
   explanation: string;
-  // 題目來源
   sourceLesson: number;
   sourceUnit?: number;
-  // 難度
-  difficulty: 1 | 2 | 3; // 1=簡單, 2=中等, 3=困難
+  difficulty: 1 | 2 | 3;
 }
 
 export interface ExamSectionData {
@@ -32,7 +30,7 @@ export interface ExamSectionData {
   title: string;
   titleJp: string;
   description: string;
-  timeLimit: number; // 分鐘
+  timeLimit: number;
   questionCount: number;
   questions: ExamQuestion[];
 }
@@ -42,9 +40,9 @@ export interface Exam {
   lessonNum: number;
   title: string;
   subtitle: string;
-  totalTime: number; // 分鐘
+  totalTime: number;
   totalQuestions: number;
-  passScore: number; // 及格分數
+  passScore: number;
   sections: ExamSectionData[];
 }
 
@@ -58,16 +56,8 @@ export interface ExamResult {
   percentage: number;
   isPassed: boolean;
   sectionScores: Record<ExamSection, { correct: number; total: number; score: number }>;
-  answers: Record<string, string | number>;
-  timeSpent: number; // 秒
-}
-
-// ==================== 題目生成器配置 ====================
-
-interface QuestionTemplate {
-  section: ExamSection;
-  type: ExamQuestion['type'];
-  generator: (lessons: N5Lesson[], lessonNum: number) => ExamQuestion[];
+  answers: Record<string, number>;
+  timeSpent: number;
 }
 
 // ==================== 閱讀理解題目生成器 ====================
@@ -76,139 +66,169 @@ function generateReadingQuestions(lessons: N5Lesson[], upToLesson: number): Exam
   const questions: ExamQuestion[] = [];
   const targetLessons = lessons.filter(l => l.lessonNum <= upToLesson);
   
-  // 從課程內容生成閱讀理解題
+  // 收集所有詞彙
+  const allVocab: Array<{ vocab: N5Vocab; lessonNum: number; unitId: number }> = [];
   targetLessons.forEach(lesson => {
-    lesson.units.forEach((unit, unitIndex) => {
-      // 簡單理解題：根據單元標題和內容
-      if (unit.vocab.length > 0) {
-        const vocab = unit.vocab.slice(0, 4);
-        const correctIndex = Math.floor(Math.random() * vocab.length);
-        const correctVocab = vocab[correctIndex];
-        
-        questions.push({
-          id: `read-${lesson.lessonNum}-${unit.id}-1`,
-          section: 'reading',
-          type: 'multiple-choice',
-          question: `「${unit.title}」這個單元主要學習什麼內容？`,
-          options: vocab.map(v => v.meaning),
-          correctAnswer: correctIndex,
-          explanation: `正確答案是「${correctVocab.meaning}」。這個單元學習了「${unit.subtitle}」。`,
-          sourceLesson: lesson.lessonNum,
-          sourceUnit: unit.id,
-          difficulty: 1,
-        });
-      }
-      
-      // 詞彙理解題
-      if (unit.vocab.length >= 4) {
-        const shuffled = [...unit.vocab].sort(() => Math.random() - 0.5);
-        const targetVocab = shuffled[0];
-        const options = shuffled.slice(0, 4).map(v => v.meaning);
-        
-        questions.push({
-          id: `read-${lesson.lessonNum}-${unit.id}-2`,
-          section: 'reading',
-          type: 'multiple-choice',
-          question: `「${targetVocab.hiragana}」${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''}的意思是什麼？`,
-          options,
-          correctAnswer: options.indexOf(targetVocab.meaning),
-          explanation: `「${targetVocab.hiragana}」的意思是「${targetVocab.meaning}」。`,
-          sourceLesson: lesson.lessonNum,
-          sourceUnit: unit.id,
-          difficulty: targetVocab.note ? 2 : 1,
-        });
-      }
+    lesson.units.forEach(unit => {
+      unit.vocab.forEach(v => {
+        allVocab.push({ vocab: v, lessonNum: lesson.lessonNum, unitId: unit.id });
+      });
     });
   });
   
-  return questions.slice(0, 10); // 閱讀理解最多10題
+  if (allVocab.length < 4) return questions;
+  
+  // 生成詞彙理解題（日文詞彙 → 選中文意思）
+  const usedIndices = new Set<number>();
+  let questionCount = 0;
+  
+  while (questionCount < 10 && usedIndices.size < allVocab.length) {
+    const randomIndex = Math.floor(Math.random() * allVocab.length);
+    if (usedIndices.has(randomIndex)) continue;
+    usedIndices.add(randomIndex);
+    
+    const target = allVocab[randomIndex];
+    const targetVocab = target.vocab;
+    
+    // 選3個干擾項
+    const otherVocabs = allVocab
+      .filter((_, i) => i !== randomIndex)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3)
+      .map(v => v.vocab.meaning);
+    
+    const options = [...otherVocabs, targetVocab.meaning].sort(() => Math.random() - 0.5);
+    const correctIndex = options.indexOf(targetVocab.meaning);
+    
+    questions.push({
+      id: `read-${target.lessonNum}-${target.unitId}-${questionCount}`,
+      section: 'reading',
+      type: 'multiple-choice',
+      question: `「${targetVocab.hiragana}」${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''} 的意思是什麼？`,
+      options,
+      correctAnswer: correctIndex,
+      explanation: `「${targetVocab.hiragana}${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''}」的意思是「${targetVocab.meaning}」。`,
+      sourceLesson: target.lessonNum,
+      sourceUnit: target.unitId,
+      difficulty: targetVocab.note ? 2 : 1,
+    });
+    
+    questionCount++;
+  }
+  
+  return questions;
 }
 
 // ==================== 語文運用題目生成器 ====================
 
 function generateLanguageQuestions(lessons: N5Lesson[], upToLesson: number): ExamQuestion[] {
   const questions: ExamQuestion[] = [];
-  const targetLessons = lessons.filter(l => l.lessonNum <= upToLesson);
   
-  targetLessons.forEach(lesson => {
-    // 根據課程內容生成文法題
-    lesson.units.forEach((unit, unitIndex) => {
-      // 助詞填空題
-      if (upToLesson >= 1) {
-        const particleQuestions: Array<{sentence: string, answer: string, meaning: string, difficulty: 1 | 2 | 3}> = [
-          { 
-            sentence: 'わたし＿＿がくせいです。', 
-            answer: 'は', 
-            meaning: '我是學生。',
-            difficulty: 1
-          },
-          { 
-            sentence: 'これ＿＿ほんです。', 
-            answer: 'は', 
-            meaning: '這是書。',
-            difficulty: 1
-          },
-          { 
-            sentence: 'ここ＿＿きょうしつです。', 
-            answer: 'は', 
-            meaning: '這裡是教室。',
-            difficulty: 1
-          },
-        ];
-        
-        if (upToLesson >= 4) {
-          particleQuestions.push(
-            { 
-              sentence: 'わたしはろくじ＿＿おきます。', 
-              answer: 'に', 
-              meaning: '我六點起床。',
-              difficulty: 2
-            },
-            { 
-              sentence: 'くじ＿＿はたらきます。', 
-              answer: 'から', 
-              meaning: '從九點開始工作。',
-              difficulty: 2
-            }
-          );
-        }
-        
-        const pq = particleQuestions[Math.floor(Math.random() * particleQuestions.length)];
-        questions.push({
-          id: `lang-${lesson.lessonNum}-${unit.id}-particle`,
-          section: 'language',
-          type: 'fill-in-blank',
-          question: `請填入正確的助詞：\n${pq.sentence}\n（${pq.meaning}）`,
-          options: ['は', 'が', 'を', 'に', 'で', 'から', 'まで'],
-          correctAnswer: pq.answer,
-          explanation: `正確答案是「${pq.answer}」。`,
-          sourceLesson: lesson.lessonNum,
-          sourceUnit: unit.id,
-          difficulty: pq.difficulty,
-        });
-      }
-      
-      // 詞彙配對題
-      if (unit.vocab.length >= 4) {
-        const shuffled = [...unit.vocab].sort(() => Math.random() - 0.5).slice(0, 4);
-        
-        questions.push({
-          id: `lang-${lesson.lessonNum}-${unit.id}-match`,
-          section: 'language',
-          type: 'matching',
-          question: '請將下列日文詞彙與正確的中文意思配對：',
-          options: shuffled.map(v => `${v.hiragana} = ${v.meaning}`),
-          correctAnswer: 0, // 這裡簡化處理，實際應該有配對邏輯
-          explanation: shuffled.map(v => `「${v.hiragana}」=「${v.meaning}」`).join('，'),
-          sourceLesson: lesson.lessonNum,
-          sourceUnit: unit.id,
-          difficulty: 2,
-        });
-      }
+  // N5 文法題庫
+  const grammarQuestions: Array<{
+    sentence: string;
+    meaning: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+    minLesson: number;
+    difficulty: 1 | 2 | 3;
+  }> = [
+    {
+      sentence: 'わたし＿＿がくせいです。',
+      meaning: '我是學生。',
+      options: ['は', 'が', 'を', 'の'],
+      correctIndex: 0,
+      explanation: '「は」用於提示主題，表示「我是學生」。',
+      minLesson: 1,
+      difficulty: 1,
+    },
+    {
+      sentence: 'これ＿＿ほんです。',
+      meaning: '這是書。',
+      options: ['は', 'が', 'を', 'に'],
+      correctIndex: 0,
+      explanation: '「は」用於提示主題，表示「這（東西）是書」。',
+      minLesson: 2,
+      difficulty: 1,
+    },
+    {
+      sentence: 'がっこう＿＿いきます。',
+      meaning: '去學校。',
+      options: ['は', 'が', 'を', 'へ'],
+      correctIndex: 3,
+      explanation: '「へ」表示方向，「がっこうへいきます」意思是「去學校」。',
+      minLesson: 3,
+      difficulty: 2,
+    },
+    {
+      sentence: 'ろくじ＿＿おきます。',
+      meaning: '六點起床。',
+      options: ['は', 'が', 'を', 'に'],
+      correctIndex: 3,
+      explanation: '「に」用於表示具體時間點，「ろくじに」意思是「在六點」。',
+      minLesson: 4,
+      difficulty: 2,
+    },
+    {
+      sentence: 'きょうと＿＿しんかんせん＿＿いきます。',
+      meaning: '坐新幹線去京都。',
+      options: ['へ、で', 'に、を', 'で、へ', 'を、に'],
+      correctIndex: 0,
+      explanation: '「へ」表示方向，「で」表示交通方式。',
+      minLesson: 5,
+      difficulty: 3,
+    },
+    {
+      sentence: 'がいこく＿＿りょうり＿＿たべました。',
+      meaning: '吃了外國菜。',
+      options: ['の、を', 'を、が', 'が、に', 'に、で'],
+      correctIndex: 0,
+      explanation: '「の」連接名詞，「を」提示賓語。',
+      minLesson: 2,
+      difficulty: 2,
+    },
+    {
+      sentence: 'いま＿＿なんじですか。',
+      meaning: '現在幾點？',
+      options: ['は', 'が', 'を', 'に'],
+      correctIndex: 0,
+      explanation: '「は」用於提示主題，「いまはなんじですか」詢問現在時間。',
+      minLesson: 4,
+      difficulty: 1,
+    },
+    {
+      sentence: 'だいがく＿＿なにがくですか。',
+      meaning: '大學是什麼學系？',
+      options: ['は', 'が', 'を', 'に'],
+      correctIndex: 0,
+      explanation: '「は」用於提示主題。',
+      minLesson: 1,
+      difficulty: 1,
+    },
+  ];
+  
+  // 根據課程進度選擇合適的文法題
+  const availableQuestions = grammarQuestions.filter(q => q.minLesson <= upToLesson);
+  
+  // 隨機選擇最多12題
+  const shuffled = [...availableQuestions].sort(() => Math.random() - 0.5).slice(0, 12);
+  
+  shuffled.forEach((q, index) => {
+    questions.push({
+      id: `lang-grammar-${index}`,
+      section: 'language',
+      type: 'fill-in-blank',
+      question: `請選擇正確的助詞填入空白處：\n${q.sentence}\n（${q.meaning}）`,
+      options: q.options,
+      correctAnswer: q.correctIndex,
+      explanation: q.explanation,
+      sourceLesson: q.minLesson,
+      difficulty: q.difficulty,
     });
   });
   
-  return questions.slice(0, 12); // 語文運用最多12題
+  return questions;
 }
 
 // ==================== 聆聽題目生成器 ====================
@@ -217,68 +237,57 @@ function generateListeningQuestions(lessons: N5Lesson[], upToLesson: number): Ex
   const questions: ExamQuestion[] = [];
   const targetLessons = lessons.filter(l => l.lessonNum <= upToLesson);
   
+  // 收集所有詞彙
+  const allVocab: Array<{ vocab: N5Vocab; lessonNum: number; unitId: number }> = [];
   targetLessons.forEach(lesson => {
-    lesson.units.forEach((unit, unitIndex) => {
-      // 詞彙聽力題（顯示日文，選中文意思）
-      if (unit.vocab.length >= 4) {
-        const targetVocab = unit.vocab[Math.floor(Math.random() * unit.vocab.length)];
-        const options = unit.vocab
-          .filter(v => v.hiragana !== targetVocab.hiragana)
-          .slice(0, 3)
-          .map(v => v.meaning);
-        options.push(targetVocab.meaning);
-        
-        // 打亂選項
-        const shuffledOptions = options.sort(() => Math.random() - 0.5);
-        
-        questions.push({
-          id: `listen-${lesson.lessonNum}-${unit.id}-1`,
-          section: 'listening',
-          type: 'multiple-choice',
-          question: `請聽以下詞彙，選擇正確的意思：\n🔊 ${targetVocab.hiragana}${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''}`,
-          options: shuffledOptions,
-          correctAnswer: shuffledOptions.indexOf(targetVocab.meaning),
-          explanation: `「${targetVocab.hiragana}」的意思是「${targetVocab.meaning}」。廣東話諧音：${targetVocab.cantonese || '無'}`,
-          sourceLesson: lesson.lessonNum,
-          sourceUnit: unit.id,
-          difficulty: 1,
-        });
-      }
-      
-      // 簡單對話理解題
-      if (unitIndex % 2 === 0) {
-        const commonPhrases = [
-          { phrase: 'はじめまして', meaning: '初次見面', lesson: 1 },
-          { phrase: 'ありがとうございます', meaning: '謝謝', lesson: 1 },
-          { phrase: 'すみません', meaning: '對不起', lesson: 3 },
-          { phrase: 'いくらですか', meaning: '多少錢', lesson: 3 },
-          { phrase: 'これはなんですか', meaning: '這是什麼', lesson: 2 },
-        ];
-        
-        const phrase = commonPhrases.find(p => p.lesson <= upToLesson) || commonPhrases[0];
-        
-        questions.push({
-          id: `listen-${lesson.lessonNum}-${unit.id}-2`,
-          section: 'listening',
-          type: 'multiple-choice',
-          question: `聽到「${phrase.phrase}」時，應該如何回應？`,
-          options: [
-            phrase.meaning,
-            '再見',
-            '你好',
-            '不好意思'
-          ],
-          correctAnswer: 0,
-          explanation: `「${phrase.phrase}」的意思是「${phrase.meaning}」。`,
-          sourceLesson: lesson.lessonNum,
-          sourceUnit: unit.id,
-          difficulty: 2,
-        });
-      }
+    lesson.units.forEach(unit => {
+      unit.vocab.forEach(v => {
+        allVocab.push({ vocab: v, lessonNum: lesson.lessonNum, unitId: unit.id });
+      });
     });
   });
   
-  return questions.slice(0, 8); // 聆聽最多8題
+  if (allVocab.length < 4) return questions;
+  
+  // 生成聆聽理解題（顯示日文詞彙，選中文意思）
+  const usedIndices = new Set<number>();
+  let questionCount = 0;
+  
+  while (questionCount < 8 && usedIndices.size < allVocab.length) {
+    const randomIndex = Math.floor(Math.random() * allVocab.length);
+    if (usedIndices.has(randomIndex)) continue;
+    usedIndices.add(randomIndex);
+    
+    const target = allVocab[randomIndex];
+    const targetVocab = target.vocab;
+    
+    // 選3個干擾項
+    const otherVocabs = allVocab
+      .filter((_, i) => i !== randomIndex)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3)
+      .map(v => v.vocab.meaning);
+    
+    const options = [...otherVocabs, targetVocab.meaning].sort(() => Math.random() - 0.5);
+    const correctIndex = options.indexOf(targetVocab.meaning);
+    
+    questions.push({
+      id: `listen-${target.lessonNum}-${target.unitId}-${questionCount}`,
+      section: 'listening',
+      type: 'multiple-choice',
+      question: `請聽以下詞彙，選擇正確的意思：\n🔊 「${targetVocab.hiragana}」${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''}`,
+      options,
+      correctAnswer: correctIndex,
+      explanation: `「${targetVocab.hiragana}${targetVocab.kanji ? `（${targetVocab.kanji}）` : ''}」的意思是「${targetVocab.meaning}」。`,
+      sourceLesson: target.lessonNum,
+      sourceUnit: target.unitId,
+      difficulty: 1,
+    });
+    
+    questionCount++;
+  }
+  
+  return questions;
 }
 
 // ==================== 考試生成器 ====================
@@ -289,15 +298,15 @@ export function generateExam(lessons: N5Lesson[], lessonNum: number): Exam {
   const listeningQuestions = generateListeningQuestions(lessons, lessonNum);
   
   const totalQuestions = readingQuestions.length + languageQuestions.length + listeningQuestions.length;
-  const maxScore = totalQuestions * 10; // 每題10分
-  const passScore = Math.floor(maxScore * 0.6); // 60%及格
+  const maxScore = totalQuestions * 10;
+  const passScore = Math.floor(maxScore * 0.6);
   
   return {
     id: `exam-n5-lesson-${lessonNum}`,
     lessonNum,
     title: `第${lessonNum}課 綜合考試`,
     subtitle: `包含第1至${lessonNum}課所有內容`,
-    totalTime: 30 + (lessonNum * 5), // 基礎30分鐘，每課增加5分鐘
+    totalTime: 30 + (lessonNum * 5),
     totalQuestions,
     passScore,
     sections: [
@@ -305,7 +314,7 @@ export function generateExam(lessons: N5Lesson[], lessonNum: number): Exam {
         id: 'reading',
         title: '閱讀理解',
         titleJp: '読解',
-        description: '閱讀短文並回答問題，測試你對詞彙和語法的理解。',
+        description: '閱讀詞彙並回答問題，測試你對日文詞彙的理解。',
         timeLimit: 10 + (lessonNum * 2),
         questionCount: readingQuestions.length,
         questions: readingQuestions,
@@ -314,7 +323,7 @@ export function generateExam(lessons: N5Lesson[], lessonNum: number): Exam {
         id: 'language',
         title: '語文運用',
         titleJp: '文法・語彙',
-        description: '測試助詞使用、詞彙配對和句子結構。',
+        description: '測試助詞使用和句子結構。',
         timeLimit: 12 + (lessonNum * 2),
         questionCount: languageQuestions.length,
         questions: languageQuestions,
@@ -323,7 +332,7 @@ export function generateExam(lessons: N5Lesson[], lessonNum: number): Exam {
         id: 'listening',
         title: '聆聽理解',
         titleJp: '聴解',
-        description: '聽取詞彙和簡單對話，選擇正確答案。',
+        description: '聆聽詞彙，選擇正確意思。',
         timeLimit: 8 + lessonNum,
         questionCount: listeningQuestions.length,
         questions: listeningQuestions,
@@ -336,7 +345,7 @@ export function generateExam(lessons: N5Lesson[], lessonNum: number): Exam {
 
 export function calculateExamScore(
   exam: Exam,
-  answers: Record<string, string | number>
+  answers: Record<string, number>
 ): ExamResult {
   const sectionScores: ExamResult['sectionScores'] = {
     reading: { correct: 0, total: 0, score: 0 },
@@ -352,14 +361,14 @@ export function calculateExamScore(
       sectionScores[section.id].total++;
       if (isCorrect) {
         sectionScores[section.id].correct++;
-        sectionScores[section.id].score += 10; // 每題10分
+        sectionScores[section.id].score += 10;
       }
     });
   });
   
   const totalScore = Object.values(sectionScores).reduce((sum, s) => sum + s.score, 0);
   const maxScore = exam.totalQuestions * 10;
-  const percentage = Math.round((totalScore / maxScore) * 100);
+  const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
   
   return {
     examId: exam.id,

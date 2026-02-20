@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 interface ExamSectionProps {
   section: ExamSectionData;
   answers: Record<string, string | number>;
-  onSubmitAnswer: (questionId: string, answer: string | number) => void;
+  onSubmitAnswer: (questionId: string, answer: number) => void;
   onNext: () => void;
   isLastSection: boolean;
 }
@@ -56,7 +56,7 @@ export function ExamSectionComponent({
   };
   
   // 選擇答案
-  const selectAnswer = (answer: string | number) => {
+  const selectAnswer = (answer: number) => {
     onSubmitAnswer(currentQuestion.id, answer);
   };
   
@@ -210,9 +210,9 @@ export function ExamSectionComponent({
               {currentQuestion.options?.map((option, index) => (
                 <button
                   key={index}
-                  onClick={() => selectAnswer(option)}
+                  onClick={() => selectAnswer(index)}
                   className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                    answers[currentQuestion.id] === option
+                    answers[currentQuestion.id] === index
                       ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
                       : 'border-gray-200 hover:border-indigo-200 hover:bg-gray-50'
                   }`}

@@ -29,7 +29,7 @@ export default function ExamPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [currentSection, setCurrentSection] = useState<number>(0);
-  const [answers, setAnswers] = useState<Record<string, string | number>>({});
+  const [answers, setAnswers] = useState<Record<string, number>>({});
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   
@@ -49,7 +49,7 @@ export default function ExamPage() {
   };
   
   // 提交答案
-  const submitAnswer = (questionId: string, answer: string | number) => {
+  const submitAnswer = (questionId: string, answer: number) => {
     setAnswers(prev => ({
       ...prev,
       [questionId]: answer,
