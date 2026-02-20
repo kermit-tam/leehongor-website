@@ -199,6 +199,11 @@ export default function LearnPage() {
   const [proficiencyStats, setProficiencyStats] = useState({ overall: 0, level: 'N5-Beginner', weakAreas: [] as string[], strongAreas: [] as string[] });
   const [quizAvg, setQuizAvg] = useState(0);
 
+  // 記錄用戶最後訪問頁面
+  useEffect(() => {
+    localStorage.setItem('lastVisitedPage', '/learn');
+  }, []);
+
   // 加載數據
   useEffect(() => {
     const loadData = async () => {

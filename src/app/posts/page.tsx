@@ -29,6 +29,11 @@ export default function PostsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 記錄用戶最後訪問頁面
+  useEffect(() => {
+    localStorage.setItem('lastVisitedPage', '/posts');
+  }, []);
+
   // 加載文章
   useEffect(() => {
     const loadPosts = async () => {

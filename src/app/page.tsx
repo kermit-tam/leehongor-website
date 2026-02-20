@@ -15,10 +15,17 @@ export default function HomePage() {
   const { user, isLoading, loginWithGoogle } = useAuth();
   const router = useRouter();
 
-  // 已登入用戶重定向
+  // 已登入用戶重定向 - 默認系統學，或恢復上次頁面
   useEffect(() => {
     if (!isLoading && user) {
-      router.push('/posts');
+      // 檢查用戶最後使用嘅頁面
+      const lastPage = localStorage.getItem('lastVisitedPage');
+      if (lastPage) {
+        router.push(lastPage);
+      } else {
+        // 默認去系統學 (/learn)
+        router.push('/learn');
+      }
     }
   }, [user, isLoading, router]);
 

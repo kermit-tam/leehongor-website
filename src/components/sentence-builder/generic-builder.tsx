@@ -152,10 +152,39 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
     }
   }, [currentSentence.hiragana, isPlaying, speechRate, speechGender, availableVoices]);
 
+  // 獲取最佳支持的 MIME 類型
+  const getSupportedMimeType = () => {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+    ];
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        return type;
+      }
+    }
+    return ''; // 使用默認
+  };
+
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 44100,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        } 
+      });
+      
+      const mimeType = getSupportedMimeType();
+      const options = mimeType ? { mimeType } : {};
+      const mediaRecorder = new MediaRecorder(stream, options);
+      
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -164,16 +193,18 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const finalMimeType = mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: finalMimeType });
         const audioUrl = URL.createObjectURL(audioBlob);
         recordedAudioUrlRef.current = audioUrl;
         setRecordedAudioUrl(audioUrl);
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(100); // 每 100ms 收集數據，確保數據不會丟失
       setIsRecording(true);
     } catch (err) {
-      alert('無法存取麥克風，請確認已授予權限。');
+      console.error('Recording error:', err);
+      alert('無法存取麥克風，請確認已授予權限。在 iOS 上請使用 Safari 瀏覽器。');
     }
   };
 
@@ -185,13 +216,48 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
     }
   };
 
-  const playRecording = () => {
+  const playRecording = async () => {
     if (recordedAudioUrl && !isPlayingRecording) {
-      const audio = new Audio(recordedAudioUrl);
-      audioPlayerRef.current = audio;
-      audio.onplay = () => setIsPlayingRecording(true);
-      audio.onended = () => setIsPlayingRecording(false);
-      audio.play();
+      try {
+        // 創建音頻元素
+        const audio = new Audio(recordedAudioUrl);
+        audioPlayerRef.current = audio;
+        
+        // iOS Safari 需要設置這些屬性
+        audio.preload = 'auto';
+        (audio as any).playsInline = true; // iOS 視頻屬性，對音頻也有幫助
+        audio.muted = false;
+        
+        // 等待音頻加載
+        await new Promise((resolve, reject) => {
+          audio.oncanplaythrough = resolve;
+          audio.onerror = reject;
+          // 超時處理
+          setTimeout(() => reject(new Error('Audio load timeout')), 5000);
+        });
+        
+        audio.onplay = () => setIsPlayingRecording(true);
+        audio.onended = () => setIsPlayingRecording(false);
+        audio.onerror = () => {
+          setIsPlayingRecording(false);
+          alert('播放失敗，請重試');
+        };
+        
+        // 確保音頻上下文已恢復（針對 iOS）
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          const audioContext = new AudioContext();
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+          }
+        }
+        
+        await audio.play();
+      } catch (err) {
+        console.error('Playback error:', err);
+        setIsPlayingRecording(false);
+        alert('播放失敗，請重試。在 iOS 上請確保靜音開關已關閉。');
+      }
     }
   };
 
@@ -379,7 +445,16 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
                       <div className="text-sm font-medium text-[#4A4A4A] mb-1">{r.sentence}</div>
                       <div className="text-xs text-[#8C8C8C] mb-2">{r.hiragana}</div>
                       <div className="flex gap-2">
-                        <button onClick={() => { const a = new Audio(r.audioData); a.play(); }} className="flex-1 py-1.5 bg-[#E3F2FD] text-[#1976D2] rounded-full text-xs">▶️ 播放</button>
+                        <button onClick={async () => { 
+                          try {
+                            const a = new Audio(r.audioData);
+                            a.preload = 'auto';
+                            (a as any).playsInline = true;
+                            await a.play();
+                          } catch (e) {
+                            alert('播放失敗，請重試');
+                          }
+                        }} className="flex-1 py-1.5 bg-[#E3F2FD] text-[#1976D2] rounded-full text-xs">▶️ 播放</button>
                         <button onClick={() => deleteRecording(r.id)} className="px-3 py-1.5 bg-[#FFEBEE] text-[#F44336] rounded-full text-xs">🗑️</button>
                       </div>
                     </div>
