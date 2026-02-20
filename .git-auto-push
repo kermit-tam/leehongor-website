@@ -1,0 +1,24 @@
+#!/bin/bash
+# 自動 push 腳本
+cd /Users/Kermit/leehongor-website
+
+# 檢查是否有改動
+if git diff --quiet && git diff --cached --quiet; then
+    exit 0
+fi
+
+# 添加所有改動
+git add -A
+
+# 生成提交信息（帶時間）
+commit_msg="Auto update: $(date '+%Y-%m-%d %H:%M:%S')"
+if [ -f .commit-msg ]; then
+    commit_msg="$(cat .commit-msg)"
+    rm .commit-msg
+fi
+
+# Commit 同 push
+git commit -m "$commit_msg" --quiet
+git push origin main --quiet
+
+echo "✅ 已自動推送到 GitHub ($(date '+%H:%M:%S'))"
