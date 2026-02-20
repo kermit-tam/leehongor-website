@@ -500,6 +500,26 @@ export const QuizService = {
       unlockedNextLesson,
     };
   },
+
+  /**
+   * 獲取用戶練習記錄
+   */
+  async getUserRecords(userId: string): Promise<PracticeRecord[]> {
+    const q = query(
+      collection(db, COLLECTIONS.PRACTICE_RECORDS),
+      where('userId', '==', userId),
+      orderBy('completedAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        completedAt: data.completedAt instanceof Timestamp ? data.completedAt.toDate() : data.completedAt,
+      } as PracticeRecord;
+    });
+  },
 };
 
 // ==================== 排行榜服務 ====================

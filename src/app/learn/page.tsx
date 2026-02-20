@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
-import { UserService } from '@/lib/firestore';
+import { UserService, QuizService } from '@/lib/firestore';
 import { LevelCard, StatCard } from '@/components/ui/card';
 import { AbilityRadarChart } from '@/components/charts/radar-chart';
 import { lesson1Data, calculateLevel, scoringConfig, getUnitProgressKey, calculateLessonProgress, n5LessonsList } from '@/data/n5-lessons';
@@ -221,27 +221,131 @@ export default function LearnPage() {
           setUnitScores(JSON.parse(savedScores));
         }
         
-        // 加載雙軌進度
-        const lp = loadLearningProgress();
-        const pd = loadProficiencyData();
-        
-        setLearningProgress(lp);
-        setProficiencyData(pd);
-        
-        // 總單元數（第1-4課）
-        const totalUnitsAcrossLessons = lesson1Data.units.length + 
-          n5LessonsList.slice(1, 4).reduce((sum, l) => sum + (l.units?.length || 0), 0);
-        
-        setLearningStats(calculateLearningRate(lp, totalUnitsAcrossLessons));
-        setProficiencyStats(calculateProficiency(pd));
-        setQuizAvg(pd.quizResults.length > 0
-          ? Math.round(pd.quizResults.reduce((sum, r) => sum + r.score, 0) / pd.quizResults.length)
-          : 0);
-
-        // 如果用戶已登入，加載用戶數據
+        // 如果用戶已登入，從 Firebase 加載數據
         if (user?.uid) {
-          const fetchedUser = await UserService.getUser(user.uid);
+          const [fetchedUser, practiceRecords] = await Promise.all([
+            UserService.getUser(user.uid),
+            QuizService.getUserRecords(user.uid),
+          ]);
+          
           setUserData(fetchedUser);
+          
+          // 計算學習進度（基於完成的課程）
+          const completedLessons = fetchedUser?.completedLessons || [];
+          const totalLessons = 15; // N5 共15課
+          
+          setLearningStats({
+            rate: Math.round((completedLessons.length / totalLessons) * 100),
+            completedCount: completedLessons.length,
+            totalCount: totalLessons,
+            status: completedLessons.length >= 10 ? 'dedicated' : 
+                    completedLessons.length >= 5 ? 'active' : 
+                    completedLessons.length >= 1 ? 'beginner' : 'beginner',
+          });
+          
+          // 計算熟練度（基於測驗記錄）
+          if (practiceRecords.length > 0) {
+            const avgScore = Math.round(
+              practiceRecords.reduce((sum, r) => sum + r.scores.overall, 0) / practiceRecords.length
+            );
+            setQuizAvg(avgScore);
+            
+            // 計算各項能力平均分
+            const dimensionScores = {
+              vocabulary: [] as number[],
+              grammar: [] as number[],
+              listening: [] as number[],
+              pronunciation: [] as number[],
+              kanji: [] as number[],
+              application: [] as number[],
+            };
+            
+            practiceRecords.forEach(r => {
+              Object.entries(r.scores).forEach(([dim, score]) => {
+                if (dim !== 'overall' && score !== undefined) {
+                  dimensionScores[dim as keyof typeof dimensionScores].push(score);
+                }
+              });
+            });
+            
+            const avgVocab = dimensionScores.vocabulary.length > 0 
+              ? Math.round(dimensionScores.vocabulary.reduce((a, b) => a + b, 0) / dimensionScores.vocabulary.length) 
+              : 0;
+            const avgGrammar = dimensionScores.grammar.length > 0 
+              ? Math.round(dimensionScores.grammar.reduce((a, b) => a + b, 0) / dimensionScores.grammar.length) 
+              : 0;
+            const avgListening = dimensionScores.listening.length > 0 
+              ? Math.round(dimensionScores.listening.reduce((a, b) => a + b, 0) / dimensionScores.listening.length) 
+              : 0;
+            
+            const overall = Math.round((avgVocab + avgGrammar + avgListening + avgScore) / 4);
+            
+            let level = 'N5-Beginner';
+            if (overall >= 95) level = 'N5-Master';
+            else if (overall >= 85) level = 'N5-Advanced';
+            else if (overall >= 70) level = 'N5-Intermediate';
+            else if (overall >= 50) level = 'N5-Elementary';
+            
+            const weakAreas = [];
+            const strongAreas = [];
+            if (avgVocab < 60) weakAreas.push('詞彙');
+            if (avgVocab >= 80) strongAreas.push('詞彙');
+            if (avgGrammar < 60) weakAreas.push('文法');
+            if (avgGrammar >= 80) strongAreas.push('文法');
+            if (avgListening < 60) weakAreas.push('聽力');
+            if (avgListening >= 80) strongAreas.push('聽力');
+            
+            setProficiencyStats({
+              overall,
+              level,
+              weakAreas,
+              strongAreas,
+            });
+          } else {
+            // 無測驗記錄時使用能力分數
+            if (fetchedUser?.abilityScores) {
+              const scores = fetchedUser.abilityScores;
+              const dims = ['vocabulary', 'grammar', 'listening', 'pronunciation', 'kanji', 'application'] as const;
+              const values = dims.map(d => scores[d]?.best || 0);
+              const overall = Math.round(values.reduce((a, b) => a + b, 0) / dims.length);
+              
+              let level = 'N5-Beginner';
+              if (overall >= 95) level = 'N5-Master';
+              else if (overall >= 85) level = 'N5-Advanced';
+              else if (overall >= 70) level = 'N5-Intermediate';
+              else if (overall >= 50) level = 'N5-Elementary';
+              
+              const weakAreas = [];
+              const strongAreas = [];
+              if (scores.vocabulary?.best < 60) weakAreas.push('詞彙');
+              if (scores.vocabulary?.best >= 80) strongAreas.push('詞彙');
+              if (scores.grammar?.best < 60) weakAreas.push('文法');
+              if (scores.grammar?.best >= 80) strongAreas.push('文法');
+              if (scores.listening?.best < 60) weakAreas.push('聽力');
+              if (scores.listening?.best >= 80) strongAreas.push('聽力');
+              
+              setProficiencyStats({
+                overall,
+                level,
+                weakAreas,
+                strongAreas,
+              });
+              setQuizAvg(0);
+            }
+          }
+        } else {
+          // 未登入用戶使用本地數據
+          const lp = loadLearningProgress();
+          const pd = loadProficiencyData();
+          
+          const totalUnitsAcrossLessons = lesson1Data.units.length + 
+            n5LessonsList.slice(1, 4).reduce((sum, l) => sum + (l.units?.length || 0), 0);
+          
+          setLearningStats(calculateLearningRate(lp, totalUnitsAcrossLessons));
+          setProficiencyStats(calculateProficiency(pd));
+          setQuizAvg(pd.quizResults.length > 0
+            ? Math.round(pd.quizResults.reduce((sum, r) => sum + r.score, 0) / pd.quizResults.length)
+            : 0);
         }
       } catch (err) {
         console.error('Error loading learn page:', err);
