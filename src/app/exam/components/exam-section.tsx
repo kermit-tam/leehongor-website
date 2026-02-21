@@ -296,22 +296,8 @@ export function ExamSectionComponent({
             </div>
           )}
           
-          {/* 答題後顯示解釋 */}
-          {currentQuestion && answers[currentQuestion.id] !== undefined && currentQuestion.explanation && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              className="mt-6 p-4 bg-green-50 rounded-xl border border-green-100"
-            >
-              <div className="flex items-center gap-2 mb-2 text-green-800 font-medium">
-                <span>✅</span>
-                <span>正確答案：{String.fromCharCode(65 + currentQuestion.correctAnswer)}</span>
-              </div>
-              <p className="text-sm text-green-700 whitespace-pre-line">
-                {currentQuestion.explanation}
-              </p>
-            </motion.div>
-          )}
+          {/* 考試模式：交卷前唔顯示正確答案 */}
+          {/* 答案同解釋會喺交卷後顯示 */}
         </motion.div>
       </AnimatePresence>
       )}
