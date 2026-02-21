@@ -7,6 +7,7 @@
  */
 
 import { N5Lesson, N5Unit, N5Vocab } from '@/data/n5-lessons';
+import { lesson1Reading } from '@/app/learn/n5/lesson-1/reading-data';
 import { lesson2Reading } from '@/app/learn/n5/lesson-2/reading-data';
 import { lesson3Reading } from '@/app/learn/n5/lesson-3/reading-data';
 import { lesson4Reading } from '@/app/learn/n5/lesson-4/reading-data';
@@ -69,6 +70,7 @@ export interface ExamResult {
 
 // 所有閱讀理解短文數據
 const allReadingPassages = [
+  ...lesson1Reading,
   ...lesson2Reading,
   ...lesson3Reading,
   ...lesson4Reading,
@@ -287,14 +289,16 @@ function generateLanguageQuestions(lessons: N5Lesson[], upToLesson: number): Exa
   const shuffled = [...availableQuestions].sort(() => Math.random() - 0.5).slice(0, 12);
   
   shuffled.forEach((q, index) => {
+    // 題目不顯示中文解釋（只在解說中顯示）
     questions.push({
       id: `lang-grammar-${index}`,
       section: 'language',
       type: 'fill-in-blank',
-      question: `請選擇正確的助詞填入空白處：\n${q.sentence}\n（${q.meaning}）`,
+      question: `請選擇正確的助詞填入空白處：\n${q.sentence}`,
       options: q.options,
       correctAnswer: q.correctIndex,
-      explanation: q.explanation,
+      // 在解說中提供原文翻譯和文法解釋
+      explanation: `【原文】${q.meaning}\n\n${q.explanation}`,
       sourceLesson: q.minLesson,
       difficulty: q.difficulty,
     });

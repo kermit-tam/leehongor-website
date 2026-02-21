@@ -29,6 +29,8 @@ export function ExamSectionComponent({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(section.timeLimit * 60); // 轉換為秒
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showHint, setShowHint] = useState(false); // 顯示提示（語文運用的中文翻譯）
+  const [showTranscript, setShowTranscript] = useState(false); // 顯示聆聽對話內容
   
   // 安全檢查：確保有題目
   const hasQuestions = section.questions.length > 0;
@@ -186,6 +188,30 @@ export function ExamSectionComponent({
               {currentQuestion?.question}
             </h3>
             
+            {/* 語文運用：顯示中文翻譯的選項 */}
+            {section.id === 'language' && currentQuestion && (
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowHint(!showHint)}
+                  className="text-sm text-gray-500 hover:text-indigo-600 flex items-center gap-1 transition-all"
+                >
+                  <span>{showHint ? '🙈' : '💡'}</span>
+                  <span>{showHint ? '隱藏中文翻譯' : '顯示中文翻譯（考試時不會有）'}</span>
+                </button>
+                
+                {showHint && currentQuestion.explanation && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    className="mt-2 p-3 bg-yellow-50 rounded-lg text-sm text-yellow-800"
+                  >
+                    <strong>提示：</strong>
+                    {currentQuestion.explanation.split('\n')[0]?.replace('【原文】', '') || ''}
+                  </motion.div>
+                )}
+              </div>
+            )}
+            
             {/* 聆聽音頻播放器 */}
             {section.id === 'listening' && currentQuestion && (
               <div className="mt-6">
@@ -195,7 +221,12 @@ export function ExamSectionComponent({
                   
                   // 如果有多句對話，用 DialoguePlayer
                   if (data.dialogue.length > 1) {
-                    return <DialoguePlayer lines={data.dialogue} />;
+                    return (
+                      <DialoguePlayer 
+                        lines={data.dialogue} 
+                        onShowTranscript={() => setShowTranscript(true)}
+                      />
+                    );
                   }
                   
                   // 單句用 AudioPlayer
@@ -203,7 +234,7 @@ export function ExamSectionComponent({
                     <div className="bg-amber-50 rounded-xl p-4 text-center">
                       <AudioPlayer 
                         text={data.dialogue[0]?.text || ''} 
-                        autoPlay={false}
+                        rate={0.8}
                       />
                     </div>
                   );
@@ -263,6 +294,23 @@ export function ExamSectionComponent({
                 </button>
               ))}
             </div>
+          )}
+          
+          {/* 答題後顯示解釋 */}
+          {currentQuestion && answers[currentQuestion.id] !== undefined && currentQuestion.explanation && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              className="mt-6 p-4 bg-green-50 rounded-xl border border-green-100"
+            >
+              <div className="flex items-center gap-2 mb-2 text-green-800 font-medium">
+                <span>✅</span>
+                <span>正確答案：{String.fromCharCode(65 + currentQuestion.correctAnswer)}</span>
+              </div>
+              <p className="text-sm text-green-700 whitespace-pre-line">
+                {currentQuestion.explanation}
+              </p>
+            </motion.div>
           )}
         </motion.div>
       </AnimatePresence>
