@@ -23,7 +23,9 @@ export interface ExamQuestion {
   section: ExamSection;
   type: 'multiple-choice' | 'fill-in-blank';
   question: string;
+  questionCn?: string; // 中文題目（閱讀理解）
   options: string[];
+  optionsCn?: string[]; // 中文選項（閱讀理解）
   correctAnswer: number; // 選項索引
   explanation: string;
   sourceLesson: number;
@@ -106,7 +108,9 @@ function generateReadingQuestions(lessons: N5Lesson[], upToLesson: number): Exam
         section: 'reading',
         type: 'multiple-choice',
         question: `【${passage.title}】\n\n${passage.japanese}\n\n問題：${q.question}`,
+        questionCn: q.questionCn || q.question, // 中文題目
         options: q.options,
+        optionsCn: q.optionsCn || q.options, // 中文選項
         correctAnswer: q.correctIndex,
         explanation: `${q.explanation}\n\n文章粵語翻譯：${passage.cantonese}`,
         sourceLesson: passage.lessonId,

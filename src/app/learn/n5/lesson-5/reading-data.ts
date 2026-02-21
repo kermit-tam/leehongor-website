@@ -22,7 +22,9 @@ export const lesson5Reading: ReadingPassage[] = [
       {
         id: '5-1-q1',
         question: '「わたし」怎樣去學校？',
+        questionCn: '「我」怎样去學校？',
         options: ['搭巴士', '搭電車', '揸車', '行路'],
+        optionsCn: ['坐巴士', '坐電車', '開車', '走路'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「でんしゃでがっこうへ行きます」，所以搭電車。',
@@ -30,7 +32,9 @@ export const lesson5Reading: ReadingPassage[] = [
       {
         id: '5-1-q2',
         question: '朋友怎樣去？',
+        questionCn: '朋友怎样去？',
         options: ['搭巴士', '搭電車', '揸車', '行路'],
+        optionsCn: ['坐巴士', '坐電車', '開車', '走路'],
         correctIndex: 0,
         type: 'detail',
         explanation: '文章說「ともだちはバスで行きます」，所以搭巴士。',
@@ -38,7 +42,9 @@ export const lesson5Reading: ReadingPassage[] = [
       {
         id: '5-1-q3',
         question: '老師怎樣去？',
+        questionCn: '老師怎样去？',
         options: ['搭巴士', '搭電車', '揸車', '行路'],
+        optionsCn: ['坐巴士', '坐電車', '開車', '走路'],
         correctIndex: 2,
         type: 'detail',
         explanation: '文章說「せんせいはくるまで行きます」，所以揸車。',
@@ -58,7 +64,9 @@ export const lesson5Reading: ReadingPassage[] = [
       {
         id: '5-2-q1',
         question: '「わたし」和誰一起去？',
+        questionCn: '「我」和谁一起去？',
         options: ['朋友', '女朋友', '自己一個', '屋企人'],
+        optionsCn: ['朋友', '女朋友', '自己一個', '家人'],
         correctIndex: 2,
         type: 'detail',
         explanation: '文章說「ひとりで」，所以是自己一個。',
@@ -66,7 +74,9 @@ export const lesson5Reading: ReadingPassage[] = [
       {
         id: '5-2-q2',
         question: '「かのじょ」和誰一起去？',
+        questionCn: '「她」和谁一起去？',
         options: ['朋友', '女朋友', '自己一個', '屋企人'],
+        optionsCn: ['朋友', '女朋友', '自己一個', '家人'],
         correctIndex: 0,
         type: 'detail',
         explanation: '文章說「ともだちと行きます」，所以同朋友。',
@@ -74,7 +84,9 @@ export const lesson5Reading: ReadingPassage[] = [
       {
         id: '5-2-q3',
         question: '「かれ」和誰一起去？',
+        questionCn: '「他」和谁一起去？',
         options: ['朋友', '女朋友', '自己一個', '屋企人'],
+        optionsCn: ['朋友', '女朋友', '自己一個', '家人'],
         correctIndex: 3,
         type: 'detail',
         explanation: '文章說「かぞくと行きます」，所以同屋企人。',
@@ -94,7 +106,9 @@ export const lesson5Reading: ReadingPassage[] = [
       {
         id: '5-3-q1',
         question: '幾時去日本？',
+        questionCn: '什麼時候去日本？',
         options: ['上個禮拜', '今個禮拜', '下個禮拜', '下個月'],
+        optionsCn: ['上個星期', '這個星期', '下個星期', '下個月'],
         correctIndex: 2,
         type: 'detail',
         explanation: '文章說「らいしゅう、にほんへ行きます」，所以是下個禮拜。',
@@ -102,7 +116,9 @@ export const lesson5Reading: ReadingPassage[] = [
       {
         id: '5-3-q2',
         question: '昨天做什麼？',
+        questionCn: '昨天做什麼？',
         options: ['去日本', '喺學校學習', '休息', '工作'],
+        optionsCn: ['去日本', '在學校學習', '休息', '工作'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「きのうはがっこうでべんきょうしました」，所以喺學校學習。',
@@ -110,7 +126,9 @@ export const lesson5Reading: ReadingPassage[] = [
       {
         id: '5-3-q3',
         question: '明天會怎樣？',
+        questionCn: '明天會怎樣？',
         options: ['去日本', '喺學校學習', '休息', '工作'],
+        optionsCn: ['去日本', '在學校學習', '休息', '工作'],
         correctIndex: 2,
         type: 'detail',
         explanation: '文章說「あしたはやすみです」，所以明天休息。',

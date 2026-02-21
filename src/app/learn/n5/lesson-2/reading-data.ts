@@ -23,7 +23,9 @@ export const lesson2Reading: ReadingPassage[] = [
       {
         id: '2-1-q1',
         question: '「これ」是什麼？',
+        questionCn: '「これ」是什麼？',
         options: ['朋友', '書', '字典', '報紙'],
+        optionsCn: ['朋友', '書', '字典', '報紙'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「これはわたしのほんです」，所以「これ」是書。',
@@ -31,7 +33,9 @@ export const lesson2Reading: ReadingPassage[] = [
       {
         id: '2-1-q2',
         question: '「それ」是誰的？',
+        questionCn: '「それ」是誰的？',
         options: ['我的', '朋友的', '老師的', '不明'],
+        optionsCn: ['我的', '朋友的', '老師的', '不明'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「それはともだちのじしょです」，所以是朋友的。',
@@ -39,7 +43,9 @@ export const lesson2Reading: ReadingPassage[] = [
       {
         id: '2-1-q3',
         question: '「あれ」是什麼？',
+        questionCn: '「あれ」是什麼？',
         options: ['書', '字典', '報紙', '雜誌'],
+        optionsCn: ['書', '字典', '報紙', '雜誌'],
         correctIndex: 2,
         type: 'detail',
         explanation: '文章說「あれはせんせいのしんぶんです」，所以是報紙。',
@@ -59,7 +65,9 @@ export const lesson2Reading: ReadingPassage[] = [
       {
         id: '2-2-q1',
         question: 'かばん裡面有什麼？',
+        questionCn: 'かばん裡面有什麼？',
         options: ['書和鉛筆', '雜誌和字典', '報紙和名片', '電視和電話'],
+        optionsCn: ['書和鉛筆', '雜誌和字典', '報紙和名片', '電視和電話'],
         correctIndex: 0,
         type: 'detail',
         explanation: '文章說「ほんとえんぴつがあります」，所以有書和鉛筆。',
@@ -67,7 +75,9 @@ export const lesson2Reading: ReadingPassage[] = [
       {
         id: '2-2-q2',
         question: 'かばん裡面有雜誌嗎？',
+        questionCn: 'かばん裡面有雜誌嗎？',
         options: ['有', '沒有', '不知道', '有很多'],
+        optionsCn: ['有', '沒有', '不知道', '有很多'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「ざっしはありません」，所以沒有雜誌。',
@@ -75,7 +85,9 @@ export const lesson2Reading: ReadingPassage[] = [
       {
         id: '2-2-q3',
         question: '這篇文章主要講什麼？',
+        questionCn: '這篇文章主要講什麼？',
         options: ['書包裡的物品', '去圖書館', '買東西', '老師的東西'],
+        optionsCn: ['書包裡的物品', '去圖書館', '買東西', '老師的東西'],
         correctIndex: 0,
         type: 'main',
         explanation: '整篇文章都在介紹書包裡有什麼東西。',
@@ -95,7 +107,9 @@ export const lesson2Reading: ReadingPassage[] = [
       {
         id: '2-3-q1',
         question: '「これ」在哪裡？',
+        questionCn: '「これ」在哪裡？',
         options: ['地上', '地下', '樓上', '外面'],
+        optionsCn: ['地上', '地下', '樓上', '外面'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「テレビはちかのうりばです」，テレビ是これ，所以在地下。',
@@ -103,7 +117,9 @@ export const lesson2Reading: ReadingPassage[] = [
       {
         id: '2-3-q2',
         question: '「それ」是什麼？',
+        questionCn: '「それ」是什麼？',
         options: ['電視', '收音機', '電腦', '電話'],
+        optionsCn: ['電視', '收音機', '電腦', '電話'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「それはラジオです」，所以是收音機。',
@@ -111,7 +127,9 @@ export const lesson2Reading: ReadingPassage[] = [
       {
         id: '2-3-q3',
         question: '「あれ」是什麼？',
+        questionCn: '「あれ」是什麼？',
         options: ['電視', '收音機', '電腦', '汽車'],
+        optionsCn: ['電視', '收音機', '電腦', '汽車'],
         correctIndex: 2,
         type: 'detail',
         explanation: '文章說「あれはコンピューターです」，所以是電腦。',

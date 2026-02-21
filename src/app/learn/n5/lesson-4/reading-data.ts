@@ -22,7 +22,9 @@ export const lesson4Reading: ReadingPassage[] = [
       {
         id: '4-1-q1',
         question: '幾點起床？',
+        questionCn: '幾點起床？',
         options: ['5點', '6點', '7點', '8點'],
+        optionsCn: ['5點', '6點', '7點', '8點'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「ろくじにおきます」，所以是6點。',
@@ -30,7 +32,9 @@ export const lesson4Reading: ReadingPassage[] = [
       {
         id: '4-1-q2',
         question: '在哪裡學習？',
+        questionCn: '在哪裡學習？',
         options: ['家裡', '學校', '公司', '圖書館'],
+        optionsCn: ['家裡', '學校', '公司', '圖書館'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「がっこうでべんきょうします」，所以在學校。',
@@ -38,7 +42,9 @@ export const lesson4Reading: ReadingPassage[] = [
       {
         id: '4-1-q3',
         question: '幾點結束？',
+        questionCn: '幾點結束？',
         options: ['3點', '4點', '5點', '6點'],
+        optionsCn: ['3點', '4點', '5點', '6點'],
         correctIndex: 2,
         type: 'detail',
         explanation: '文章說「よるごじにおわります」，所以是5點。',
@@ -58,7 +64,9 @@ export const lesson4Reading: ReadingPassage[] = [
       {
         id: '4-2-q1',
         question: '今天去哪裡？',
+        questionCn: '今天去哪裡？',
         options: ['郵局', '銀行', '百貨商店', '圖書館'],
+        optionsCn: ['郵局', '銀行', '百貨商店', '圖書館'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「きょう、ぎんこうへ行きます」，所以今天去銀行。',
@@ -66,7 +74,9 @@ export const lesson4Reading: ReadingPassage[] = [
       {
         id: '4-2-q2',
         question: '明天去哪裡？',
+        questionCn: '明天去哪裡？',
         options: ['郵局', '銀行', '百貨商店', '美術館'],
+        optionsCn: ['郵局', '銀行', '百貨商店', '美術館'],
         correctIndex: 0,
         type: 'detail',
         explanation: '文章說「あした、ゆうびんきょくへ行きます」，所以明天去郵局。',
@@ -74,7 +84,9 @@ export const lesson4Reading: ReadingPassage[] = [
       {
         id: '4-2-q3',
         question: '後天去哪裡？',
+        questionCn: '後天去哪裡？',
         options: ['郵局', '銀行', '百貨商店', '學校'],
+        optionsCn: ['郵局', '銀行', '百貨商店', '學校'],
         correctIndex: 2,
         type: 'detail',
         explanation: '文章說「あさって、デパートへ行きます」，所以後天去百貨商店。',
@@ -94,7 +106,9 @@ export const lesson4Reading: ReadingPassage[] = [
       {
         id: '4-3-q1',
         question: '學校幾點開始？',
+        questionCn: '學校幾點開始？',
         options: ['7點', '8點', '9點', '10點'],
+        optionsCn: ['7點', '8點', '9點', '10點'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「ごぜんはちじからです」，所以是8點。',
@@ -102,7 +116,9 @@ export const lesson4Reading: ReadingPassage[] = [
       {
         id: '4-3-q2',
         question: '午休是幾點？',
+        questionCn: '午休是幾點？',
         options: ['11點', '12點', '1點', '2點'],
+        optionsCn: ['11點', '12點', '1點', '2點'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「ひるやすみはじゅうにじです」，所以是12點。',
@@ -110,7 +126,9 @@ export const lesson4Reading: ReadingPassage[] = [
       {
         id: '4-3-q3',
         question: '下午幾點結束？',
+        questionCn: '下午幾點結束？',
         options: ['12點', '12點半', '1點', '1點半'],
+        optionsCn: ['12點', '12點半', '1點', '1點半'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「じゅうにじはんでおわります」，所以是12點半。',

@@ -21,7 +21,8 @@ export const lesson1Reading: ReadingPassage[] = [
       {
         id: '1-1-q1',
         question: 'スミスさんはどこから来ましたか。',
-        options: ['にほん', 'アメリカ', 'かんこく', 'ちゅうごく'],
+        questionCn: '史密斯從哪裡來？',
+        options: ['日本', '美國', '韓國', '中國'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「アメリカじんです」，所以是美國人。',
@@ -29,7 +30,8 @@ export const lesson1Reading: ReadingPassage[] = [
       {
         id: '1-1-q2',
         question: 'スミスさんのしごとは何ですか。',
-        options: ['がくせい', 'いしゃ', 'かいしゃいん', 'せんせい'],
+        questionCn: '史密斯的職業是什麼？',
+        options: ['學生', '醫生', '公司職員', '老師'],
         correctIndex: 1,
         type: 'detail',
         explanation: '文章說「いしゃです」，所以是醫生。',
@@ -37,7 +39,8 @@ export const lesson1Reading: ReadingPassage[] = [
       {
         id: '1-1-q3',
         question: 'スミスさんはなんと言いましたか。',
-        options: ['さようなら', 'ありがとう', 'よろしくおねがいします', 'すみません'],
+        questionCn: '史密斯說了什麼？',
+        options: ['再見', '謝謝', '請多關照', '對不起'],
         correctIndex: 2,
         type: 'detail',
         explanation: '最後說「よろしくおねがいします」，這是初次見面的問候語。',

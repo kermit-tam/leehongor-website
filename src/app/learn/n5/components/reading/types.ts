@@ -10,7 +10,9 @@ export type ReadingQuestionType = 'main' | 'detail' | 'inference';
 export interface ReadingQuestion {
   id: string;
   question: string;
+  questionCn?: string; // 中文題目（給初學者使用）
   options: string[];
+  optionsCn?: string[]; // 中文選項（給初學者使用）
   correctIndex: number;
   type: ReadingQuestionType;
   explanation: string;

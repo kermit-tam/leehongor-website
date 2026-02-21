@@ -31,6 +31,7 @@ export function ExamSectionComponent({
   const [showConfirm, setShowConfirm] = useState(false);
   const [showHint, setShowHint] = useState(false); // 顯示提示（語文運用的中文翻譯）
   const [showTranscript, setShowTranscript] = useState(false); // 顯示聆聽對話內容
+  const [questionLang, setQuestionLang] = useState<'ja' | 'cn'>('cn'); // 題目語言（閱讀理解）
   
   // 安全檢查：確保有題目
   const hasQuestions = section.questions.length > 0;
@@ -184,8 +185,52 @@ export function ExamSectionComponent({
               )}
             </div>
             
+            {/* 閱讀理解：題目語言切換 */}
+            {section.id === 'reading' && (
+              <div className="flex justify-end mb-3">
+                <div className="inline-flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setQuestionLang('cn')}
+                    className={`px-3 py-1 text-sm rounded-md transition-all ${
+                      questionLang === 'cn'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    中文題目
+                  </button>
+                  <button
+                    onClick={() => setQuestionLang('ja')}
+                    className={`px-3 py-1 text-sm rounded-md transition-all ${
+                      questionLang === 'ja'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    日文題目
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <h3 className="text-lg text-gray-900 whitespace-pre-line leading-relaxed">
-              {currentQuestion?.question}
+              {(() => {
+                // 閱讀理解：根據選擇顯示中文或日文題目
+                if (section.id === 'reading' && currentQuestion) {
+                  const fullQuestion = currentQuestion.question;
+                  // 分割文章和問題部分
+                  const parts = fullQuestion.split('\n\n問題：');
+                  
+                  if (parts.length === 2) {
+                    const article = parts[0]; // 【標題】\n\n文章
+                    const questionText = questionLang === 'cn' && currentQuestion.questionCn
+                      ? currentQuestion.questionCn
+                      : parts[1];
+                    return `${article}\n\n問題：${questionText}`;
+                  }
+                }
+                return currentQuestion?.question;
+              })()}
             </h3>
             
             {/* 語文運用：顯示中文翻譯的選項 */}
@@ -246,7 +291,10 @@ export function ExamSectionComponent({
           {/* 選項 */}
           {currentQuestion?.options && (
             <div className="space-y-3">
-              {currentQuestion.options.map((option, index) => {
+              {(section.id === 'reading' && questionLang === 'cn' && currentQuestion.optionsCn
+                ? currentQuestion.optionsCn
+                : currentQuestion.options
+              ).map((option, index) => {
                 const isSelected = answers[currentQuestion!.id] === index;
                 
                 return (
