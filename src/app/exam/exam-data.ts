@@ -12,6 +12,16 @@ import { lesson2Reading } from '@/app/learn/n5/lesson-2/reading-data';
 import { lesson3Reading } from '@/app/learn/n5/lesson-3/reading-data';
 import { lesson4Reading } from '@/app/learn/n5/lesson-4/reading-data';
 import { lesson5Reading } from '@/app/learn/n5/lesson-5/reading-data';
+import { lesson6Reading } from '@/app/learn/n5/lesson-6/reading-data';
+import { lesson7Reading } from '@/app/learn/n5/lesson-7/reading-data';
+import { lesson8Reading } from '@/app/learn/n5/lesson-8/reading-data';
+import { lesson9Reading } from '@/app/learn/n5/lesson-9/reading-data';
+import { lesson10Reading } from '@/app/learn/n5/lesson-10/reading-data';
+import { lesson11Reading } from '@/app/learn/n5/lesson-11/reading-data';
+import { lesson12Reading } from '@/app/learn/n5/lesson-12/reading-data';
+import { lesson13Reading } from '@/app/learn/n5/lesson-13/reading-data';
+import { lesson14Reading } from '@/app/learn/n5/lesson-14/reading-data';
+import { lesson15Reading } from '@/app/learn/n5/lesson-15/reading-data';
 import { getListeningDialogues, ListeningDialogue } from './listening-dialogues';
 
 // ==================== 考試類型 ====================
@@ -77,6 +87,16 @@ const allReadingPassages = [
   ...lesson3Reading,
   ...lesson4Reading,
   ...lesson5Reading,
+  ...lesson6Reading,
+  ...lesson7Reading,
+  ...lesson8Reading,
+  ...lesson9Reading,
+  ...lesson10Reading,
+  ...lesson11Reading,
+  ...lesson12Reading,
+  ...lesson13Reading,
+  ...lesson14Reading,
+  ...lesson15Reading,
 ];
 
 function generateReadingQuestions(lessons: N5Lesson[], upToLesson: number): ExamQuestion[] {
