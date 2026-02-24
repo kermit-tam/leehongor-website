@@ -3,7 +3,7 @@
  * Kids Study Page
  * 
  * 課程結構：
- * - 中文：基礎漢字 + 分課（每課7-8字）
+ * - 中文：基礎十字主題，分第一課、第二課
  * - 英文：獨立課程
  */
 
@@ -12,7 +12,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRequireAuth } from '@/lib/auth-context';
-import { StudyCard, Lesson, chineseLessons, englishLessons } from './data';
+import { StudyCard, Lesson, chineseTopics, englishLessons, getAllLessons } from './data';
 import { chineseLesson01Cards } from './data/chinese-lesson-01';
 import { chineseLesson02Cards } from './data/chinese-lesson-02';
 import { englishCards } from './data';
@@ -97,7 +97,7 @@ function KidsStudyContent() {
   };
 
   const getTotalProgress = (sub: Subject) => {
-    const lessons = sub === 'chinese' ? chineseLessons : englishLessons;
+    const lessons = sub === 'chinese' ? getAllLessons('chinese') : englishLessons;
     const totalCards = lessons.reduce((sum, l) => sum + l.cardCount, 0);
     const totalLearned = lessons.reduce((sum, l) => sum + (progress[l.id] || 0), 0);
     return { totalCards, totalLearned };
@@ -240,7 +240,7 @@ function KidsStudyContent() {
           {subject === 'chinese' ? '選擇課程' : 'Choose Lesson'}
         </h3>
         
-        {(subject === 'chinese' ? chineseLessons : englishLessons).map((lesson) => {
+        {(subject === 'chinese' ? getAllLessons('chinese') : englishLessons).map((lesson) => {
           
           const lessonProgress = progress[lesson.id] || 0;
           

@@ -2,21 +2,48 @@
  * 仔仔溫書數據入口
  * 
  * 結構：
- * - 中文：分課（每課約10字）
- * - 每個生字有3個情景例句（口語+書面語對比）
+ * - 基礎十字（大主題）
+ *   - 第一課：山、水、上、下、我、你、在、有、人、牛
+ *   - 第二課：去、個、爸、媽、家、和、沒、中、草、走
  */
 
-import { Lesson, StudyCard } from './types';
+import { Lesson, StudyCard, Topic } from './types';
 
 // 導入各課數據
 import { chineseLesson01Cards } from './chinese-lesson-01';
 import { chineseLesson02Cards } from './chinese-lesson-02';
 
-// ==================== 課程列表 ====================
+// ==================== 主題列表 ====================
 
-export const chineseLessons: Lesson[] = [
-  { id: 'ch-01', subject: 'chinese', title: '第一課：基礎十字', description: '山、水、上、下、我、你、在、有、人、牛', order: 1, cardCount: 10 },
-  { id: 'ch-02', subject: 'chinese', title: '第二課：日常生活', description: '去、個、爸、媽、家、和、沒、中、草、走', order: 2, cardCount: 10 },
+export const chineseTopics: Topic[] = [
+  {
+    id: 'ch-topic-01',
+    subject: 'chinese',
+    title: '基礎十字',
+    description: '20個基礎漢字，學識就可以組合好多句子',
+    order: 1,
+    totalCards: 20,
+    lessons: [
+      { 
+        id: 'ch-01', 
+        subject: 'chinese', 
+        title: '第一課', 
+        description: '山、水、上、下、我、你、在、有、人、牛', 
+        order: 1, 
+        cardCount: 10,
+        topicId: 'ch-topic-01'
+      },
+      { 
+        id: 'ch-02', 
+        subject: 'chinese', 
+        title: '第二課', 
+        description: '去、個、爸、媽、家、和、沒、中、草、走', 
+        order: 2, 
+        cardCount: 10,
+        topicId: 'ch-topic-01'
+      },
+    ]
+  }
 ];
 
 export const englishLessons: Lesson[] = [
@@ -38,14 +65,22 @@ export const getChineseCards = (lessonId?: string): StudyCard[] => {
   }
 };
 
-// 獲取所有中文卡片（跨課）
+// 獲取所有中文卡片
 export const getAllChineseCards = (): StudyCard[] => {
   return [...chineseLesson01Cards, ...chineseLesson02Cards];
 };
 
+// 獲取主題列表
+export const getAllTopics = (subject: 'chinese' | 'english'): Topic[] => {
+  return subject === 'chinese' ? chineseTopics : [];
+};
+
 // 獲取課程列表
 export const getAllLessons = (subject: 'chinese' | 'english'): Lesson[] => {
-  return subject === 'chinese' ? chineseLessons : englishLessons;
+  if (subject === 'chinese') {
+    return chineseTopics.flatMap(t => t.lessons);
+  }
+  return englishLessons;
 };
 
 // 獲取英文卡片
