@@ -16,7 +16,7 @@ import { StudyCard, Lesson, chineseLessons, englishLessons } from './data';
 import { chineseLesson01Cards } from './data/chinese-lesson-01';
 import { englishCards } from './data';
 import { FlashCard } from './components/FlashCard';
-import { QuizSection } from './components/QuizSection';
+import { ListeningQuiz } from './components/ListeningQuiz';
 import { ProgressBar } from './components/ProgressBar';
 import Link from 'next/link';
 
@@ -140,14 +140,13 @@ function KidsStudyContent() {
       return (
         <div className="max-w-md mx-auto px-4 py-12 text-center">
           <div className="animate-spin text-4xl mb-4">⏳</div>
-          <p>準備測驗中...</p>
+          <p>準備聆聽測驗中...</p>
         </div>
       );
     }
     return (
-      <QuizSection
+      <ListeningQuiz
         cards={currentCards}
-        subject={subject}
         onComplete={() => setMode('menu')}
         onBack={() => setMode('menu')}
       />
