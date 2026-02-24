@@ -9,12 +9,11 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRequireAuth } from '@/lib/auth-context';
 import { StudyCard, Lesson, chineseLessons, englishLessons } from './data';
-import { chineseBasicCards } from './data/chinese-basic';
 import { chineseLesson01Cards } from './data/chinese-lesson-01';
-import { chineseLesson05Cards } from './data/chinese-lesson-05';
 import { englishCards } from './data';
 import { FlashCard } from './components/FlashCard';
 import { QuizSection } from './components/QuizSection';
@@ -27,27 +26,34 @@ type Subject = 'chinese' | 'english';
 // 本地函數（避免導入問題）
 const getChineseCards = (lessonId?: string): StudyCard[] => {
   switch (lessonId) {
-    case 'ch-basic': return chineseBasicCards;
     case 'ch-01': return chineseLesson01Cards;
-    case 'ch-05': return chineseLesson05Cards;
-    default: return [...chineseBasicCards, ...chineseLesson01Cards, ...chineseLesson05Cards];
+    default: return [...chineseLesson01Cards];
   }
 };
-
-const getBasicChineseCards = (): StudyCard[] => chineseBasicCards;
 
 const getEnglishCards = (lessonId?: string): StudyCard[] => {
   if (!lessonId) return englishCards;
   return englishCards.filter(c => c.lessonId === lessonId);
 };
 
-export default function KidsStudyPage() {
+function KidsStudyContent() {
+  const searchParams = useSearchParams();
   const { user, isLoading } = useRequireAuth('/');
   const [mode, setMode] = useState<StudyMode>('menu');
   const [subject, setSubject] = useState<Subject>('chinese');
-  const [selectedLesson, setSelectedLesson] = useState<string>('ch-basic');
+  const [selectedLesson, setSelectedLesson] = useState<string>('ch-01');
   const [currentCards, setCurrentCards] = useState<StudyCard[]>([]);
   const [isLoadingCards, setIsLoadingCards] = useState(false);
+  
+  // 從 URL 參數讀取課程
+  useEffect(() => {
+    const lessonId = searchParams.get('lesson');
+    const sub = searchParams.get('subject') as Subject | null;
+    
+    if (lessonId) {
+      setSelectedLesson(lessonId);
+    }
+  }, [searchParams]);
   
   const [progress, setProgress] = useState<Record<string, number>>({});
 
@@ -70,11 +76,7 @@ export default function KidsStudyPage() {
     
     let cards: StudyCard[] = [];
     if (sub === 'chinese') {
-      if (lessonId === 'ch-basic') {
-        cards = getBasicChineseCards();
-      } else {
-        cards = getChineseCards(lessonId);
-      }
+      cards = getChineseCards(lessonId);
     } else {
       cards = getEnglishCards(lessonId);
     }
@@ -219,7 +221,7 @@ export default function KidsStudyPage() {
         </h3>
         
         {(subject === 'chinese' ? chineseLessons : englishLessons).map((lesson) => {
-          const isBasic = lesson.id === 'ch-basic';
+          const isFirst = lesson.id === 'ch-01';
           const lessonProgress = progress[lesson.id] || 0;
           
           return (
@@ -231,7 +233,7 @@ export default function KidsStudyPage() {
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  {isBasic && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">基礎</span>}
+                  {isFirst && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">第一課</span>}
                   <h4 className="font-bold text-gray-900">{lesson.title}</h4>
                 </div>
                 <span className="text-sm text-gray-500">{lesson.cardCount} 字</span>
@@ -272,5 +274,19 @@ export default function KidsStudyPage() {
         </ul>
       </div>
     </div>
+  );
+}
+
+// 包裝組件，處理 Suspense
+export default function KidsStudyPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-4xl mx-auto px-4 py-12 text-center">
+        <div className="animate-spin text-4xl mb-4">⏳</div>
+        <p>載入中...</p>
+      </div>
+    }>
+      <KidsStudyContent />
+    </Suspense>
   );
 }
