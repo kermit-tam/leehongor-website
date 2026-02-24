@@ -5,13 +5,15 @@
 
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Exam, ExamResult } from '../exam-data';
+import { Exam, ExamResult, ExamQuestion } from '../exam-data';
 import { Button } from '@/components/ui/button';
 
 interface ExamResultProps {
   result: ExamResult;
   exam: Exam;
+  answers: Record<string, number>; // 用戶答案
   onRetry: () => void;
   onBackToMenu: () => void;
 }
@@ -19,10 +21,12 @@ interface ExamResultProps {
 export function ExamResultComponent({
   result,
   exam,
+  answers,
   onRetry,
   onBackToMenu,
 }: ExamResultProps) {
   const { percentage, isPassed, totalScore, maxScore, sectionScores } = result;
+  const [showReview, setShowReview] = useState(false);
   
   // 評語
   const getFeedback = () => {
@@ -240,22 +244,88 @@ export function ExamResultComponent({
         </ul>
       </motion.div>
       
+      {/* 重溫答案 */}
+      {showReview && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900">📝 答案回顧</h3>
+            <button
+              onClick={() => setShowReview(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕ 關閉
+            </button>
+          </div>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {exam.sections.map((section) => 
+              section.questions.map((q, idx) => {
+                const userAnswer = answers[q.id];
+                const isCorrect = userAnswer === q.correctAnswer;
+                return (
+                  <div key={q.id} className={`p-4 rounded-xl ${isCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <div className="flex items-start gap-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
+                        isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                      }`}>
+                        {isCorrect ? '✓' : '✗'}
+                      </span>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500 mb-1">
+                          {section.title} - 第 {idx + 1} 題
+                        </p>
+                        <p className="font-medium text-gray-900 mb-2">{q.question}</p>
+                        <div className="space-y-1">
+                          {q.options.map((opt, optIdx) => (
+                            <div key={optIdx} className={`text-sm px-3 py-2 rounded ${
+                              optIdx === q.correctAnswer 
+                                ? 'bg-green-200 text-green-800 font-medium' 
+                                : optIdx === userAnswer 
+                                  ? 'bg-red-200 text-red-800' 
+                                  : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {String.fromCharCode(65 + optIdx)}. {opt}
+                              {optIdx === q.correctAnswer && ' ✓ 正確'}
+                              {optIdx === userAnswer && optIdx !== q.correctAnswer && ' ✗ 你的答案'}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2">{q.explanation}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </motion.div>
+      )}
+
       {/* 操作按 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="flex gap-4"
+        className="flex gap-3"
       >
         <button
           onClick={onBackToMenu}
-          className="flex-1 px-6 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors"
+          className="flex-1 px-4 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors"
         >
           返回選單
         </button>
         <button
+          onClick={() => setShowReview(true)}
+          className="flex-1 px-4 py-3 rounded-xl bg-amber-100 text-amber-700 font-medium hover:bg-amber-200 transition-colors"
+        >
+          📝 重溫答案
+        </button>
+        <button
           onClick={onRetry}
-          className="flex-1 px-6 py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
+          className="flex-1 px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
         >
           重新考試
         </button>

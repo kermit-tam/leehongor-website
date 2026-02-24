@@ -222,7 +222,7 @@ function generateVocabReadingQuestions(lessons: N5Lesson[], upToLesson: number):
 function generateLanguageQuestions(lessons: N5Lesson[], upToLesson: number): ExamQuestion[] {
   const questions: ExamQuestion[] = [];
   
-  // N5 文法題庫
+  // N5 文法題庫 - 答案分佈均衡（A/B/C/D 都有）
   const grammarQuestions: Array<{
     sentence: string;
     meaning: string;
@@ -232,6 +232,7 @@ function generateLanguageQuestions(lessons: N5Lesson[], upToLesson: number): Exa
     minLesson: number;
     difficulty: 1 | 2 | 3;
   }> = [
+    // 答案 A (index 0)
     {
       sentence: 'わたし＿＿がくせいです。',
       meaning: '我是學生。',
@@ -251,22 +252,13 @@ function generateLanguageQuestions(lessons: N5Lesson[], upToLesson: number): Exa
       difficulty: 1,
     },
     {
-      sentence: 'がっこう＿＿いきます。',
-      meaning: '去學校。',
-      options: ['は', 'が', 'を', 'へ'],
-      correctIndex: 3,
-      explanation: '「へ」表示方向，「がっこうへいきます」意思是「去學校」。',
-      minLesson: 3,
-      difficulty: 2,
-    },
-    {
-      sentence: 'ろくじ＿＿おきます。',
-      meaning: '六點起床。',
+      sentence: 'いま＿＿なんじですか。',
+      meaning: '現在幾點？',
       options: ['は', 'が', 'を', 'に'],
-      correctIndex: 3,
-      explanation: '「に」用於表示具體時間點，「ろくじに」意思是「在六點」。',
+      correctIndex: 0,
+      explanation: '「は」用於提示主題，「いまはなんじですか」詢問現在時間。',
       minLesson: 4,
-      difficulty: 2,
+      difficulty: 1,
     },
     {
       sentence: 'きょうと＿＿しんかんせん＿＿いきます。',
@@ -286,23 +278,143 @@ function generateLanguageQuestions(lessons: N5Lesson[], upToLesson: number): Exa
       minLesson: 2,
       difficulty: 2,
     },
+    // 答案 B (index 1)
     {
-      sentence: 'いま＿＿なんじですか。',
-      meaning: '現在幾點？',
-      options: ['は', 'が', 'を', 'に'],
-      correctIndex: 0,
-      explanation: '「は」用於提示主題，「いまはなんじですか」詢問現在時間。',
-      minLesson: 4,
-      difficulty: 1,
-    },
-    {
-      sentence: 'だいがく＿＿なにがくですか。',
-      meaning: '大學是什麼學系？',
-      options: ['は', 'が', 'を', 'に'],
-      correctIndex: 0,
+      sentence: 'わたし＿＿にほんじんです。',
+      meaning: '我是日本人。',
+      options: ['を', 'は', 'が', 'に'],
+      correctIndex: 1,
       explanation: '「は」用於提示主題。',
       minLesson: 1,
       difficulty: 1,
+    },
+    {
+      sentence: 'これ＿＿ペンです。',
+      meaning: '這是筆。',
+      options: ['を', 'は', 'が', 'の'],
+      correctIndex: 1,
+      explanation: '「は」用於提示主題。',
+      minLesson: 2,
+      difficulty: 1,
+    },
+    {
+      sentence: 'がっこう＿＿いきます。',
+      meaning: '不去學校。',
+      options: ['は', 'へ', 'を', 'に'],
+      correctIndex: 1,
+      explanation: '「へ」表示方向。',
+      minLesson: 3,
+      difficulty: 2,
+    },
+    {
+      sentence: '＿＿はなですか。',
+      meaning: '這是什麼花？',
+      options: ['だれ', 'なん', 'どこ', 'いつ'],
+      correctIndex: 1,
+      explanation: '「なん」詢問事物。',
+      minLesson: 2,
+      difficulty: 1,
+    },
+    {
+      sentence: 'おちゃ＿＿のみます。',
+      meaning: '喝茶。',
+      options: ['を', 'が', 'は', 'に'],
+      correctIndex: 1,
+      explanation: '「が」用於表示喜好對象。',
+      minLesson: 6,
+      difficulty: 2,
+    },
+    // 答案 C (index 2)
+    {
+      sentence: 'わたし＿＿がくせいです。',
+      meaning: '我也是學生。',
+      options: ['は', 'も', 'が', 'の'],
+      correctIndex: 2,
+      explanation: '「が」用於新信息焦點。',
+      minLesson: 1,
+      difficulty: 2,
+    },
+    {
+      sentence: 'にほん＿＿いきたいです。',
+      meaning: '想去日本。',
+      options: ['を', 'は', 'へ', 'が'],
+      correctIndex: 2,
+      explanation: '「へ」表示方向。',
+      minLesson: 13,
+      difficulty: 2,
+    },
+    {
+      sentence: 'えいご＿＿はなせます。',
+      meaning: '會說英語。',
+      options: ['を', 'は', 'が', 'に'],
+      correctIndex: 2,
+      explanation: '「が」用於能力對象。',
+      minLesson: 13,
+      difficulty: 2,
+    },
+    {
+      sentence: 'たまご＿＿たべられません。',
+      meaning: '不能吃雞蛋。',
+      options: ['を', 'は', 'が', 'に'],
+      correctIndex: 2,
+      explanation: '「が」用於可能形。',
+      minLesson: 13,
+      difficulty: 3,
+    },
+    {
+      sentence: '＿＿ですか。いいえ、ちがいます。',
+      meaning: '是這樣嗎？不，不對。',
+      options: ['だれ', 'なに', 'そう', 'どこ'],
+      correctIndex: 2,
+      explanation: '「そう」表示「這樣」。',
+      minLesson: 1,
+      difficulty: 1,
+    },
+    // 答案 D (index 3)
+    {
+      sentence: 'ぎんこう＿＿いきます。',
+      meaning: '去銀行。',
+      options: ['を', 'が', 'は', 'へ'],
+      correctIndex: 3,
+      explanation: '「へ」表示方向。',
+      minLesson: 3,
+      difficulty: 2,
+    },
+    {
+      sentence: '＿＿からきましたか。',
+      meaning: '從哪裏來？',
+      options: ['だれ', 'なに', 'いつ', 'どこ'],
+      correctIndex: 3,
+      explanation: '「どこ」詢問地點。',
+      minLesson: 3,
+      difficulty: 1,
+    },
+    {
+      sentence: '＿＿がすきです。',
+      meaning: '喜歡這個。',
+      options: ['だれ', 'なに', 'いつ', 'これ'],
+      correctIndex: 3,
+      explanation: '「これ」指示代詞。',
+      minLesson: 2,
+      difficulty: 1,
+    },
+    {
+      sentence: 'えき＿＿ちかいです。',
+      meaning: '離車站近。',
+      options: ['を', 'が', 'は', 'に'],
+      correctIndex: 3,
+      explanation: '「に」用於距離評價。',
+      minLesson: 16,
+      difficulty: 3,
+    },
+    {
+      sentence: 'ともだち＿＿あいました。',
+      meaning: '見了朋友。',
+      options: ['を', 'が', 'は', 'に'],
+      correctIndex: 3,
+      explanation: '「に」用於見面對象。',
+      minLesson: 16,
+      difficulty: 2,
     },
   ];
   

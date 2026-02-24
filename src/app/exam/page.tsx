@@ -479,6 +479,7 @@ export default function ExamPage() {
         <ExamResultComponent
           result={examResult}
           exam={selectedExam}
+          answers={answers}
           onRetry={retryExam}
           onBackToMenu={backToMenu}
         />
