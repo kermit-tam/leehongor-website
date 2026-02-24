@@ -14,20 +14,23 @@ import { useSearchParams } from 'next/navigation';
 import { useRequireAuth } from '@/lib/auth-context';
 import { StudyCard, Lesson, chineseLessons, englishLessons } from './data';
 import { chineseLesson01Cards } from './data/chinese-lesson-01';
+import { chineseLesson02Cards } from './data/chinese-lesson-02';
 import { englishCards } from './data';
 import { FlashCard } from './components/FlashCard';
 import { ListeningQuiz } from './components/ListeningQuiz';
+import { SpeakingQuiz } from './components/SpeakingQuiz';
 import { ProgressBar } from './components/ProgressBar';
 import Link from 'next/link';
 
-type StudyMode = 'menu' | 'flashcard' | 'quiz';
+type StudyMode = 'menu' | 'flashcard' | 'listening-quiz' | 'speaking-quiz';
 type Subject = 'chinese' | 'english';
 
 // 本地函數（避免導入問題）
 const getChineseCards = (lessonId?: string): StudyCard[] => {
   switch (lessonId) {
     case 'ch-01': return chineseLesson01Cards;
-    default: return [...chineseLesson01Cards];
+    case 'ch-02': return chineseLesson02Cards;
+    default: return [...chineseLesson01Cards, ...chineseLesson02Cards];
   }
 };
 
@@ -135,7 +138,7 @@ function KidsStudyContent() {
     );
   }
 
-  if (mode === 'quiz') {
+  if (mode === 'listening-quiz') {
     if (isLoadingCards) {
       return (
         <div className="max-w-md mx-auto px-4 py-12 text-center">
@@ -146,6 +149,24 @@ function KidsStudyContent() {
     }
     return (
       <ListeningQuiz
+        cards={currentCards}
+        onComplete={() => setMode('menu')}
+        onBack={() => setMode('menu')}
+      />
+    );
+  }
+
+  if (mode === 'speaking-quiz') {
+    if (isLoadingCards) {
+      return (
+        <div className="max-w-md mx-auto px-4 py-12 text-center">
+          <div className="animate-spin text-4xl mb-4">⏳</div>
+          <p>準備讀句子測驗中...</p>
+        </div>
+      );
+    }
+    return (
+      <SpeakingQuiz
         cards={currentCards}
         onComplete={() => setMode('menu')}
         onBack={() => setMode('menu')}
@@ -220,7 +241,7 @@ function KidsStudyContent() {
         </h3>
         
         {(subject === 'chinese' ? chineseLessons : englishLessons).map((lesson) => {
-          const isFirst = lesson.id === 'ch-01';
+          
           const lessonProgress = progress[lesson.id] || 0;
           
           return (
@@ -232,7 +253,8 @@ function KidsStudyContent() {
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  {isFirst && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">第一課</span>}
+                  {lesson.id === 'ch-01' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">第一課</span>}
+                  {lesson.id === 'ch-02' && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">第二課</span>}
                   <h4 className="font-bold text-gray-900">{lesson.title}</h4>
                 </div>
                 <span className="text-sm text-gray-500">{lesson.cardCount} 字</span>
@@ -245,18 +267,24 @@ function KidsStudyContent() {
                   style={{ width: `${Math.min((lessonProgress / lesson.cardCount) * 100, 100)}%` }} />
               </div>
               
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => startStudy('flashcard', subject, lesson.id)}
-                  className="flex-1 py-2 rounded-lg bg-indigo-100 text-indigo-700 font-medium text-sm hover:bg-indigo-200"
+                  className="py-2 rounded-lg bg-indigo-100 text-indigo-700 font-medium text-sm hover:bg-indigo-200"
                 >
                   📖 溫書
                 </button>
                 <button
-                  onClick={() => startStudy('quiz', subject, lesson.id)}
-                  className="flex-1 py-2 rounded-lg bg-purple-100 text-purple-700 font-medium text-sm hover:bg-purple-200"
+                  onClick={() => startStudy('listening-quiz', subject, lesson.id)}
+                  className="py-2 rounded-lg bg-purple-100 text-purple-700 font-medium text-sm hover:bg-purple-200"
                 >
-                  📝 測驗
+                  🎧 聆聽
+                </button>
+                <button
+                  onClick={() => startStudy('speaking-quiz', subject, lesson.id)}
+                  className="py-2 rounded-lg bg-green-100 text-green-700 font-medium text-sm hover:bg-green-200"
+                >
+                  🎤 讀句子
                 </button>
               </div>
             </div>
