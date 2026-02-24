@@ -1,13 +1,14 @@
 /**
- * 測驗組件
+ * 測驗組件（修復版）
  * 
- * 測驗模式，考考小朋友記得幾多
+ * 中文測驗：顯示生字 → 揀中文意思
+ * 英文測驗：顯示意思 → 揀英文單詞
  */
 
 'use client';
 
 import { useState, useEffect } from 'react';
-import { StudyCard } from '../data';
+import { StudyCard } from '../data/types';
 
 interface QuizSectionProps {
   cards: StudyCard[];
@@ -20,6 +21,8 @@ interface QuizQuestion {
   card: StudyCard;
   options: string[];
   correctIndex: number;
+  questionText: string;
+  questionSubtext?: string;
 }
 
 export function QuizSection({ cards, subject, onComplete, onBack }: QuizSectionProps) {
@@ -31,26 +34,50 @@ export function QuizSection({ cards, subject, onComplete, onBack }: QuizSectionP
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [quizComplete, setQuizComplete] = useState(false);
 
-  // 生成測驗題目
+  // 生成測驗題目（修復版）
   useEffect(() => {
-    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, 10);
+    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length));
+    
     const qs: QuizQuestion[] = shuffled.map(card => {
-      // 生成選項
       const otherCards = cards.filter(c => c.id !== card.id);
-      const wrongOptions = otherCards
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3)
-        .map(c => subject === 'chinese' ? c.meaning : c.word!);
       
-      const correctAnswer = subject === 'chinese' ? card.meaning : card.word!;
-      const options = [...wrongOptions, correctAnswer].sort(() => Math.random() - 0.5);
-      
-      return {
-        card,
-        options,
-        correctIndex: options.indexOf(correctAnswer),
-      };
+      if (subject === 'chinese') {
+        // 中文測驗：顯示生字 → 揀中文意思
+        const wrongOptions = otherCards
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 3)
+          .map(c => c.meaning); // 中文意思
+        
+        const correctAnswer = card.meaning; // 正確中文意思
+        const options = [...wrongOptions, correctAnswer].sort(() => Math.random() - 0.5);
+        
+        return {
+          card,
+          options,
+          correctIndex: options.indexOf(correctAnswer),
+          questionText: card.character!,
+          questionSubtext: `${card.pinyin} (${card.jyutping})`,
+        };
+      } else {
+        // 英文測驗：顯示意思 → 揀英文單詞
+        const wrongOptions = otherCards
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 3)
+          .map(c => c.word!);
+        
+        const correctAnswer = card.word!;
+        const options = [...wrongOptions, correctAnswer].sort(() => Math.random() - 0.5);
+        
+        return {
+          card,
+          options,
+          correctIndex: options.indexOf(correctAnswer),
+          questionText: card.meaning, // 顯示中文意思
+          questionSubtext: '選擇正確的英文單詞',
+        };
+      }
     });
+    
     setQuestions(qs);
   }, [cards, subject]);
 
@@ -184,25 +211,24 @@ export function QuizSection({ cards, subject, onComplete, onBack }: QuizSectionP
       </div>
 
       {/* 題目 */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6 text-center">
         <p className="text-sm text-gray-400 mb-4">{currentQ.card.category}</p>
         
         {subject === 'chinese' ? (
-          <div className="text-center">
+          <>
             <p className="text-gray-600 mb-4">這個字的意思是什麼？</p>
             <div className="text-7xl font-bold text-gray-800 mb-2">
-              {currentQ.card.character}
+              {currentQ.questionText}
             </div>
-            <p className="text-gray-400">{currentQ.card.pinyin}</p>
-          </div>
+            <p className="text-gray-400 text-sm">{currentQ.questionSubtext}</p>
+          </>
         ) : (
-          <div className="text-center">
-            <p className="text-gray-600 mb-4">這個詞彙是什麼？</p>
+          <>
+            <p className="text-gray-600 mb-4">{currentQ.questionSubtext}</p>
             <div className="bg-indigo-50 rounded-xl p-4 mb-2">
-              <p className="text-lg text-gray-700">{currentQ.card.meaning}</p>
+              <p className="text-xl text-gray-700 font-medium">{currentQ.questionText}</p>
             </div>
-            <p className="text-gray-400">{currentQ.card.phonetic}</p>
-          </div>
+          </>
         )}
       </div>
 
@@ -238,7 +264,7 @@ export function QuizSection({ cards, subject, onComplete, onBack }: QuizSectionP
                 <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold mr-3">
                   {String.fromCharCode(65 + index)}
                 </span>
-                <span>{option}</span>
+                <span className="text-lg">{option}</span>
               </div>
             </button>
           );
@@ -276,7 +302,7 @@ export function QuizSection({ cards, subject, onComplete, onBack }: QuizSectionP
             <>
               <p className="font-bold mb-1">😅 答錯了</p>
               {subject === 'chinese' ? (
-                <p className="text-sm">{currentQ.card.character} 的意思是「{currentQ.card.meaning}」</p>
+                <p className="text-sm">「{currentQ.card.character}」的意思是「{currentQ.card.meaning}」</p>
               ) : (
                 <p className="text-sm">「{currentQ.card.meaning}」的英文是 "{currentQ.card.word}"</p>
               )}
