@@ -18,7 +18,7 @@ import { chineseLesson05Cards } from './chinese-lesson-05';
 
 export const chineseLessons: Lesson[] = [
   { id: 'ch-basic', subject: 'chinese', title: '基礎漢字', description: '最常用的基礎漢字，識咗就易學啲', order: 0, cardCount: 5 },
-  { id: 'ch-01', subject: 'chinese', title: '第一課：自然', description: '花草樹木、天氣相關', order: 1, cardCount: 7 },
+  { id: 'ch-01', subject: 'chinese', title: '第一課：基礎十字', description: '山、水、上、下、我、你、在、有、人、牛 - 可以組合成詞語和短句', order: 1, cardCount: 10 },
   { id: 'ch-05', subject: 'chinese', title: '第五課：形容詞', description: '常用形容詞', order: 5, cardCount: 2 },
 ];
 
