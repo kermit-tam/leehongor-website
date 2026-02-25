@@ -35,7 +35,7 @@ export default function TryChiPage() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-2xl font-extrabold text-white mb-1">港鐵小站長</h2>
-                  <p className="text-white/90 font-medium">認識98個港鐵站名</p>
+                  <p className="text-white/90 font-medium">98個港鐵站學中文字</p>
                 </div>
                 <span className="text-3xl text-white">→</span>
               </div>
@@ -61,7 +61,7 @@ export default function TryChiPage() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-2xl font-extrabold text-white mb-1">基礎漢字挑戰</h2>
-                  <p className="text-white/90 font-medium">仔仔溫書 - 二年級中文</p>
+                  <p className="text-white/90 font-medium">幼稚園目標：500個中文字</p>
                 </div>
                 <span className="text-3xl text-white">→</span>
               </div>
