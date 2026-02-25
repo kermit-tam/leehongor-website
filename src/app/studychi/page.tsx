@@ -1,9 +1,10 @@
 /**
- * 港鐵小站長 - 東鐵綫學習
+ * 港鐵小站長 - 所有港鐵路線學習
  * 
  * 路徑：/studychi
  * 
  * 功能：
+ * - 選擇不同路線（東鐵、屯馬、觀塘、港島、荃灣、將軍澳、東涌）
  * - 列車動畫旅程
  * - 顏色配對
  * - 地標配對
@@ -19,12 +20,13 @@ import { ColorMatch } from './components/ColorMatch';
 import { LandmarkMatch } from './components/LandmarkMatch';
 import { ListeningQuiz } from './components/ListeningQuiz';
 import { SpeakingQuiz } from './components/SpeakingQuiz';
-import { eastRailLine } from './data/mtr-stations';
+import { mtrLines, getLineById, MTRLine } from './data/mtr-stations';
 
-type GameMode = 'menu' | 'train' | 'color' | 'landmark' | 'listening' | 'speaking';
+type GameMode = 'menu' | 'select-line' | 'train' | 'color' | 'landmark' | 'listening' | 'speaking';
 
 export default function StudyChiPage() {
   const [mode, setMode] = useState<GameMode>('menu');
+  const [selectedLine, setSelectedLine] = useState<MTRLine>(mtrLines[0]);
   const [score, setScore] = useState(0);
 
   // 播放讀音
@@ -37,6 +39,83 @@ export default function StudyChiPage() {
     window.speechSynthesis.speak(utterance);
   }, []);
 
+  // 選擇路線並開始遊戲
+  const selectLineAndPlay = (lineId: string, gameMode: GameMode) => {
+    const line = getLineById(lineId);
+    if (line) {
+      setSelectedLine(line);
+      setMode(gameMode);
+    }
+  };
+
+  // 路線選擇畫面
+  if (mode === 'select-line') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-sky-100 to-white p-4">
+        <div className="max-w-md mx-auto">
+          {/* 標題 */}
+          <div className="text-center py-6">
+            <button 
+              onClick={() => setMode('menu')}
+              className="text-gray-500 mb-4 flex items-center justify-center gap-1"
+            >
+              ← 返回
+            </button>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">揀路線</h1>
+            <p className="text-gray-600">選擇你想學習嘅港鐵路線</p>
+          </div>
+
+          {/* 路線列表 */}
+          <div className="space-y-3">
+            {mtrLines.map((line) => (
+              <button
+                key={line.id}
+                onClick={() => selectLineAndPlay(line.id, 'train')}
+                className="w-full bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
+              >
+                <div 
+                  className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl"
+                  style={{ backgroundColor: `${line.colorCode}20` }}
+                >
+                  <span style={{ color: line.colorCode }}>🚇</span>
+                </div>
+                <div className="text-left flex-1">
+                  <h2 className="text-xl font-bold text-gray-800">{line.name}</h2>
+                  <p className="text-gray-500 text-sm">{line.nameEn}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span 
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: line.colorCode }}
+                    />
+                    <span className="text-xs text-gray-400">{line.color} · {line.stations.length}個站</span>
+                  </div>
+                </div>
+                <span className="text-gray-300">→</span>
+              </button>
+            ))}
+          </div>
+
+          {/* 統計 */}
+          <div className="mt-8 bg-white rounded-2xl p-4 shadow-lg">
+            <h3 className="font-bold text-gray-800 mb-3">📊 港鐵網絡概覽</h3>
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-2xl font-bold text-blue-500">{mtrLines.length}</p>
+                <p className="text-gray-500 text-sm">條路線</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-2xl font-bold text-green-500">
+                  {mtrLines.reduce((sum, l) => sum + l.stations.length, 0)}
+                </p>
+                <p className="text-gray-500 text-sm">個車站</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 菜單畫面
   if (mode === 'menu') {
     return (
@@ -46,10 +125,7 @@ export default function StudyChiPage() {
           <div className="text-center py-8">
             <div className="text-6xl mb-4">🚇</div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">港鐵小站長</h1>
-            <p className="text-gray-600">東鐵綫站名學習</p>
-            <div className="mt-4 inline-block px-4 py-2 rounded-full" style={{ backgroundColor: eastRailLine.colorCode }}>
-              <span className="text-white font-bold">🔵 {eastRailLine.name}</span>
-            </div>
+            <p className="text-gray-600">認識所有港鐵站名</p>
           </div>
 
           {/* 分數 */}
@@ -61,13 +137,13 @@ export default function StudyChiPage() {
           {/* 遊戲選擇 */}
           <div className="space-y-4">
             <button
-              onClick={() => setMode('train')}
+              onClick={() => setMode('select-line')}
               className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
             >
               <span className="text-4xl">🚄</span>
               <div className="text-left">
                 <h2 className="text-xl font-bold text-gray-800">列車旅程</h2>
-                <p className="text-gray-500 text-sm">坐東鐵遊香港，學站名</p>
+                <p className="text-gray-500 text-sm">坐港鐵遊香港，學站名</p>
               </div>
             </button>
 
@@ -78,12 +154,12 @@ export default function StudyChiPage() {
               <span className="text-4xl">🎨</span>
               <div className="text-left">
                 <h2 className="text-xl font-bold text-gray-800">顏色配對</h2>
-                <p className="text-gray-500 text-sm">認識東鐵綫淺藍色</p>
+                <p className="text-gray-500 text-sm">認識7條路線嘅顏色</p>
               </div>
             </button>
 
             <button
-              onClick={() => setMode('landmark')}
+              onClick={() => setMode('select-line')}
               className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
             >
               <span className="text-4xl">🏢</span>
@@ -94,7 +170,7 @@ export default function StudyChiPage() {
             </button>
 
             <button
-              onClick={() => setMode('listening')}
+              onClick={() => setMode('select-line')}
               className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
             >
               <span className="text-4xl">🎧</span>
@@ -105,7 +181,7 @@ export default function StudyChiPage() {
             </button>
 
             <button
-              onClick={() => setMode('speaking')}
+              onClick={() => setMode('select-line')}
               className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
             >
               <span className="text-4xl">🎤</span>
@@ -118,21 +194,18 @@ export default function StudyChiPage() {
 
           {/* 路線資料 */}
           <div className="mt-8 bg-white rounded-2xl p-4 shadow-lg">
-            <h3 className="font-bold text-gray-800 mb-3">🚇 東鐵綫資料</h3>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-2xl font-bold text-blue-500">16</p>
-                <p className="text-gray-500 text-sm">個車站</p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-2xl font-bold text-blue-500">47.5</p>
-                <p className="text-gray-500 text-sm">公里長</p>
-              </div>
-            </div>
-            <div className="mt-4 p-3 rounded-xl" style={{ backgroundColor: `${eastRailLine.colorCode}20` }}>
-              <p className="text-sm text-gray-600">
-                <strong>路線特色：</strong>由金鐘到羅湖/落馬洲，係香港歷史最悠久嘅鐵路綫，可以過關去深圳！
-              </p>
+            <h3 className="font-bold text-gray-800 mb-3">🚇 港鐵路線一覽</h3>
+            <div className="space-y-2">
+              {mtrLines.map((line) => (
+                <div key={line.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl">
+                  <span 
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: line.colorCode }}
+                  />
+                  <span className="font-medium text-gray-700">{line.name}</span>
+                  <span className="text-gray-400 text-sm ml-auto">{line.stations.length}站</span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -150,7 +223,7 @@ export default function StudyChiPage() {
     <div className="min-h-screen bg-gradient-to-b from-sky-100 to-white">
       {mode === 'train' && (
         <TrainJourney
-          line={eastRailLine}
+          line={selectedLine}
           onBack={() => setMode('menu')}
           onScore={(points) => setScore(s => s + points)}
           speak={speak}
@@ -158,14 +231,13 @@ export default function StudyChiPage() {
       )}
       {mode === 'color' && (
         <ColorMatch
-          line={eastRailLine}
           onBack={() => setMode('menu')}
           onScore={(points) => setScore(s => s + points)}
         />
       )}
       {mode === 'landmark' && (
         <LandmarkMatch
-          line={eastRailLine}
+          line={selectedLine}
           onBack={() => setMode('menu')}
           onScore={(points) => setScore(s => s + points)}
           speak={speak}
@@ -173,7 +245,7 @@ export default function StudyChiPage() {
       )}
       {mode === 'listening' && (
         <ListeningQuiz
-          line={eastRailLine}
+          line={selectedLine}
           onBack={() => setMode('menu')}
           onScore={(points) => setScore(s => s + points)}
           speak={speak}
@@ -181,7 +253,7 @@ export default function StudyChiPage() {
       )}
       {mode === 'speaking' && (
         <SpeakingQuiz
-          line={eastRailLine}
+          line={selectedLine}
           onBack={() => setMode('menu')}
           onScore={(points) => setScore(s => s + points)}
         />

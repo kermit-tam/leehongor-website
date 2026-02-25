@@ -1,32 +1,27 @@
 /**
  * 顏色配對組件
- * 認識東鐵綫淺藍色
+ * 認識所有港鐵路線顏色
  */
 
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MTRLine } from '../data/mtr-stations';
+import { mtrLines } from '../data/mtr-stations';
 
 interface ColorMatchProps {
-  line: MTRLine;
   onBack: () => void;
   onScore: (points: number) => void;
 }
 
 // 港鐵各路線顏色
-const mtrColors = [
-  { name: '東鐵綫', color: '淺藍色', code: '#5EB3E6', icon: '🔵' },
-  { name: '觀塘綫', color: '綠色', code: '#00B200', icon: '🟢' },
-  { name: '荃灣綫', color: '紅色', code: '#FF0000', icon: '🔴' },
-  { name: '港島綫', color: '深藍色', code: '#0066CC', icon: '🔵' },
-  { name: '屯馬綫', color: '啡色', code: '#9D8B6B', icon: '🟤' },
-  { name: '將軍澳綫', color: '紫色', code: '#8B00FF', icon: '🟣' },
-  { name: '東涌綫', color: '橙色', code: '#FF8C00', icon: '🟠' },
-  { name: '迪士尼綫', color: '粉紅色', code: '#FF69B4', icon: '💗' },
-];
+const mtrColors = mtrLines.map(line => ({
+  name: line.name,
+  color: line.color,
+  code: line.colorCode,
+  icon: '🚇'
+}));
 
-export function ColorMatch({ line, onBack, onScore }: ColorMatchProps) {
+export function ColorMatch({ onBack, onScore }: ColorMatchProps) {
   const [targetColor, setTargetColor] = useState(mtrColors[0]);
   const [options, setOptions] = useState<typeof mtrColors>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -104,8 +99,7 @@ export function ColorMatch({ line, onBack, onScore }: ColorMatchProps) {
           <p className="text-gray-600 mb-4">你答對咗 {score / 10} 題</p>
           <button
             onClick={onBack}
-            className="px-8 py-3 rounded-xl text-white font-bold"
-            style={{ backgroundColor: line.colorCode }}
+            className="px-8 py-3 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600"
           >
             返回主頁
           </button>
@@ -114,14 +108,14 @@ export function ColorMatch({ line, onBack, onScore }: ColorMatchProps) {
         <>
           {/* 問題區 */}
           <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
-            <p className="text-gray-500 text-center mb-4">邊個路線係呢個顏色？</p>
+            <p className="text-gray-500 text-center mb-4">呢個係邊條路線嘅顏色？</p>
             
             {/* 顏色展示 */}
             <div 
               className="w-32 h-32 rounded-2xl mx-auto mb-4 shadow-inner flex items-center justify-center"
               style={{ backgroundColor: targetColor.code }}
             >
-              <span className="text-6xl">{targetColor.icon}</span>
+              <span className="text-6xl">🚇</span>
             </div>
             
             <p className="text-center text-gray-400 text-sm">{targetColor.color}</p>
@@ -153,7 +147,7 @@ export function ColorMatch({ line, onBack, onScore }: ColorMatchProps) {
           {/* 提示 */}
           <div className="mt-6 bg-blue-50 rounded-xl p-4">
             <p className="text-sm text-blue-700 text-center">
-              💡 提示：東鐵綫係淺藍色 🔵，可以過海去金鐘！
+              💡 提示：東鐵綫係淺藍色 🔵，觀塘綫係綠色 🟢，港島綫係深藍色 🔵
             </p>
           </div>
         </>
