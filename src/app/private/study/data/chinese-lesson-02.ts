@@ -79,6 +79,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 8,
     meaning: '爸爸、父親',
     category: '家人',
+    image: '/images/study/dad.png',
     examples: [
       { 
         id: '1', 
@@ -110,6 +111,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 13,
     meaning: '媽媽、母親',
     category: '家人',
+    image: '/images/study/mom.png',
     examples: [
       { 
         id: '1', 
@@ -141,6 +143,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 10,
     meaning: '家、家庭',
     category: '地方',
+    image: '/images/study/home.png',
     examples: [
       { 
         id: '1', 
@@ -238,20 +241,20 @@ export const chineseLesson02Cards: StudyCard[] = [
       { 
         id: '1', 
         scenario: '短句', 
-        spoken: '在山中。', 
-        written: '在山中。' 
+        spoken: '人在山中。', 
+        written: '人在山中。' 
       },
       { 
         id: '2', 
         scenario: '短句', 
-        spoken: '在水中。', 
-        written: '在水中。' 
+        spoken: '水中有草。', 
+        written: '水中有草。' 
       },
       { 
         id: '3', 
         scenario: '短句', 
-        spoken: '在家中。', 
-        written: '在家中。' 
+        spoken: '草中有牛。', 
+        written: '草中有牛。' 
       },
     ],
   },
@@ -281,11 +284,12 @@ export const chineseLesson02Cards: StudyCard[] = [
       { 
         id: '3', 
         scenario: '短句', 
-        spoken: '沒有草。', 
-        written: '沒有草。' 
+        spoken: '山上沒有草。', 
+        written: '山上沒有草。' 
       },
     ],
   },
+
   {
     id: 'ch-02-010',
     subject: 'chinese',
@@ -323,30 +327,30 @@ export const chineseLesson02Cards: StudyCard[] = [
  * 第一課 + 第二課 組合短句
  */
 export const lesson02Combinations = [
-  // 四五個字短句
+  // 四至六字完整句子
   { chars: ['我', '在', '家'], phrase: '我在家', meaning: '我在家裏' },
   { chars: ['爸', '在', '家'], phrase: '爸在家', meaning: '爸爸在家' },
   { chars: ['媽', '在', '家'], phrase: '媽在家', meaning: '媽媽在家' },
-  { chars: ['爸', '和', '媽'], phrase: '爸和媽', meaning: '爸爸和媽媽' },
-  { chars: ['你', '和', '我'], phrase: '你和我', meaning: '你和我' },
-  { chars: ['沒', '有', '人'], phrase: '沒有人', meaning: '沒有人' },
-  { chars: ['我', '沒', '走'], phrase: '我沒走', meaning: '我沒有走' },
-  { chars: ['去', '山', '上'], phrase: '去山上', meaning: '去山上' },
-  { chars: ['在', '山', '中'], phrase: '在山中', meaning: '在山中' },
-  { chars: ['在', '水', '中'], phrase: '在水中', meaning: '在水中' },
+  { chars: ['爸', '和', '媽', '在', '家'], phrase: '爸和媽在家', meaning: '爸爸和媽媽在家' },
+  { chars: ['你', '和', '我', '在', '家'], phrase: '你和我在家', meaning: '你和我在家裏' },
+  { chars: ['山', '上', '沒', '有', '人'], phrase: '山上沒有人', meaning: '山上沒有人' },
+  { chars: ['家', '裏', '沒', '有', '人'], phrase: '家裏沒有人', meaning: '家裏沒有人' },
+  { chars: ['我', '沒', '有', '走'], phrase: '我沒有走', meaning: '我沒有走' },
+  { chars: ['媽', '媽', '沒', '有', '去'], phrase: '媽媽沒有去', meaning: '媽媽沒有去' },
+  { chars: ['爸', '爸', '去', '山', '上'], phrase: '爸爸去山上', meaning: '爸爸去山上' },
+  { chars: ['媽', '媽', '在', '山', '上'], phrase: '媽媽在山上', meaning: '媽媽在山上' },
+  { chars: ['牛', '在', '山', '中'], phrase: '牛在山中', meaning: '牛在山中' },
+  { chars: ['牛', '在', '草', '中'], phrase: '牛在草中', meaning: '牛在草叢中' },
   { chars: ['山', '上', '有', '草'], phrase: '山上有草', meaning: '山上有草' },
   { chars: ['草', '中', '有', '牛'], phrase: '草中有牛', meaning: '草中有牛' },
-  { chars: ['一', '個', '人'], phrase: '一個人', meaning: '一個人' },
-  { chars: ['這', '個', '家'], phrase: '這個家', meaning: '這個家' },
-  { chars: ['我', '去', '家'], phrase: '我去家', meaning: '我回家' },
-  { chars: ['牛', '在', '走'], phrase: '牛在走', meaning: '牛在走' },
-  { chars: ['人', '在', '山', '中'], phrase: '人在山中', meaning: '人在山中' },
-  { chars: ['爸', '媽', '在', '家'], phrase: '爸媽在家', meaning: '爸爸媽媽在家' },
-  { chars: ['我', '和', '爸', '媽'], phrase: '我和爸媽', meaning: '我和爸爸媽媽' },
-  { chars: ['山', '上', '沒', '有', '人'], phrase: '山上沒有人', meaning: '山上沒有人' },
-  { chars: ['家', '中', '有', '人'], phrase: '家中有人', meaning: '家裏有人' },
-  { chars: ['爸', '去', '山', '上'], phrase: '爸去山上', meaning: '爸爸去山上' },
-  { chars: ['媽', '沒', '有', '去'], phrase: '媽沒有去', meaning: '媽媽沒有去' },
-  { chars: ['我', '和', '你', '在', '家'], phrase: '我和你在家', meaning: '我和你在家' },
-  { chars: ['牛', '在', '草', '中'], phrase: '牛在草中', meaning: '牛在草叢中' },
+  { chars: ['家', '中', '有', '爸', '爸'], phrase: '家中有爸爸', meaning: '家裏有爸爸' },
+  { chars: ['我', '有', '一', '個', '家'], phrase: '我有一個家', meaning: '我有一個家' },
+  { chars: ['山', '上', '有', '一', '個', '人'], phrase: '山上有一个人', meaning: '山上有一个人' },
+  { chars: ['這', '個', '家', '有', '人'], phrase: '這個家有人', meaning: '這個家有人' },
+  { chars: ['我', '回', '家', '去'], phrase: '我回家去', meaning: '我回家去' },
+  { chars: ['爸', '爸', '媽', '媽', '走', '了'], phrase: '爸爸媽媽走了', meaning: '爸爸媽媽走了' },
+  { chars: ['我', '和', '爸', '爸', '在', '家'], phrase: '我和爸爸在家', meaning: '我和爸爸在家' },
+  { chars: ['我', '和', '媽', '媽', '去', '山', '上'], phrase: '我和媽媽去山上', meaning: '我和媽媽去山上' },
+  { chars: ['牛', '在', '山', '上', '走'], phrase: '牛在山上走', meaning: '牛在山上走' },
+  { chars: ['草', '在', '山', '上'], phrase: '草在山上', meaning: '草在山上' },
 ];

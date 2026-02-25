@@ -5,6 +5,7 @@
  * - 基礎十字（大主題）
  *   - 第一課：山、水、上、下、我、你、在、有、人、牛
  *   - 第二課：去、個、爸、媽、家、和、沒、中、草、走
+ *   - 第三課：哥、姐、弟、妹、叔、愛、打、很、高、的
  */
 
 import { Lesson, StudyCard, Topic } from './types';
@@ -12,6 +13,7 @@ import { Lesson, StudyCard, Topic } from './types';
 // 導入各課數據
 import { chineseLesson01Cards } from './chinese-lesson-01';
 import { chineseLesson02Cards } from './chinese-lesson-02';
+import { chineseLesson03Cards } from './chinese-lesson-03';
 
 // ==================== 主題列表 ====================
 
@@ -22,7 +24,7 @@ export const chineseTopics: Topic[] = [
     title: '基礎十字',
     description: '20個基礎漢字，學識就可以組合好多句子',
     order: 1,
-    totalCards: 20,
+    totalCards: 30,
     lessons: [
       { 
         id: 'ch-01', 
@@ -39,6 +41,15 @@ export const chineseTopics: Topic[] = [
         title: '第二課', 
         description: '去、個、爸、媽、家、和、沒、中、草、走', 
         order: 2, 
+        cardCount: 10,
+        topicId: 'ch-topic-01'
+      },
+      { 
+        id: 'ch-03', 
+        subject: 'chinese', 
+        title: '第三課', 
+        description: '哥、姐、弟、妹、叔、愛、打、很、高、的', 
+        order: 3, 
         cardCount: 10,
         topicId: 'ch-topic-01'
       },
@@ -61,13 +72,14 @@ export const getChineseCards = (lessonId?: string): StudyCard[] => {
   switch (lessonId) {
     case 'ch-01': return chineseLesson01Cards;
     case 'ch-02': return chineseLesson02Cards;
-    default: return [...chineseLesson01Cards, ...chineseLesson02Cards];
+    case 'ch-03': return chineseLesson03Cards;
+    default: return [...chineseLesson01Cards, ...chineseLesson02Cards, ...chineseLesson03Cards];
   }
 };
 
 // 獲取所有中文卡片
 export const getAllChineseCards = (): StudyCard[] => {
-  return [...chineseLesson01Cards, ...chineseLesson02Cards];
+  return [...chineseLesson01Cards, ...chineseLesson02Cards, ...chineseLesson03Cards];
 };
 
 // 獲取主題列表
@@ -89,5 +101,5 @@ export const getEnglishCards = (lessonId?: string): StudyCard[] => {
 };
 
 // 導出類型和數據
-export { chineseLesson01Cards, chineseLesson02Cards };
+export { chineseLesson01Cards, chineseLesson02Cards, chineseLesson03Cards };
 export * from './types';

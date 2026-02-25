@@ -15,6 +15,8 @@ export interface StudyCard {
   meaning: string;
   category: string;
   examples: Example[];
+  // 圖畫配對用
+  image?: string;  // 圖片路徑，例如：/images/study/shan.png
 }
 
 // 例句類型

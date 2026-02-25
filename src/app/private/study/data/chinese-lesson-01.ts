@@ -18,6 +18,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 3,
     meaning: '山、山嶽',
     category: '自然',
+    image: '/images/study/mountain.png',
     examples: [
       { 
         id: '1', 
@@ -49,6 +50,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 4,
     meaning: '水、液體',
     category: '自然',
+    image: '/images/study/water.png',
     examples: [
       { 
         id: '1', 
@@ -59,14 +61,14 @@ export const chineseLesson01Cards: StudyCard[] = [
       { 
         id: '2', 
         scenario: '短句', 
-        spoken: '你在水上。', 
-        written: '你在水上。' 
+        spoken: '山下有水。', 
+        written: '山下有水。' 
       },
       { 
         id: '3', 
         scenario: '短句', 
-        spoken: '水下有人。', 
-        written: '水下有人。' 
+        spoken: '水中有草。', 
+        written: '水中有水草。' 
       },
     ],
   },
@@ -245,8 +247,8 @@ export const chineseLesson01Cards: StudyCard[] = [
       { 
         id: '2', 
         scenario: '短句', 
-        spoken: '水下有人。', 
-        written: '水下有人。' 
+        spoken: '山上有人。', 
+        written: '山上有人。' 
       },
       { 
         id: '3', 
@@ -297,6 +299,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 4,
     meaning: '牛、黃牛',
     category: '動物',
+    image: '/images/study/cow.png',
     examples: [
       { 
         id: '1', 

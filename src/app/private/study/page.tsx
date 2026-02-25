@@ -15,14 +15,16 @@ import { useRequireAuth } from '@/lib/auth-context';
 import { StudyCard, Lesson, chineseTopics, englishLessons, getAllLessons } from './data';
 import { chineseLesson01Cards } from './data/chinese-lesson-01';
 import { chineseLesson02Cards } from './data/chinese-lesson-02';
+import { chineseLesson03Cards } from './data/chinese-lesson-03';
 import { englishCards } from './data';
 import { FlashCard } from './components/FlashCard';
 import { ListeningQuiz } from './components/ListeningQuiz';
 import { SpeakingQuiz } from './components/SpeakingQuiz';
+import { PictureMatch } from './components/PictureMatch';
 import { ProgressBar } from './components/ProgressBar';
 import Link from 'next/link';
 
-type StudyMode = 'menu' | 'flashcard' | 'listening-quiz' | 'speaking-quiz';
+type StudyMode = 'menu' | 'flashcard' | 'listening-quiz' | 'speaking-quiz' | 'picture-match';
 type Subject = 'chinese' | 'english';
 
 // 本地函數（避免導入問題）
@@ -30,7 +32,8 @@ const getChineseCards = (lessonId?: string): StudyCard[] => {
   switch (lessonId) {
     case 'ch-01': return chineseLesson01Cards;
     case 'ch-02': return chineseLesson02Cards;
-    default: return [...chineseLesson01Cards, ...chineseLesson02Cards];
+    case 'ch-03': return chineseLesson03Cards;
+    default: return [...chineseLesson01Cards, ...chineseLesson02Cards, ...chineseLesson03Cards];
   }
 };
 
@@ -174,6 +177,24 @@ function KidsStudyContent() {
     );
   }
 
+  if (mode === 'picture-match') {
+    if (isLoadingCards) {
+      return (
+        <div className="max-w-md mx-auto px-4 py-12 text-center">
+          <div className="animate-spin text-4xl mb-4">⏳</div>
+          <p>準備圖畫配對中...</p>
+        </div>
+      );
+    }
+    return (
+      <PictureMatch
+        cards={currentCards}
+        onComplete={() => setMode('menu')}
+        onBack={() => setMode('menu')}
+      />
+    );
+  }
+
   const chineseProgress = getTotalProgress('chinese');
   const englishProgress = getTotalProgress('english');
 
@@ -255,6 +276,7 @@ function KidsStudyContent() {
                 <div className="flex items-center gap-2">
                   {lesson.id === 'ch-01' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">第一課</span>}
                   {lesson.id === 'ch-02' && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">第二課</span>}
+                  {lesson.id === 'ch-03' && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">第三課</span>}
                   <h4 className="font-bold text-gray-900">{lesson.title}</h4>
                 </div>
                 <span className="text-sm text-gray-500">{lesson.cardCount} 字</span>
@@ -267,7 +289,7 @@ function KidsStudyContent() {
                   style={{ width: `${Math.min((lessonProgress / lesson.cardCount) * 100, 100)}%` }} />
               </div>
               
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => startStudy('flashcard', subject, lesson.id)}
                   className="py-2 rounded-lg bg-indigo-100 text-indigo-700 font-medium text-sm hover:bg-indigo-200"
@@ -285,6 +307,12 @@ function KidsStudyContent() {
                   className="py-2 rounded-lg bg-green-100 text-green-700 font-medium text-sm hover:bg-green-200"
                 >
                   🎤 讀句子
+                </button>
+                <button
+                  onClick={() => startStudy('picture-match', subject, lesson.id)}
+                  className="py-2 rounded-lg bg-orange-100 text-orange-700 font-medium text-sm hover:bg-orange-200"
+                >
+                  🖼️ 圖畫配對
                 </button>
               </div>
             </div>

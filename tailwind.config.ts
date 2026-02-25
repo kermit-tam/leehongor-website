@@ -53,6 +53,7 @@ const config: Config = {
       animation: {
         'fade-in': 'fadeIn 0.4s ease-out',
         'slide-up': 'slideUp 0.5s ease-out',
+        'shake': 'shake 0.5s ease-in-out',
       },
       keyframes: {
         fadeIn: {
@@ -62,6 +63,11 @@ const config: Config = {
         slideUp: {
           '0%': { transform: 'translateY(16px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '25%': { transform: 'translateX(-8px)' },
+          '75%': { transform: 'translateX(8px)' },
         },
       },
     },
