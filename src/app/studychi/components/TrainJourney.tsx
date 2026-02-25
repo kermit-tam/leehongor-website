@@ -8,6 +8,9 @@
 
 import { useState, useEffect } from 'react';
 import { MTRLine, MTRStation } from '../data/mtr-stations';
+import { playDoorCloseBeep, playArrivalBeep, playDoorOpenBeep } from '../utils/sounds';
+import { getPlatformTheme } from '../data/platform-themes';
+import { PlatformBackground } from './PlatformBackground';
 
 interface TrainJourneyProps {
   line: MTRLine;
@@ -27,6 +30,9 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
   const stations = line.stations;
   const currentStation = stations[currentIndex];
   const nextStation = stations[currentIndex + 1];
+  
+  // 獲取當前站嘅月台主題
+  const platformTheme = getPlatformTheme(currentStation?.id || '');
 
   // 自動讀站名（慢速）
   useEffect(() => {
@@ -47,6 +53,9 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
       // 開始閂門程序
       setDoorStatus('closing');
       setAnnouncement('請勿靠近車門，請不要靠近車門');
+      
+      // 播放「嘟嘟嘟」閂門聲 + 廣播
+      playDoorCloseBeep();
       speak('請勿靠近車門', 'zh-HK', 0.7);
       
       setTimeout(() => {
@@ -67,6 +76,12 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
           setCurrentIndex(prev => prev + 1);
           setIsMoving(false);
           setShowInfo(true);
+          
+          // 播放到站「叮」聲 + 開門聲
+          setTimeout(() => {
+            playArrivalBeep();
+            setTimeout(() => playDoorOpenBeep(), 300);
+          }, 500);
           
           // 標記已學習
           setLearnedStations(prev => {
@@ -210,87 +225,100 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
         </div>
       </div>
 
-      {/* 列車動畫區 */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 min-h-[320px] flex flex-col items-center justify-center relative overflow-hidden">
-        
-        {/* 車門動畫效果 */}
-        {showInfo && (
-          <div className="absolute top-4 right-4 flex items-center gap-2">
-            <span className={`text-sm font-bold ${
-              doorStatus === 'open' ? 'text-green-500' : 
-              doorStatus === 'closing' || doorStatus === 'opening' ? 'text-yellow-500' : 
-              'text-red-500'
-            }`}>
-              {doorStatus === 'open' && '🚪 車門開啟'}
-              {doorStatus === 'closing' && '🚪 車門正在關閉'}
-              {doorStatus === 'closed' && '🚪 車門已關閉'}
-              {doorStatus === 'opening' && '🚪 車門正在開啟'}
-            </span>
-          </div>
-        )}
+      {/* 列車動畫區 - 有月台背景 */}
+      <div className="rounded-2xl shadow-lg mb-6 overflow-hidden" style={{ minHeight: '380px' }}>
+        {platformTheme && showInfo ? (
+          <PlatformBackground theme={platformTheme}>
+            <div className="flex flex-col items-center justify-center py-4">
+              {/* 車門動畫效果 */}
+              {showInfo && (
+                <div className="absolute top-4 right-20 flex items-center gap-2 z-20">
+                  <span className={`text-sm font-bold px-3 py-1 rounded-full bg-black/50 ${
+                    doorStatus === 'open' ? 'text-green-400' : 
+                    doorStatus === 'closing' || doorStatus === 'opening' ? 'text-yellow-400' : 
+                    'text-red-400'
+                  }`}>
+                    {doorStatus === 'open' && '🚪 車門開啟'}
+                    {doorStatus === 'closing' && '🚪 車門正在關閉'}
+                    {doorStatus === 'closed' && '🚪 車門已關閉'}
+                    {doorStatus === 'opening' && '🚪 車門正在開啟'}
+                  </span>
+                </div>
+              )}
 
-        {/* 列車圖示 */}
-        <div 
-          className={`text-8xl mb-6 transition-all duration-1000 ${
-            isMoving ? 'translate-x-32 scale-90' : 'translate-x-0'
-          } ${
-            doorStatus === 'closing' || doorStatus === 'opening' ? 'animate-pulse' : ''
-          }`}
-        >
-          {isMoving ? '🚇💨' : '🚇'}
-        </div>
+              {/* 列車圖示 */}
+              <div 
+                className={`text-7xl mb-4 transition-all duration-1000 ${
+                  doorStatus === 'closing' || doorStatus === 'opening' ? 'animate-pulse' : ''
+                }`}
+              >
+                🚇
+              </div>
 
-        {/* 站名資訊 */}
-        {showInfo && (
-          <div className="text-center animate-fade-in w-full">
-            {/* 提示：小心月台空隙 */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-2 mb-4">
-              <p className="text-yellow-700 text-sm">⚠️ 請小心月台空隙</p>
-              <p className="text-yellow-500 text-xs">Please mind the platform gap</p>
+              {/* 站名資訊 */}
+              <div className="text-center animate-fade-in w-full">
+                {/* 提示：小心月台空隙 */}
+                <div className="bg-yellow-400/90 border-2 border-yellow-500 rounded-xl p-2 mb-4 mx-4">
+                  <p className="text-yellow-900 text-sm font-bold">⚠️ 請小心月台空隙</p>
+                  <p className="text-yellow-700 text-xs">Please mind the platform gap</p>
+                </div>
+
+                {/* 站名牌 - 玻璃效果 */}
+                <div 
+                  className="inline-block px-8 py-4 rounded-2xl mb-4 backdrop-blur-md border-2 border-white/30"
+                  style={{ 
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  <h3 className="text-4xl font-bold text-white drop-shadow-lg">{currentStation.name}</h3>
+                  <p className="text-white/80 text-sm mt-1">{currentStation.nameEn}</p>
+                </div>
+
+                {/* 地標 */}
+                <div className="flex items-center justify-center gap-2 text-4xl mb-3">
+                  <span className="drop-shadow-lg">{currentStation.landmarkIcon}</span>
+                  <span className="text-lg text-white/90 font-medium">{currentStation.landmark}</span>
+                </div>
+
+                {/* 描述 */}
+                <p className="text-white/70 text-sm px-4 mb-4">{currentStation.description}</p>
+
+                {/* 讀音按鈕 */}
+                <button
+                  onClick={readStationName}
+                  className="px-6 py-3 bg-white/20 backdrop-blur-sm rounded-full text-white hover:bg-white/30 flex items-center gap-2 mx-auto transition-all active:scale-95 border border-white/30"
+                >
+                  <span className="text-xl">🔊</span>
+                  <span>慢慢讀一次</span>
+                </button>
+              </div>
             </div>
-
-            {/* 站名牌 */}
-            <div 
-              className="inline-block px-8 py-4 rounded-2xl mb-4 shadow-lg"
-              style={{ backgroundColor: line.colorCode }}
-            >
-              <h3 className="text-3xl font-bold text-white">{currentStation.name}</h3>
-              <p className="text-white/80 text-sm">{currentStation.nameEn}</p>
-            </div>
-
-            {/* 地標 */}
-            <div className="flex items-center justify-center gap-2 text-4xl mb-3">
-              <span>{currentStation.landmarkIcon}</span>
-              <span className="text-lg text-gray-600">{currentStation.landmark}</span>
-            </div>
-
-            {/* 描述 */}
-            <p className="text-gray-500 text-sm px-4 mb-4">{currentStation.description}</p>
-
-            {/* 讀音按鈕 */}
-            <button
-              onClick={readStationName}
-              className="px-6 py-3 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200 flex items-center gap-2 mx-auto transition-all active:scale-95"
-            >
-              <span className="text-xl">🔊</span>
-              <span>慢慢讀一次</span>
-            </button>
-          </div>
-        )}
-
-        {/* 行駛中提示 */}
-        {isMoving && (
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-400 mb-2">🚄 列車行駛中...</p>
-            <p className="text-gray-400">Next Station</p>
-            <p className="text-xl text-gray-500 mt-2">{nextStation?.name}</p>
-            <div className="mt-4 flex justify-center gap-1">
+          </PlatformBackground>
+        ) : isMoving ? (
+          /* 行駛中 - 隧道效果 */
+          <div className="h-full min-h-[380px] bg-gray-900 flex flex-col items-center justify-center relative overflow-hidden">
+            {/* 隧道牆壁效果 */}
+            <div className="absolute inset-0 opacity-20" style={{
+              backgroundImage: `repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 50px,
+                rgba(255,255,255,0.1) 50px,
+                rgba(255,255,255,0.1) 100px
+              )`,
+            }} />
+            
+            <p className="text-2xl font-bold text-gray-400 mb-2 relative z-10">🚄 列車行駛中...</p>
+            <p className="text-gray-500 relative z-10">Next Station</p>
+            <p className="text-xl text-gray-400 mt-2 relative z-10">{nextStation?.name}</p>
+            <div className="mt-4 flex justify-center gap-1 relative z-10">
               <span className="animate-bounce text-2xl">💨</span>
               <span className="animate-bounce text-2xl delay-100">💨</span>
               <span className="animate-bounce text-2xl delay-200">💨</span>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* 控制按 */}
