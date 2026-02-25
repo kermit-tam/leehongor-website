@@ -141,41 +141,73 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
         </p>
       </div>
 
-      {/* 路線圖（簡化版） */}
-      <div className="bg-white rounded-2xl p-4 shadow-lg mb-6">
-        <div className="flex items-center gap-1 overflow-x-auto pb-2">
-          {stations.map((station, idx) => (
-            <button
-              key={station.id}
-              onClick={() => jumpToStation(idx)}
-              className="flex-shrink-0 flex flex-col items-center"
-            >
-              <div 
-                className={`w-3 h-3 rounded-full border-2 transition-all ${
-                  idx === currentIndex 
-                    ? 'bg-white scale-150' 
-                    : idx < currentIndex 
-                      ? 'bg-gray-400' 
-                      : 'bg-gray-200'
-                }`}
-                style={{ 
-                  borderColor: line.colorCode,
-                  backgroundColor: idx === currentIndex ? line.colorCode : undefined
-                }}
-              />
-              {idx % 2 === 0 && (
-                <span className="text-[10px] text-gray-500 mt-1 whitespace-nowrap">
-                  {station.name}
-                </span>
-              )}
-            </button>
-          ))}
+      {/* 路線圖（地鐵風格 - 淨顯示前後各2個站） */}
+      <div className="bg-gray-900 rounded-2xl p-4 shadow-lg mb-6">
+        <div className="flex items-center justify-center gap-2">
+          {(() => {
+            // 計算要顯示嘅站範圍（前後各2個，共5個）
+            const startIdx = Math.max(0, currentIndex - 2);
+            const endIdx = Math.min(stations.length - 1, currentIndex + 2);
+            const visibleStations = stations.slice(startIdx, endIdx + 1);
+            
+            return visibleStations.map((station, idx) => {
+              const actualIdx = startIdx + idx;
+              const isCurrent = actualIdx === currentIndex;
+              const isPast = actualIdx < currentIndex;
+              
+              return (
+                <div key={station.id} className="flex items-center">
+                  {/* 站點 */}
+                  <button
+                    onClick={() => jumpToStation(actualIdx)}
+                    className="flex flex-col items-center"
+                  >
+                    {/* 站名（上） */}
+                    <span className={`text-[10px] mb-1 whitespace-nowrap ${
+                      isCurrent ? 'text-white font-bold' : 'text-gray-500'
+                    }`}>
+                      {station.name}
+                    </span>
+                    
+                    {/* 站點圓點 */}
+                    <div 
+                      className={`w-4 h-4 rounded-full border-2 transition-all ${
+                        isCurrent 
+                          ? 'scale-125 animate-pulse' 
+                          : isPast 
+                            ? 'opacity-60' 
+                            : 'opacity-40'
+                      }`}
+                      style={{ 
+                        borderColor: line.colorCode,
+                        backgroundColor: isCurrent ? line.colorCode : 'transparent',
+                        boxShadow: isCurrent ? `0 0 10px ${line.colorCode}` : 'none'
+                      }}
+                    />
+                  </button>
+                  
+                  {/* 連接線（除咗最後一個） */}
+                  {idx < visibleStations.length - 1 && (
+                    <div 
+                      className="w-8 h-1 mx-1"
+                      style={{ 
+                        backgroundColor: line.colorCode,
+                        opacity: actualIdx < currentIndex ? 1 : 0.3
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            });
+          })()}
         </div>
-        {/* 路線 */}
-        <div 
-          className="h-1 mx-2 rounded-full"
-          style={{ backgroundColor: line.colorCode }}
-        />
+        
+        {/* 進度提示 */}
+        <div className="flex justify-between items-center mt-3 text-xs">
+          <span className="text-gray-500">← {currentIndex > 0 ? stations[currentIndex - 1]?.name : '起點'}</span>
+          <span className="text-white font-bold">{currentStation.name}</span>
+          <span className="text-gray-500">{nextStation?.name || '終點'} →</span>
+        </div>
       </div>
 
       {/* 列車動畫區 */}
