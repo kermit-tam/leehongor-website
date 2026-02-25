@@ -55,11 +55,18 @@ export default function HomePage() {
           </h1>
           
           {/* 副標題 */}
-          <p className="text-lg text-[#8C8C8C] mb-12 leading-relaxed tracking-wide">
+          <p className="text-lg text-[#8C8C8C] mb-4 leading-relaxed tracking-wide">
             輕鬆學習日文，系統化課程設計
             <br />
             遊戲化學習體驗，讓學日文變得有趣
           </p>
+
+          {/* 中文挑戰小鏈接 */}
+          <Link href="/trychi" className="inline-flex items-center gap-2 mb-12 px-4 py-2 bg-[#E8F4F8] hover:bg-[#D0E8F0] rounded-full text-sm text-[#4A7C8F] transition-colors">
+            <span>🇭🇰</span>
+            <span>中文挑戰</span>
+            <span>→</span>
+          </Link>
 
           {/* 登入區域 */}
           <div className="max-w-sm mx-auto">
@@ -115,49 +122,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 中文挑戰入口 - 公開給所有訪客 */}
-      <div className="py-20 bg-gradient-to-b from-[#E8F4F8] to-[#F5F5F0]">
-        <div className="max-w-6xl mx-auto px-6 sm:px-8">
-          <div className="text-center mb-12">
-            <div className="text-4xl mb-4">🇭🇰</div>
-            <h2 className="text-2xl text-[#4A4A4A] mb-4 tracking-wider font-normal">
-              TryChi 中文挑戰
-            </h2>
-            <p className="text-[#8C8C8C] max-w-xl mx-auto">
-              想學廣東話或認識港鐵？試試我哋嘅中文挑戰，唔需要登入直接玩！
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* 港鐵挑戰 */}
-            <Link href="/trychi">
-              <div className="group bg-white p-8 rounded-2xl shadow-sm border-2 border-transparent hover:border-blue-300 hover:shadow-lg transition-all text-center">
-                <div className="text-5xl mb-4">🚇</div>
-                <h3 className="text-xl font-normal text-[#4A4A4A] mb-2 tracking-wide">港鐵小站長</h3>
-                <p className="text-[#8C8C8C] text-sm mb-4">認識98個港鐵站名，挑戰顏色測試</p>
-                <div className="flex items-center justify-center text-blue-600 group-hover:translate-x-2 transition-transform">
-                  <span className="tracking-wide text-sm font-medium">立即挑戰</span>
-                  <span className="ml-2">→</span>
-                </div>
-              </div>
-            </Link>
-
-            {/* 基礎漢字 */}
-            <Link href="/studychinese">
-              <div className="group bg-white p-8 rounded-2xl shadow-sm border-2 border-transparent hover:border-red-300 hover:shadow-lg transition-all text-center">
-                <div className="text-5xl mb-4">✍️</div>
-                <h3 className="text-xl font-normal text-[#4A4A4A] mb-2 tracking-wide">基礎漢字挑戰</h3>
-                <p className="text-[#8C8C8C] text-sm mb-4">二年級中文生字，閃卡溫書模式</p>
-                <div className="flex items-center justify-center text-red-600 group-hover:translate-x-2 transition-transform">
-                  <span className="tracking-wide text-sm font-medium">開始溫書</span>
-                  <span className="ml-2">→</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Footer */}
       <footer className="py-8 bg-[#F5F5F0] border-t border-[#E5E5E5]">
         <div className="max-w-6xl mx-auto px-6 text-center text-[#B5B5B5] text-sm tracking-wide">
@@ -181,15 +145,24 @@ function HeroSection() {
         <p className="text-[#8C8C8C] tracking-wide">選擇你喜歡的學習方式</p>
       </div>
 
-      {/* 三個入口 */}
-      <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+      {/* 頂部中文挑戰鏈接 */}
+      <div className="text-center mb-8">
+        <Link href="/trychi" className="inline-flex items-center gap-2 px-4 py-2 bg-[#E8F4F8] hover:bg-[#D0E8F0] rounded-full text-sm text-[#4A7C8F] transition-colors">
+          <span>🇭🇰</span>
+          <span>中文挑戰</span>
+          <span>→</span>
+        </Link>
+      </div>
+
+      {/* 兩個入口 */}
+      <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         {/* 輕鬆學入口 */}
         <Link href="/posts">
-          <div className="group bg-[#FAF9F7] p-6 border-t border-[#E5E5E5] hover:bg-[#F0F0F0] transition-all">
-            <div className="text-4xl mb-4">📚</div>
-            <h2 className="text-lg font-normal mb-2 text-[#4A4A4A] tracking-wide">輕鬆學</h2>
-            <p className="text-[#8C8C8C] text-sm mb-4">閱讀文章，輕鬆學日文</p>
-            <div className="flex items-center text-[#4A4A4A] group-hover:translate-x-2 transition-transform text-sm">
+          <div className="group bg-[#FAF9F7] p-8 border-t border-[#E5E5E5] hover:bg-[#F0F0F0] transition-all">
+            <div className="text-4xl mb-6">📚</div>
+            <h2 className="text-xl font-normal mb-2 text-[#4A4A4A] tracking-wide">輕鬆學</h2>
+            <p className="text-[#8C8C8C] mb-6">閱讀文章，輕鬆學日文</p>
+            <div className="flex items-center text-[#4A4A4A] group-hover:translate-x-2 transition-transform">
               <span className="tracking-wide">開始閱讀</span>
               <span className="ml-2">→</span>
             </div>
@@ -198,25 +171,12 @@ function HeroSection() {
 
         {/* 系統學入口 */}
         <Link href="/learn">
-          <div className="group bg-[#FAF9F7] p-6 border-t border-[#E5E5E5] hover:bg-[#F0F0F0] transition-all">
-            <div className="text-4xl mb-4">🎓</div>
-            <h2 className="text-lg font-normal mb-2 text-[#4A4A4A] tracking-wide">課程列表</h2>
-            <p className="text-[#8C8C8C] text-sm mb-4">查看所有N5課程</p>
-            <div className="flex items-center text-[#4A4A4A] group-hover:translate-x-2 transition-transform text-sm">
+          <div className="group bg-[#FAF9F7] p-8 border-t border-[#E5E5E5] hover:bg-[#F0F0F0] transition-all">
+            <div className="text-4xl mb-6">🎓</div>
+            <h2 className="text-xl font-normal mb-2 text-[#4A4A4A] tracking-wide">課程列表</h2>
+            <p className="text-[#8C8C8C] mb-6">查看所有N5課程</p>
+            <div className="flex items-center text-[#4A4A4A] group-hover:translate-x-2 transition-transform">
               <span className="tracking-wide">瀏覽課程</span>
-              <span className="ml-2">→</span>
-            </div>
-          </div>
-        </Link>
-
-        {/* 中文挑戰入口 */}
-        <Link href="/trychi">
-          <div className="group bg-gradient-to-br from-[#E8F4F8] to-[#FAF9F7] p-6 border-t border-[#E5E5E5] hover:shadow-lg transition-all">
-            <div className="text-4xl mb-4">🇭🇰</div>
-            <h2 className="text-lg font-normal mb-2 text-[#4A4A4A] tracking-wide">TryChi</h2>
-            <p className="text-[#8C8C8C] text-sm mb-4">港鐵挑戰 / 基礎漢字</p>
-            <div className="flex items-center text-blue-600 group-hover:translate-x-2 transition-transform text-sm">
-              <span className="tracking-wide">中文挑戰</span>
               <span className="ml-2">→</span>
             </div>
           </div>
