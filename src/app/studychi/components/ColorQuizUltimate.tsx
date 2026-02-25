@@ -1,11 +1,11 @@
 /**
  * 港鐵顏色終極測試
- * 10條題目，考98個港鐵站嘅顏色
+ * 15條題目，考98個港鐵站嘅顏色
  */
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { allPlatformThemes } from '../data/platform-themes';
 import { Leaderboard } from './Leaderboard';
 
@@ -67,6 +67,16 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
 
   const currentQuestion = questions[currentQ];
 
+  // 自動下一題
+  useEffect(() => {
+    if (selected) {
+      const timer = setTimeout(() => {
+        nextQuestion();
+      }, 1500); // 1.5秒後自動下一題
+      return () => clearTimeout(timer);
+    }
+  }, [selected]);
+
   const handleAnswer = (optionId: string) => {
     if (selected) return; // 已經答咗
     
@@ -87,7 +97,7 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
   };
 
   const nextQuestion = () => {
-    if (currentQ < 9) {
+    if (currentQ < 14) { // 15題：0-14
       setCurrentQ(c => c + 1);
       setSelected(null);
       setCorrect(null);
@@ -230,10 +240,11 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
           {currentQuestion.options.map((option) => {
             const isSelected = selected === option.stationId;
             const isCorrect = option.stationId === currentQuestion.theme.stationId;
+            const isAnswered = selected !== null;
             
-            let buttonClass = 'p-3 rounded-xl font-bold text-center text-sm transition-all active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis ';
+            let buttonClass = 'p-3 rounded-xl font-bold text-center text-sm transition-all active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis flex flex-col items-center gap-1 ';
             
-            if (selected === null) {
+            if (!isAnswered) {
               // 未答：白色背景
               buttonClass += 'bg-gray-100 text-gray-800 hover:bg-gray-200';
             } else if (isCorrect) {
@@ -243,44 +254,53 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
               // 錯誤選擇：紅色
               buttonClass += 'bg-red-500 text-white';
             } else {
-              // 其他：灰色
-              buttonClass += 'bg-gray-100 text-gray-400';
+              // 其他錯誤選項：顯示真實顏色
+              buttonClass += 'bg-gray-100 text-gray-500';
             }
             
             return (
               <button
                 key={option.stationId}
                 onClick={() => handleAnswer(option.stationId)}
-                disabled={selected !== null}
+                disabled={isAnswered}
                 className={buttonClass}
               >
-                {option.stationName}
-                {isSelected && isCorrect && <span className="ml-2">✓</span>}
-                {isSelected && !isCorrect && <span className="ml-2">✗</span>}
+                <span>{option.stationName}</span>
+                {/* 答完後顯示每個選項的真實顏色 */}
+                {isAnswered && (
+                  <div 
+                    className="w-full h-2 rounded-full mt-1"
+                    style={{ 
+                      backgroundColor: option.wallColor,
+                      border: '1px solid rgba(0,0,0,0.2)'
+                    }}
+                  />
+                )}
+                {isSelected && isCorrect && <span className="text-lg">✓</span>}
+                {isSelected && !isCorrect && <span className="text-lg">✗</span>}
               </button>
             );
           })}
         </div>
 
-        {/* 答對/錯提示 */}
+        {/* 答對/錯提示 + 自動跳題進度 */}
         {selected && (
-          <div className={`mt-4 p-3 rounded-xl text-center font-bold ${
-            correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`}>
-            {correct ? '✅ 答啱！+10分' : `❌ 錯！正確答案係「${currentQuestion.theme.stationName}」`}
+          <div className="mt-4 space-y-2">
+            <div className={`p-3 rounded-xl text-center font-bold ${
+              correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            }`}>
+              {correct ? '✅ 答啱！+7分' : `❌ 錯！正確答案係「${currentQuestion.theme.stationName}」`}
+            </div>
+            {/* 自動跳題倒計時顯示 */}
+            <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full bg-purple-500 animate-[shrink_1.5s_linear]" />
+            </div>
+            <p className="text-center text-gray-400 text-xs">
+              {currentQ < 14 ? '1.5秒後自動下一題...' : '1.5秒後顯示成績...'}
+            </p>
           </div>
         )}
       </div>
-
-      {/* 下一題按鈕 */}
-      {selected && (
-        <button
-          onClick={nextQuestion}
-          className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-bold text-lg hover:opacity-90 transition-opacity animate-pulse"
-        >
-          {currentQ < 14 ? '下一題 →' : '睇成績 🏆'}
-        </button>
-      )}
 
       {/* 提示 */}
       <p className="text-center text-gray-400 text-xs mt-4">

@@ -55,6 +55,7 @@ const config: Config = {
         'slide-up': 'slideUp 0.5s ease-out',
         'shake': 'shake 0.5s ease-in-out',
         'bounce': 'bounce 1s infinite',
+        'shrink': 'shrink 1.5s linear',
       },
       keyframes: {
         fadeIn: {
@@ -69,6 +70,10 @@ const config: Config = {
           '0%, 100%': { transform: 'translateX(0)' },
           '25%': { transform: 'translateX(-8px)' },
           '75%': { transform: 'translateX(8px)' },
+        },
+        shrink: {
+          '0%': { width: '100%' },
+          '100%': { width: '0%' },
         },
       },
     },
