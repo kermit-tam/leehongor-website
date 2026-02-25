@@ -446,12 +446,17 @@ export default function LearnPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-      {/* 頁面標題 */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#4A4A4A] mb-2">🎯 N5 基礎課程</h1>
-        <p className="text-[#8C8C8C]">
-          大家的日本語 • 微單元學習 • 廣東話諧音輔助
-        </p>
+      {/* 頁面標題 + 中文挑戰鏈接 */}
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-[#4A4A4A] mb-2">🎯 N5 基礎課程</h1>
+          <p className="text-[#8C8C8C]">
+            大家的日本語 • 微單元學習 • 廣東話諧音輔助
+          </p>
+        </div>
+        <Link href="/trychi" className="text-sm text-[#8C8C8C] hover:text-[#4A7C8F] transition-colors mt-2">
+          中文挑戰
+        </Link>
       </div>
 
       {/* 雙軌進度顯示 */}
@@ -523,33 +528,6 @@ export default function LearnPage() {
             )}
           </Link>
         ))}
-      </div>
-
-      {/* TryChi 中文挑戰 - 已登入用戶都見到 */}
-      <div className="bg-gradient-to-r from-[#E8F4F8] to-[#F0F7F4] rounded-2xl border border-[#B8D4E3] p-6 mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-2xl">🇭🇰</span>
-          <h2 className="text-lg font-bold text-[#4A4A4A]">TryChi 中文挑戰</h2>
-        </div>
-        <p className="text-sm text-[#8C8C8C] mb-4">
-          學完日文，試下中文挑戰！認識港鐵站名或溫習基礎漢字。
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <Link 
-            href="/studychi"
-            className="flex items-center justify-center gap-2 py-3 bg-white rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
-          >
-            <span>🚇</span>
-            <span className="font-medium">港鐵小站長</span>
-          </Link>
-          <Link 
-            href="/studychinese"
-            className="flex items-center justify-center gap-2 py-3 bg-white rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
-          >
-            <span>✍️</span>
-            <span className="font-medium">基礎漢字</span>
-          </Link>
-        </div>
       </div>
 
       {/* 計分系統說明 */}
