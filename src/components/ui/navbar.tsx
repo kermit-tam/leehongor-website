@@ -21,6 +21,7 @@ export function Navbar() {
     { label: '系統學', href: '/learn', icon: '🎯' },
     { label: '考試模式', href: '/exam', icon: '📝' },
     { label: '排行榜', href: '/leaderboard', icon: '🏆' },
+    { label: '中文挑戰', href: '/trychi', icon: '🇭🇰' },
   ];
 
   if (isAdmin) {

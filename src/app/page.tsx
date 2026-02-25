@@ -43,15 +43,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F0]">
-      {/* 頂部導航欄 - 中文挑戰鏈接置右 */}
-      <div className="w-full px-6 sm:px-8 py-4">
-        <div className="max-w-6xl mx-auto flex justify-end">
-          <Link href="/trychi" className="text-sm text-[#8C8C8C] hover:text-[#4A7C8F] transition-colors">
-            中文挑戰
-          </Link>
-        </div>
-      </div>
-
       {/* Hero Section - 簡約無印風格 */}
       <div className="max-w-6xl mx-auto px-6 sm:px-8 py-16 md:py-24">
         <div className="text-center max-w-2xl mx-auto">
@@ -139,13 +130,6 @@ export default function HomePage() {
 function HeroSection() {
   return (
     <div className="max-w-6xl mx-auto px-6 sm:px-8 py-12 bg-[#F5F5F0] min-h-screen">
-      {/* 頂部導航 - 中文挑戰置右 */}
-      <div className="flex justify-end mb-8">
-        <Link href="/trychi" className="text-sm text-[#8C8C8C] hover:text-[#4A7C8F] transition-colors">
-          中文挑戰
-        </Link>
-      </div>
-
       {/* 歡迎標語 */}
       <div className="text-center mb-12">
         <h1 className="text-2xl md:text-3xl font-light mb-4 text-[#4A4A4A] tracking-wider">
