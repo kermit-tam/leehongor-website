@@ -54,6 +54,7 @@ const config: Config = {
         'fade-in': 'fadeIn 0.4s ease-out',
         'slide-up': 'slideUp 0.5s ease-out',
         'shake': 'shake 0.5s ease-in-out',
+        'bounce': 'bounce 1s infinite',
       },
       keyframes: {
         fadeIn: {
