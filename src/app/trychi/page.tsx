@@ -1,11 +1,43 @@
 /**
  * 中文挑戰入口
  * Cocomelon 風格 - 鮮艷明亮、兒童友善
+ * 支援後台自定義標題、副標題、圖標
  */
 
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface TryChiConfig {
+  mtrTitle: string;
+  mtrSubtitle: string;
+  mtrEmoji: string;
+  chineseTitle: string;
+  chineseSubtitle: string;
+  chineseEmoji: string;
+}
+
+const defaultConfig: TryChiConfig = {
+  mtrTitle: '港鐵小站長',
+  mtrSubtitle: '98個港鐵站學中文字',
+  mtrEmoji: '🚇',
+  chineseTitle: '基礎漢字挑戰',
+  chineseSubtitle: '幼稚園目標：500個中文字',
+  chineseEmoji: '✍️',
+};
+
 export default function TryChiPage() {
+  const [config, setConfig] = useState<TryChiConfig>(defaultConfig);
+
+  // 加載後台設定
+  useEffect(() => {
+    const saved = localStorage.getItem('trychi-config');
+    if (saved) {
+      setConfig({ ...defaultConfig, ...JSON.parse(saved) });
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#FFF8E7] p-4">
       <div className="max-w-md mx-auto">
@@ -31,24 +63,14 @@ export default function TryChiPage() {
             <div className="bg-[#74B9FF] rounded-3xl p-6 shadow-[0_8px_0_#0984E3] hover:shadow-[0_4px_0_#0984E3] hover:translate-y-1 transition-all active:scale-95">
               <div className="flex items-center gap-4">
                 <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-4xl shadow-lg">
-                  🚇
+                  {config.mtrEmoji}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-extrabold text-white mb-1">港鐵小站長</h2>
-                  <p className="text-white/90 font-medium">98個港鐵站學中文字</p>
+                  <h2 className="text-2xl font-extrabold text-white mb-1">{config.mtrTitle}</h2>
+                  <p className="text-white/90 font-medium">{config.mtrSubtitle}</p>
                 </div>
                 <span className="text-3xl text-white">→</span>
               </div>
-              
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="text-sm bg-white/30 text-white px-3 py-1.5 rounded-full font-bold">7條路線</span>
-                <span className="text-sm bg-white/30 text-white px-3 py-1.5 rounded-full font-bold">98個站</span>
-                <span className="text-sm bg-white/30 text-white px-3 py-1.5 rounded-full font-bold">顏色測試</span>
-              </div>
-              
-              <p className="mt-3 text-sm text-white/80">
-                東鐵綫、屯馬綫、觀塘綫、港島綫、荃灣綫、將軍澳綫、東涌綫
-              </p>
             </div>
           </Link>
 
@@ -57,24 +79,14 @@ export default function TryChiPage() {
             <div className="bg-[#FF7675] rounded-3xl p-6 shadow-[0_8px_0_#D63031] hover:shadow-[0_4px_0_#D63031] hover:translate-y-1 transition-all active:scale-95">
               <div className="flex items-center gap-4">
                 <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-4xl shadow-lg">
-                  ✍️
+                  {config.chineseEmoji}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-extrabold text-white mb-1">基礎漢字挑戰</h2>
-                  <p className="text-white/90 font-medium">幼稚園目標：500個中文字</p>
+                  <h2 className="text-2xl font-extrabold text-white mb-1">{config.chineseTitle}</h2>
+                  <p className="text-white/90 font-medium">{config.chineseSubtitle}</p>
                 </div>
                 <span className="text-3xl text-white">→</span>
               </div>
-              
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="text-sm bg-white/30 text-white px-3 py-1.5 rounded-full font-bold">中文生字</span>
-                <span className="text-sm bg-white/30 text-white px-3 py-1.5 rounded-full font-bold">英文詞彙</span>
-                <span className="text-sm bg-white/30 text-white px-3 py-1.5 rounded-full font-bold">閃卡溫書</span>
-              </div>
-              
-              <p className="mt-3 text-sm text-white/80">
-                閃卡溫書、聆聽測驗、讀句子、圖畫配對
-              </p>
             </div>
           </Link>
         </div>

@@ -181,6 +181,23 @@ export default function AdminDashboard() {
             </div>
           </div>
         </Link>
+
+        <Link href="/admin/trychi">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all active:scale-[0.98]">
+            <div className="flex items-center">
+              <div className="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-2xl mr-4">
+                🎨
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900">中文挑戰內容</h3>
+                <p className="text-sm text-gray-500">自訂標題、副標題和圖標</p>
+              </div>
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* 使用提示 */}
