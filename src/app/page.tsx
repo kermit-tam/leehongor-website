@@ -62,7 +62,7 @@ export default function HomePage() {
           </p>
 
           {/* 中文挑戰小鏈接 */}
-          <Link href="/trychi" className="inline-flex items-center gap-2 mb-12 px-4 py-2 bg-[#E8F4F8] hover:bg-[#D0E8F0] rounded-full text-sm text-[#4A7C8F] transition-colors">
+          <Link href="/trychi" className="inline-flex items-center gap-2 mb-12 px-5 py-2.5 bg-[#4A90A4] hover:bg-[#3D7A8C] rounded-full text-sm text-white font-medium transition-colors shadow-md">
             <span>🇭🇰</span>
             <span>中文挑戰</span>
             <span>→</span>
@@ -147,7 +147,7 @@ function HeroSection() {
 
       {/* 頂部中文挑戰鏈接 */}
       <div className="text-center mb-8">
-        <Link href="/trychi" className="inline-flex items-center gap-2 px-4 py-2 bg-[#E8F4F8] hover:bg-[#D0E8F0] rounded-full text-sm text-[#4A7C8F] transition-colors">
+        <Link href="/trychi" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#4A90A4] hover:bg-[#3D7A8C] rounded-full text-sm text-white font-medium transition-colors shadow-md">
           <span>🇭🇰</span>
           <span>中文挑戰</span>
           <span>→</span>
