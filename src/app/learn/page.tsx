@@ -525,6 +525,33 @@ export default function LearnPage() {
         ))}
       </div>
 
+      {/* TryChi 中文挑戰 - 已登入用戶都見到 */}
+      <div className="bg-gradient-to-r from-[#E8F4F8] to-[#F0F7F4] rounded-2xl border border-[#B8D4E3] p-6 mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-2xl">🇭🇰</span>
+          <h2 className="text-lg font-bold text-[#4A4A4A]">TryChi 中文挑戰</h2>
+        </div>
+        <p className="text-sm text-[#8C8C8C] mb-4">
+          學完日文，試下中文挑戰！認識港鐵站名或溫習基礎漢字。
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Link 
+            href="/studychi"
+            className="flex items-center justify-center gap-2 py-3 bg-white rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+          >
+            <span>🚇</span>
+            <span className="font-medium">港鐵小站長</span>
+          </Link>
+          <Link 
+            href="/studychinese"
+            className="flex items-center justify-center gap-2 py-3 bg-white rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <span>✍️</span>
+            <span className="font-medium">基礎漢字</span>
+          </Link>
+        </div>
+      </div>
+
       {/* 計分系統說明 */}
       <div className="bg-[#FAF9F7] rounded-2xl border border-[#E8E8E8] p-6 mb-8">
         <h2 className="text-lg font-bold text-[#4A4A4A] mb-4">🏆 計分系統</h2>
