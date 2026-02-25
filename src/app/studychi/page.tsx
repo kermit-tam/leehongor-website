@@ -20,9 +20,10 @@ import { ColorMatch } from './components/ColorMatch';
 import { LandmarkMatch } from './components/LandmarkMatch';
 import { ListeningQuiz } from './components/ListeningQuiz';
 import { SpeakingQuiz } from './components/SpeakingQuiz';
+import { ColorQuizUltimate } from './components/ColorQuizUltimate';
 import { mtrLines, getLineById, MTRLine } from './data/mtr-stations';
 
-type GameMode = 'menu' | 'select-line' | 'train' | 'color' | 'landmark' | 'listening' | 'speaking';
+type GameMode = 'menu' | 'select-line' | 'train' | 'color' | 'landmark' | 'listening' | 'speaking' | 'ultimate';
 
 export default function StudyChiPage() {
   const [mode, setMode] = useState<GameMode>('menu');
@@ -255,6 +256,12 @@ export default function StudyChiPage() {
       {mode === 'speaking' && (
         <SpeakingQuiz
           line={selectedLine}
+          onBack={() => setMode('menu')}
+          onScore={(points) => setScore(s => s + points)}
+        />
+      )}
+      {mode === 'ultimate' && (
+        <ColorQuizUltimate
           onBack={() => setMode('menu')}
           onScore={(points) => setScore(s => s + points)}
         />
