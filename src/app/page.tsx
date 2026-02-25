@@ -43,8 +43,17 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F0]">
+      {/* 頂部導航欄 - 中文挑戰鏈接置右 */}
+      <div className="w-full px-6 sm:px-8 py-4">
+        <div className="max-w-6xl mx-auto flex justify-end">
+          <Link href="/trychi" className="text-sm text-[#8C8C8C] hover:text-[#4A7C8F] transition-colors">
+            中文挑戰
+          </Link>
+        </div>
+      </div>
+
       {/* Hero Section - 簡約無印風格 */}
-      <div className="max-w-6xl mx-auto px-6 sm:px-8 py-20 md:py-32">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 py-16 md:py-24">
         <div className="text-center max-w-2xl mx-auto">
           {/* Logo */}
           <div className="text-5xl mb-8">🎌</div>
@@ -55,18 +64,11 @@ export default function HomePage() {
           </h1>
           
           {/* 副標題 */}
-          <p className="text-lg text-[#8C8C8C] mb-4 leading-relaxed tracking-wide">
+          <p className="text-lg text-[#8C8C8C] mb-8 leading-relaxed tracking-wide">
             輕鬆學習日文，系統化課程設計
             <br />
             遊戲化學習體驗，讓學日文變得有趣
           </p>
-
-          {/* 中文挑戰小鏈接 */}
-          <Link href="/trychi" className="inline-flex items-center gap-2 mb-12 px-5 py-2.5 bg-[#4A90A4] hover:bg-[#3D7A8C] rounded-full text-sm text-white font-medium transition-colors shadow-md">
-            <span>🇭🇰</span>
-            <span>中文挑戰</span>
-            <span>→</span>
-          </Link>
 
           {/* 登入區域 */}
           <div className="max-w-sm mx-auto">
@@ -137,21 +139,19 @@ export default function HomePage() {
 function HeroSection() {
   return (
     <div className="max-w-6xl mx-auto px-6 sm:px-8 py-12 bg-[#F5F5F0] min-h-screen">
+      {/* 頂部導航 - 中文挑戰置右 */}
+      <div className="flex justify-end mb-8">
+        <Link href="/trychi" className="text-sm text-[#8C8C8C] hover:text-[#4A7C8F] transition-colors">
+          中文挑戰
+        </Link>
+      </div>
+
       {/* 歡迎標語 */}
       <div className="text-center mb-12">
         <h1 className="text-2xl md:text-3xl font-light mb-4 text-[#4A4A4A] tracking-wider">
           歡迎回來
         </h1>
         <p className="text-[#8C8C8C] tracking-wide">選擇你喜歡的學習方式</p>
-      </div>
-
-      {/* 頂部中文挑戰鏈接 */}
-      <div className="text-center mb-8">
-        <Link href="/trychi" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#4A90A4] hover:bg-[#3D7A8C] rounded-full text-sm text-white font-medium transition-colors shadow-md">
-          <span>🇭🇰</span>
-          <span>中文挑戰</span>
-          <span>→</span>
-        </Link>
       </div>
 
       {/* 兩個入口 */}
