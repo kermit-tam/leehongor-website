@@ -29,13 +29,14 @@ export default function StudyChiPage() {
   const [selectedLine, setSelectedLine] = useState<MTRLine>(mtrLines[0]);
   const [score, setScore] = useState(0);
 
-  // 播放讀音
-  const speak = useCallback((text: string, lang: string = 'zh-HK') => {
+  // 播放讀音（支援調整速度）
+  const speak = useCallback((text: string, lang: string = 'zh-HK', rate: number = 0.7) => {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang;
-    utterance.rate = 0.9;
+    utterance.rate = rate; // 預設 0.7 較慢，可調 0.5 更慢
+    utterance.pitch = 1.0;
     window.speechSynthesis.speak(utterance);
   }, []);
 

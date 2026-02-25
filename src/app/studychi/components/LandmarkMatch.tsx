@@ -12,7 +12,7 @@ interface LandmarkMatchProps {
   line: MTRLine;
   onBack: () => void;
   onScore: (points: number) => void;
-  speak: (text: string, lang?: string) => void;
+  speak: (text: string, lang?: string, rate?: number) => void;
 }
 
 export function LandmarkMatch({ line, onBack, onScore, speak }: LandmarkMatchProps) {
@@ -120,7 +120,7 @@ export function LandmarkMatch({ line, onBack, onScore, speak }: LandmarkMatchPro
 
             {/* 讀提示按鈕 */}
             <button
-              onClick={() => speak(`${currentStation.landmark}，${currentStation.description}`)}
+              onClick={() => speak(`${currentStation.landmark}，${currentStation.description}`, 'zh-HK', 0.6)}
               className="mt-4 px-4 py-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200 text-sm"
             >
               🔊 聽提示

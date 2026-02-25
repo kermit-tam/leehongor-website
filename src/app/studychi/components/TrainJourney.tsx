@@ -1,6 +1,7 @@
 /**
  * 列車旅程組件
- * 動畫列車沿東鐵綫移動，停站學站名
+ * 動畫列車沿港鐵路線移動，停站學站名
+ * 特色：慢速讀音 + 地鐵廣播效果 + 開門閂門動畫
  */
 
 'use client';
@@ -12,7 +13,7 @@ interface TrainJourneyProps {
   line: MTRLine;
   onBack: () => void;
   onScore: (points: number) => void;
-  speak: (text: string, lang?: string) => void;
+  speak: (text: string, lang?: string, rate?: number) => void;
 }
 
 export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps) {
@@ -20,44 +21,71 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
   const [isMoving, setIsMoving] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
   const [learnedStations, setLearnedStations] = useState<Set<string>>(new Set());
+  const [announcement, setAnnouncement] = useState<string>('');
+  const [doorStatus, setDoorStatus] = useState<'open' | 'closing' | 'closed' | 'opening'>('open');
 
   const stations = line.stations;
   const currentStation = stations[currentIndex];
+  const nextStation = stations[currentIndex + 1];
 
-  // 自動讀站名
+  // 自動讀站名（慢速）
   useEffect(() => {
     if (currentStation && showInfo) {
-      speak(currentStation.name);
+      // 播放廣播：列車即將到達
+      setAnnouncement(`列車即將到達 ${currentStation.name} 站`);
+      speak(`列車即將到達，${currentStation.name}站`, 'zh-HK', 0.7);
+      
+      // 開門動畫
+      setDoorStatus('opening');
+      setTimeout(() => setDoorStatus('open'), 500);
     }
   }, [currentIndex, showInfo, speak, currentStation]);
 
   // 下一站
-  const nextStation = () => {
+  const goToNextStation = () => {
     if (currentIndex < stations.length - 1) {
-      setIsMoving(true);
-      setShowInfo(false);
+      // 開始閂門程序
+      setDoorStatus('closing');
+      setAnnouncement('請勿靠近車門，請不要靠近車門');
+      speak('請勿靠近車門', 'zh-HK', 0.7);
       
       setTimeout(() => {
-        setCurrentIndex(prev => prev + 1);
-        setIsMoving(false);
-        setShowInfo(true);
+        setDoorStatus('closed');
+        setIsMoving(true);
+        setShowInfo(false);
         
-        // 標記已學習
-        setLearnedStations(prev => {
-          const newSet = new Set(prev);
-          newSet.add(currentStation.id);
-          return newSet;
-        });
-        onScore(5);
+        // 播放「下一站」廣播
+        if (nextStation) {
+          setAnnouncement(`下一站：${nextStation.name}`);
+          setTimeout(() => {
+            speak(`下一站，${nextStation.name}`, 'zh-HK', 0.7);
+          }, 500);
+        }
+        
+        // 列車行駛動畫
+        setTimeout(() => {
+          setCurrentIndex(prev => prev + 1);
+          setIsMoving(false);
+          setShowInfo(true);
+          
+          // 標記已學習
+          setLearnedStations(prev => {
+            const newSet = new Set(prev);
+            newSet.add(currentStation.id);
+            return newSet;
+          });
+          onScore(5);
+        }, 2500);
       }, 1500);
     }
   };
 
   // 上一站
-  const prevStation = () => {
+  const goToPrevStation = () => {
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
       setShowInfo(true);
+      setDoorStatus('open');
     }
   };
 
@@ -65,6 +93,14 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
   const jumpToStation = (index: number) => {
     setCurrentIndex(index);
     setShowInfo(true);
+    setDoorStatus('open');
+  };
+
+  // 手動讀站名（更慢）
+  const readStationName = () => {
+    if (currentStation) {
+      speak(currentStation.name, 'zh-HK', 0.5); // 更慢
+    }
   };
 
   return (
@@ -89,6 +125,20 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
             backgroundColor: line.colorCode 
           }}
         />
+      </div>
+
+      {/* 廣播顯示區 */}
+      <div className="bg-gray-900 rounded-2xl p-4 mb-6 shadow-lg">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-green-400 text-xs">●</span>
+          <span className="text-green-400 text-xs">廣播 Announcement</span>
+        </div>
+        <p className="text-white text-lg font-medium text-center">
+          {announcement || `歡迎乘搭${line.name}`}
+        </p>
+        <p className="text-gray-500 text-xs text-center mt-1">
+          {line.nameEn}
+        </p>
       </div>
 
       {/* 路線圖（簡化版） */}
@@ -129,22 +179,47 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
       </div>
 
       {/* 列車動畫區 */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 min-h-[300px] flex flex-col items-center justify-center">
+      <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 min-h-[320px] flex flex-col items-center justify-center relative overflow-hidden">
+        
+        {/* 車門動畫效果 */}
+        {showInfo && (
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <span className={`text-sm font-bold ${
+              doorStatus === 'open' ? 'text-green-500' : 
+              doorStatus === 'closing' || doorStatus === 'opening' ? 'text-yellow-500' : 
+              'text-red-500'
+            }`}>
+              {doorStatus === 'open' && '🚪 車門開啟'}
+              {doorStatus === 'closing' && '🚪 車門正在關閉'}
+              {doorStatus === 'closed' && '🚪 車門已關閉'}
+              {doorStatus === 'opening' && '🚪 車門正在開啟'}
+            </span>
+          </div>
+        )}
+
         {/* 列車圖示 */}
         <div 
-          className={`text-8xl mb-6 transition-transform duration-1000 ${
-            isMoving ? 'translate-x-20' : 'translate-x-0'
+          className={`text-8xl mb-6 transition-all duration-1000 ${
+            isMoving ? 'translate-x-32 scale-90' : 'translate-x-0'
+          } ${
+            doorStatus === 'closing' || doorStatus === 'opening' ? 'animate-pulse' : ''
           }`}
         >
-          🚇
+          {isMoving ? '🚇💨' : '🚇'}
         </div>
 
         {/* 站名資訊 */}
         {showInfo && (
-          <div className="text-center animate-fade-in">
+          <div className="text-center animate-fade-in w-full">
+            {/* 提示：小心月台空隙 */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-2 mb-4">
+              <p className="text-yellow-700 text-sm">⚠️ 請小心月台空隙</p>
+              <p className="text-yellow-500 text-xs">Please mind the platform gap</p>
+            </div>
+
             {/* 站名牌 */}
             <div 
-              className="inline-block px-8 py-4 rounded-2xl mb-4"
+              className="inline-block px-8 py-4 rounded-2xl mb-4 shadow-lg"
               style={{ backgroundColor: line.colorCode }}
             >
               <h3 className="text-3xl font-bold text-white">{currentStation.name}</h3>
@@ -158,14 +233,15 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
             </div>
 
             {/* 描述 */}
-            <p className="text-gray-500 text-sm px-4">{currentStation.description}</p>
+            <p className="text-gray-500 text-sm px-4 mb-4">{currentStation.description}</p>
 
             {/* 讀音按鈕 */}
             <button
-              onClick={() => speak(currentStation.name)}
-              className="mt-4 px-6 py-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200 flex items-center gap-2 mx-auto"
+              onClick={readStationName}
+              className="px-6 py-3 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200 flex items-center gap-2 mx-auto transition-all active:scale-95"
             >
-              🔊 再讀一次
+              <span className="text-xl">🔊</span>
+              <span>慢慢讀一次</span>
             </button>
           </div>
         )}
@@ -173,24 +249,30 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
         {/* 行駛中提示 */}
         {isMoving && (
           <div className="text-center">
-            <p className="text-2xl font-bold text-gray-400">🚄 列車行駛中...</p>
-            <p className="text-gray-400">下一站：{stations[currentIndex + 1]?.name}</p>
+            <p className="text-2xl font-bold text-gray-400 mb-2">🚄 列車行駛中...</p>
+            <p className="text-gray-400">Next Station</p>
+            <p className="text-xl text-gray-500 mt-2">{nextStation?.name}</p>
+            <div className="mt-4 flex justify-center gap-1">
+              <span className="animate-bounce text-2xl">💨</span>
+              <span className="animate-bounce text-2xl delay-100">💨</span>
+              <span className="animate-bounce text-2xl delay-200">💨</span>
+            </div>
           </div>
         )}
       </div>
 
-      {/* 控制按鈕 */}
+      {/* 控制按 */}
       <div className="flex gap-4">
         <button
-          onClick={prevStation}
+          onClick={goToPrevStation}
           disabled={currentIndex === 0 || isMoving}
           className="flex-1 py-4 rounded-xl bg-gray-100 text-gray-700 font-bold disabled:opacity-50 hover:bg-gray-200 transition-colors"
         >
           ← 上一站
         </button>
         <button
-          onClick={nextStation}
-          disabled={currentIndex === stations.length - 1 || isMoving}
+          onClick={goToNextStation}
+          disabled={currentIndex === stations.length - 1 || isMoving || doorStatus === 'closing'}
           className="flex-1 py-4 rounded-xl text-white font-bold disabled:opacity-50 hover:opacity-90 transition-opacity"
           style={{ backgroundColor: line.colorCode }}
         >
@@ -201,6 +283,11 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
       {/* 已學習統計 */}
       <p className="text-center text-gray-500 text-sm mt-4">
         已學習 {learnedStations.size} 個站
+      </p>
+
+      {/* 操作提示 */}
+      <p className="text-center text-gray-400 text-xs mt-2">
+        按「下一站」聽廣播：「請勿靠近車門」→「下一站...」→「列車即將到達...」
       </p>
     </div>
   );

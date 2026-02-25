@@ -12,7 +12,7 @@ interface ListeningQuizProps {
   line: MTRLine;
   onBack: () => void;
   onScore: (points: number) => void;
-  speak: (text: string, lang?: string) => void;
+  speak: (text: string, lang?: string, rate?: number) => void;
 }
 
 export function ListeningQuiz({ line, onBack, onScore, speak }: ListeningQuizProps) {
@@ -51,7 +51,7 @@ export function ListeningQuiz({ line, onBack, onScore, speak }: ListeningQuizPro
   const playQuestion = () => {
     if (!currentStation || isPlaying) return;
     setIsPlaying(true);
-    speak(currentStation.name);
+    speak(currentStation.name, 'zh-HK', 0.6);
     setTimeout(() => setIsPlaying(false), 1000);
   };
 
