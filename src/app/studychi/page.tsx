@@ -192,6 +192,17 @@ export default function StudyChiPage() {
                 <p className="text-gray-500 text-sm">讀出站名，做個小站長</p>
               </div>
             </button>
+
+            <button
+              onClick={() => setMode('ultimate')}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4 text-white"
+            >
+              <span className="text-4xl">🏆</span>
+              <div className="text-left">
+                <h2 className="text-xl font-bold">終極顏色測試</h2>
+                <p className="text-white/80 text-sm">10條題目考晒98個站！</p>
+              </div>
+            </button>
           </div>
 
           {/* 路線資料 */}
