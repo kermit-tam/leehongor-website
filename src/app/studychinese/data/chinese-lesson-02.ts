@@ -1,9 +1,10 @@
 import { StudyCard } from './types';
 
 /**
- * 第二課：日常生活
+ * 第二課：日常生活（修訂版）
  * 
  * 10 個基礎單字，配合第一課組成日常短句
+ * 句子更自然、適合二年級學生
  */
 
 export const chineseLesson02Cards: StudyCard[] = [
@@ -17,25 +18,25 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 5,
     meaning: '去、前往',
     category: '動詞',
-    isPicturable: false,  // 動作較難用靜態圖片
+    isPicturable: false,
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '我去家。', 
-        written: '我回家。' 
+        scenario: '日常', 
+        spoken: '我去上學。', 
+        written: '我去上學。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '爸去山。', 
-        written: '爸爸去山上。' 
+        scenario: '日常', 
+        spoken: '爸爸去工作。', 
+        written: '爸爸去工作。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '媽沒去。', 
-        written: '媽媽沒有去。' 
+        scenario: '日常', 
+        spoken: '我們去公園玩。', 
+        written: '我們去公園玩。' 
       },
     ],
   },
@@ -49,25 +50,25 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 10,
     meaning: '個、量詞',
     category: '量詞',
-    isPicturable: false,  // 量詞抽象
+    isPicturable: false,
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '一個人。', 
-        written: '一個人。' 
+        scenario: '日常', 
+        spoken: '這個蘋果很甜。', 
+        written: '這個蘋果很甜。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '這個家。', 
-        written: '這個家。' 
+        scenario: '日常', 
+        spoken: '我家有三個人。', 
+        written: '我家有三個人。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '個個去。', 
-        written: '個個都去。' 
+        scenario: '日常', 
+        spoken: '一個、兩個、三個。', 
+        written: '一個、兩個、三個。' 
       },
     ],
   },
@@ -86,21 +87,21 @@ export const chineseLesson02Cards: StudyCard[] = [
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '爸在家。', 
-        written: '爸爸在家。' 
+        scenario: '家庭', 
+        spoken: '我爸爸很高。', 
+        written: '我爸爸很高。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '我和爸。', 
-        written: '我和爸爸。' 
+        scenario: '家庭', 
+        spoken: '爸爸和我一起看電視。', 
+        written: '爸爸和我一起看電視。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '爸沒走。', 
-        written: '爸爸沒有走。' 
+        scenario: '家庭', 
+        spoken: '我愛爸爸。', 
+        written: '我愛爸爸。' 
       },
     ],
   },
@@ -119,21 +120,21 @@ export const chineseLesson02Cards: StudyCard[] = [
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '媽在家。', 
-        written: '媽媽在家。' 
+        scenario: '家庭', 
+        spoken: '我媽媽很溫柔。', 
+        written: '我媽媽很溫柔。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '媽和我。', 
-        written: '媽媽和我。' 
+        scenario: '家庭', 
+        spoken: '媽媽煮飯給我吃。', 
+        written: '媽媽煮飯給我吃。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '媽去了。', 
-        written: '媽媽去了。' 
+        scenario: '家庭', 
+        spoken: '媽媽抱著我。', 
+        written: '媽媽抱著我。' 
       },
     ],
   },
@@ -152,21 +153,21 @@ export const chineseLesson02Cards: StudyCard[] = [
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '我在家。', 
-        written: '我在家。' 
+        scenario: '家庭', 
+        spoken: '我家在這裏。', 
+        written: '我家在這裏。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '家有人。', 
-        written: '家裏有人。' 
+        scenario: '家庭', 
+        spoken: '我放學回家。', 
+        written: '我放學回家。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '爸媽在家。', 
-        written: '爸爸媽媽在家。' 
+        scenario: '家庭', 
+        spoken: '家裏有很多人。', 
+        written: '家裏有很多人。' 
       },
     ],
   },
@@ -180,25 +181,25 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 8,
     meaning: '和、與',
     category: '連詞',
-    isPicturable: false,  // 連接詞抽象
+    isPicturable: false,
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '爸和媽。', 
-        written: '爸爸和媽媽。' 
+        scenario: '日常', 
+        spoken: '我和弟弟一起玩。', 
+        written: '我和弟弟一起玩。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '你和我。', 
-        written: '你和我。' 
+        scenario: '日常', 
+        spoken: '爸爸和媽媽去買菜。', 
+        written: '爸爸和媽媽去買菜。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '山和水。', 
-        written: '山和水。' 
+        scenario: '日常', 
+        spoken: '牛和馬在山上。', 
+        written: '牛和馬在山上。' 
       },
     ],
   },
@@ -212,25 +213,25 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 7,
     meaning: '沒有、無',
     category: '動詞',
-    isPicturable: false,  // 否定詞抽象
+    isPicturable: false,
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '沒有人。', 
-        written: '沒有人。' 
+        scenario: '日常', 
+        spoken: '我沒有錢。', 
+        written: '我沒有錢。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '爸沒去。', 
-        written: '爸爸沒有去。' 
+        scenario: '日常', 
+        spoken: '這裏沒有人。', 
+        written: '這裏沒有人。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '我沒走。', 
-        written: '我沒有走。' 
+        scenario: '日常', 
+        spoken: '我沒有去過。', 
+        written: '我沒有去過。' 
       },
     ],
   },
@@ -244,25 +245,25 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 4,
     meaning: '中間、之中',
     category: '方位',
-    isPicturable: false,  // 方位抽象
+    isPicturable: false,
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '人在山中。', 
-        written: '人在山中。' 
+        scenario: '方位', 
+        spoken: '我在家中。', 
+        written: '我在家中。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '水中有草。', 
-        written: '水中有草。' 
+        scenario: '方位', 
+        spoken: '水中有魚。', 
+        written: '水中有魚。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '草中有牛。', 
-        written: '草中有牛。' 
+        scenario: '方位', 
+        spoken: '他在人群中。', 
+        written: '他在人群中。' 
       },
     ],
   },
@@ -280,25 +281,24 @@ export const chineseLesson02Cards: StudyCard[] = [
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '山上有草。', 
-        written: '山上有草。' 
+        scenario: '自然', 
+        spoken: '地上有草。', 
+        written: '地上有草。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '草中有牛。', 
-        written: '草中有牛。' 
+        scenario: '自然', 
+        spoken: '小牛吃草。', 
+        written: '小牛吃草。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '山上沒有草。', 
-        written: '山上沒有草。' 
+        scenario: '自然', 
+        spoken: '草是綠色的。', 
+        written: '草是綠色的。' 
       },
     ],
   },
-
   {
     id: 'ch-02-010',
     subject: 'chinese',
@@ -309,58 +309,66 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 7,
     meaning: '走、走路',
     category: '動詞',
-    isPicturable: true,  // 走路動作可用圖片
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
-        scenario: '短句', 
-        spoken: '我去走。', 
-        written: '我去走走。' 
+        scenario: '日常', 
+        spoken: '我走路去學校。', 
+        written: '我走路去學校。' 
       },
       { 
         id: '2', 
-        scenario: '短句', 
-        spoken: '牛在走。', 
-        written: '牛在走。' 
+        scenario: '日常', 
+        spoken: '請你走快一點。', 
+        written: '請你走快一點。' 
       },
       { 
         id: '3', 
-        scenario: '短句', 
-        spoken: '爸媽走。', 
-        written: '爸爸媽媽走了。' 
+        scenario: '日常', 
+        spoken: '爺爺走得很慢。', 
+        written: '爺爺走得很慢。' 
       },
     ],
   },
 ];
 
 /**
- * 第一課 + 第二課 組合短句
+ * 第一課 + 第二課 組合短句（修訂版）
+ * 更自然、更實用的句子
  */
 export const lesson02Combinations = [
-  // 四至六字完整句子
+  // 家庭生活
   { chars: ['我', '在', '家'], phrase: '我在家', meaning: '我在家裏' },
-  { chars: ['爸', '在', '家'], phrase: '爸在家', meaning: '爸爸在家' },
-  { chars: ['媽', '在', '家'], phrase: '媽在家', meaning: '媽媽在家' },
-  { chars: ['爸', '和', '媽', '在', '家'], phrase: '爸和媽在家', meaning: '爸爸和媽媽在家' },
+  { chars: ['爸', '爸', '在', '家'], phrase: '爸爸在家', meaning: '爸爸在家' },
+  { chars: ['媽', '媽', '在', '家'], phrase: '媽媽在家', meaning: '媽媽在家' },
+  { chars: ['爸', '爸', '和', '媽', '媽', '在', '家'], phrase: '爸爸和媽媽在家', meaning: '爸爸和媽媽在家' },
   { chars: ['你', '和', '我', '在', '家'], phrase: '你和我在家', meaning: '你和我在家裏' },
+  { chars: ['我', '回', '家', '去'], phrase: '我回家去', meaning: '我回家去' },
+  { chars: ['我', '沒', '有', '在', '家'], phrase: '我沒有在家', meaning: '我沒有在家' },
+  
+  // 山上場景
   { chars: ['山', '上', '沒', '有', '人'], phrase: '山上沒有人', meaning: '山上沒有人' },
-  { chars: ['家', '裏', '沒', '有', '人'], phrase: '家裏沒有人', meaning: '家裏沒有人' },
-  { chars: ['我', '沒', '有', '走'], phrase: '我沒有走', meaning: '我沒有走' },
-  { chars: ['媽', '媽', '沒', '有', '去'], phrase: '媽媽沒有去', meaning: '媽媽沒有去' },
   { chars: ['爸', '爸', '去', '山', '上'], phrase: '爸爸去山上', meaning: '爸爸去山上' },
   { chars: ['媽', '媽', '在', '山', '上'], phrase: '媽媽在山上', meaning: '媽媽在山上' },
-  { chars: ['牛', '在', '山', '中'], phrase: '牛在山中', meaning: '牛在山中' },
-  { chars: ['牛', '在', '草', '中'], phrase: '牛在草中', meaning: '牛在草叢中' },
   { chars: ['山', '上', '有', '草'], phrase: '山上有草', meaning: '山上有草' },
-  { chars: ['草', '中', '有', '牛'], phrase: '草中有牛', meaning: '草中有牛' },
-  { chars: ['家', '中', '有', '爸', '爸'], phrase: '家中有爸爸', meaning: '家裏有爸爸' },
+  { chars: ['牛', '在', '山', '上', '吃', '草'], phrase: '牛在山上吃草', meaning: '牛在山上吃草' },
+  { chars: ['草', '在', '山', '上'], phrase: '草在山上', meaning: '草在山上' },
+  
+  // 組合句子
+  { chars: ['我', '和', '爸', '爸', '在', '山', '上'], phrase: '我和爸爸在山上', meaning: '我和爸爸在山上' },
+  { chars: ['我', '和', '媽', '媽', '去', '山', '上'], phrase: '我和媽媽去山上', meaning: '我和媽媽去山上' },
+  { chars: ['牛', '在', '山', '上', '走'], phrase: '牛在山上走', meaning: '牛在山上走' },
+  { chars: ['山', '中', '有', '牛'], phrase: '山中有牛', meaning: '山中有牛' },
+  { chars: ['草', '中', '有', '牛'], phrase: '草中有牛', meaning: '草叢中有牛' },
+  
+  // 日常生活
   { chars: ['我', '有', '一', '個', '家'], phrase: '我有一個家', meaning: '我有一個家' },
   { chars: ['山', '上', '有', '一', '個', '人'], phrase: '山上有一个人', meaning: '山上有一个人' },
   { chars: ['這', '個', '家', '有', '人'], phrase: '這個家有人', meaning: '這個家有人' },
-  { chars: ['我', '回', '家', '去'], phrase: '我回家去', meaning: '我回家去' },
+  { chars: ['家', '裏', '沒', '有', '人'], phrase: '家裏沒有人', meaning: '家裏沒有人' },
+  { chars: ['我', '沒', '有', '走'], phrase: '我沒有走', meaning: '我沒有走' },
+  { chars: ['媽', '媽', '沒', '有', '去'], phrase: '媽媽沒有去', meaning: '媽媽沒有去' },
   { chars: ['爸', '爸', '媽', '媽', '走', '了'], phrase: '爸爸媽媽走了', meaning: '爸爸媽媽走了' },
-  { chars: ['我', '和', '爸', '爸', '在', '家'], phrase: '我和爸爸在家', meaning: '我和爸爸在家' },
-  { chars: ['我', '和', '媽', '媽', '去', '山', '上'], phrase: '我和媽媽去山上', meaning: '我和媽媽去山上' },
-  { chars: ['牛', '在', '山', '上', '走'], phrase: '牛在山上走', meaning: '牛在山上走' },
-  { chars: ['草', '在', '山', '上'], phrase: '草在山上', meaning: '草在山上' },
+  { chars: ['家', '中', '有', '爸', '爸'], phrase: '家中有爸爸', meaning: '家裏有爸爸' },
 ];
