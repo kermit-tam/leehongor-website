@@ -189,6 +189,7 @@ function KidsStudyContent() {
     return (
       <PictureMatch
         cards={currentCards}
+        lessonId={selectedLesson}
         onComplete={() => setMode('menu')}
         onBack={() => setMode('menu')}
       />
@@ -308,12 +309,15 @@ function KidsStudyContent() {
                 >
                   🎤 讀句子
                 </button>
-                <button
-                  onClick={() => startStudy('picture-match', subject, lesson.id)}
-                  className="py-2 rounded-lg bg-orange-100 text-orange-700 font-medium text-sm hover:bg-orange-200"
-                >
-                  🖼️ 圖畫配對
-                </button>
+                {/* 第三課開始才顯示圖畫配對 */}
+                {(lesson.id === 'ch-03' || lesson.id > 'ch-03') && (
+                  <button
+                    onClick={() => startStudy('picture-match', subject, lesson.id)}
+                    className="py-2 rounded-lg bg-orange-100 text-orange-700 font-medium text-sm hover:bg-orange-200"
+                  >
+                    🖼️ 圖畫配對
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -323,6 +327,8 @@ function KidsStudyContent() {
       <div className="bg-blue-50 rounded-xl p-4 text-sm text-blue-700">
         <p className="font-medium mb-2">💡 功能說明：</p>
         <ul className="space-y-1 ml-4 list-disc">
+          <li>第一、二課：基礎認字（山、水、人、牛等具體名詞）</li>
+          <li>第三課開始：新增圖畫配對遊戲，認識形容詞+名詞組合</li>
           <li>每個生字有 3 個情景例句（口語 + 書面語）</li>
           <li>可按 🔊 聽廣東話 / 普通話 / 英文發音</li>
           <li>測驗模式考考記得幾多</li>

@@ -17,6 +17,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 5,
     meaning: '去、前往',
     category: '動詞',
+    isPicturable: false,  // 動作較難用靜態圖片
     examples: [
       { 
         id: '1', 
@@ -48,6 +49,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 10,
     meaning: '個、量詞',
     category: '量詞',
+    isPicturable: false,  // 量詞抽象
     examples: [
       { 
         id: '1', 
@@ -80,6 +82,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     meaning: '爸爸、父親',
     category: '家人',
     image: '/images/study/dad.png',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -112,6 +115,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     meaning: '媽媽、母親',
     category: '家人',
     image: '/images/study/mom.png',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -144,6 +148,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     meaning: '家、家庭',
     category: '地方',
     image: '/images/study/home.png',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -175,6 +180,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 8,
     meaning: '和、與',
     category: '連詞',
+    isPicturable: false,  // 連接詞抽象
     examples: [
       { 
         id: '1', 
@@ -206,6 +212,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 7,
     meaning: '沒有、無',
     category: '動詞',
+    isPicturable: false,  // 否定詞抽象
     examples: [
       { 
         id: '1', 
@@ -237,6 +244,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 4,
     meaning: '中間、之中',
     category: '方位',
+    isPicturable: false,  // 方位抽象
     examples: [
       { 
         id: '1', 
@@ -268,6 +276,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 9,
     meaning: '草、青草',
     category: '植物',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -300,6 +309,7 @@ export const chineseLesson02Cards: StudyCard[] = [
     strokes: 7,
     meaning: '走、走路',
     category: '動詞',
+    isPicturable: true,  // 走路動作可用圖片
     examples: [
       { 
         id: '1', 

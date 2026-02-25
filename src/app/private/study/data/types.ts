@@ -17,6 +17,18 @@ export interface StudyCard {
   examples: Example[];
   // 圖畫配對用
   image?: string;  // 圖片路徑，例如：/images/study/shan.png
+  // 學習模式標記
+  isPicturable?: boolean;  // 是否適合圖畫配對（名詞/動物等）
+}
+
+// 兩字詞語類型
+export interface WordPhrase {
+  id: string;
+  chars: string[];        // 組成字的列表
+  phrase: string;         // 完整詞語
+  meaning: string;        // 意思
+  lessonId: string;       // 所屬課程
+  image?: string;         // 圖片路徑
 }
 
 // 例句類型

@@ -13,6 +13,7 @@ import { getImageMappings } from '../data/image-service';
 
 interface PictureMatchProps {
   cards: StudyCard[];
+  lessonId: string;
   onComplete: () => void;
   onBack: () => void;
 }
@@ -54,7 +55,7 @@ const getImageContent = (card: StudyCard, dynamicMappings: Record<string, string
   return { type: 'emoji', content: getEmojiForCard(card) };
 };
 
-export function PictureMatch({ cards, onComplete, onBack }: PictureMatchProps) {
+export function PictureMatch({ cards, lessonId, onComplete, onBack }: PictureMatchProps) {
   const [gameCards, setGameCards] = useState<StudyCard[]>([]);
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [matches, setMatches] = useState<Record<string, string>>({}); // cardId -> icon
@@ -72,8 +73,10 @@ export function PictureMatch({ cards, onComplete, onBack }: PictureMatchProps) {
 
   // 初始化遊戲
   useEffect(() => {
+    // 過濾適合圖畫配對的字
+    const picturableCards = cards.filter(c => c.isPicturable !== false);
     // 隨機選 6 個字（或者全部）
-    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, 6);
+    const shuffled = [...picturableCards].sort(() => Math.random() - 0.5).slice(0, 6);
     setGameCards(shuffled);
   }, [cards]);
 
@@ -89,7 +92,8 @@ export function PictureMatch({ cards, onComplete, onBack }: PictureMatchProps) {
 
   // 重置遊戲
   const resetGame = () => {
-    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, 6);
+    const picturableCards = cards.filter(c => c.isPicturable !== false);
+    const shuffled = [...picturableCards].sort(() => Math.random() - 0.5).slice(0, 6);
     setGameCards(shuffled);
     setMatches({});
     setSelectedEmoji(null);

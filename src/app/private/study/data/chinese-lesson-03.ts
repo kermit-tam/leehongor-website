@@ -18,6 +18,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     meaning: '哥哥、兄長',
     category: '家人',
     image: '/images/study/brother-old.png',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -49,6 +50,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     strokes: 8,
     meaning: '姐姐、姊姊',
     category: '家人',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -80,6 +82,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     strokes: 7,
     meaning: '弟弟',
     category: '家人',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -111,6 +114,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     strokes: 8,
     meaning: '妹妹',
     category: '家人',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -142,6 +146,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     strokes: 8,
     meaning: '叔叔、叔父',
     category: '家人',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -174,6 +179,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     meaning: '愛、喜愛',
     category: '動詞',
     image: '/images/study/love.png',
+    isPicturable: true,  // 愛心圖片常用
     examples: [
       { 
         id: '1', 
@@ -205,6 +211,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     strokes: 5,
     meaning: '打、敲打',
     category: '動詞',
+    isPicturable: true,  // 動作可用圖片
     examples: [
       { 
         id: '1', 
@@ -236,6 +243,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     strokes: 9,
     meaning: '很、非常',
     category: '副詞',
+    isPicturable: false,  // 程度副詞抽象
     examples: [
       { 
         id: '1', 
@@ -267,6 +275,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     strokes: 10,
     meaning: '高、 tall',
     category: '形容詞',
+    isPicturable: true,  // 高可用圖片（高山、高個子）
     examples: [
       { 
         id: '1', 
@@ -298,6 +307,7 @@ export const chineseLesson03Cards: StudyCard[] = [
     strokes: 8,
     meaning: '的、助詞',
     category: '助詞',
+    isPicturable: false,  // 助詞抽象
     examples: [
       { 
         id: '1', 

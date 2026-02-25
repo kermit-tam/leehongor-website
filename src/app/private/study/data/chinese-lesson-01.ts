@@ -19,6 +19,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     meaning: '山、山嶽',
     category: '自然',
     image: '/images/study/mountain.png',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -51,6 +52,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     meaning: '水、液體',
     category: '自然',
     image: '/images/study/water.png',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -82,6 +84,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 3,
     meaning: '上面、向上',
     category: '方位',
+    isPicturable: false,  // 方位較難用圖片表示
     examples: [
       { 
         id: '1', 
@@ -113,6 +116,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 3,
     meaning: '下面、向下',
     category: '方位',
+    isPicturable: false,
     examples: [
       { 
         id: '1', 
@@ -144,6 +148,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 7,
     meaning: '我、自己',
     category: '代詞',
+    isPicturable: false,  // 代詞較難用圖片
     examples: [
       { 
         id: '1', 
@@ -175,6 +180,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 7,
     meaning: '你、對方',
     category: '代詞',
+    isPicturable: false,
     examples: [
       { 
         id: '1', 
@@ -206,6 +212,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 6,
     meaning: '在、喺',
     category: '動詞',
+    isPicturable: false,  // 抽象動詞
     examples: [
       { 
         id: '1', 
@@ -237,6 +244,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 6,
     meaning: '有、存在',
     category: '動詞',
+    isPicturable: false,
     examples: [
       { 
         id: '1', 
@@ -268,6 +276,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     strokes: 2,
     meaning: '人、人類',
     category: '人物',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
@@ -300,6 +309,7 @@ export const chineseLesson01Cards: StudyCard[] = [
     meaning: '牛、黃牛',
     category: '動物',
     image: '/images/study/cow.png',
+    isPicturable: true,
     examples: [
       { 
         id: '1', 
