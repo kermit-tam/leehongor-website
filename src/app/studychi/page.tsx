@@ -19,16 +19,18 @@ import { TrainJourney } from './components/TrainJourney';
 import { ColorMatch } from './components/ColorMatch';
 import { LandmarkMatch } from './components/LandmarkMatch';
 import { ListeningQuiz } from './components/ListeningQuiz';
+import { NeighborQuiz } from './components/NeighborQuiz';
 import { SpeakingQuiz } from './components/SpeakingQuiz';
 import { ColorQuizUltimate } from './components/ColorQuizUltimate';
 import { mtrLines, getLineById, MTRLine } from './data/mtr-stations';
 
-type GameMode = 'menu' | 'select-line' | 'train' | 'color' | 'landmark' | 'listening' | 'speaking' | 'ultimate';
+type GameMode = 'menu' | 'select-line' | 'train' | 'color' | 'landmark' | 'listening' | 'neighbor' | 'speaking' | 'ultimate';
 
 export default function StudyChiPage() {
   const [mode, setMode] = useState<GameMode>('menu');
   const [selectedLine, setSelectedLine] = useState<MTRLine>(mtrLines[0]);
   const [score, setScore] = useState(0);
+  const [pendingGameMode, setPendingGameMode] = useState<GameMode>('train'); // 記住用戶想玩邊個
 
   // 播放讀音（支援調整速度）
   const speak = useCallback((text: string, lang: string = 'zh-HK', rate: number = 0.7) => {
@@ -42,12 +44,18 @@ export default function StudyChiPage() {
   }, []);
 
   // 選擇路線並開始遊戲
-  const selectLineAndPlay = (lineId: string, gameMode: GameMode) => {
+  const selectLineAndPlay = (lineId: string) => {
     const line = getLineById(lineId);
     if (line) {
       setSelectedLine(line);
-      setMode(gameMode);
+      setMode(pendingGameMode);
     }
+  };
+
+  // 開始選路線流程
+  const startLineSelection = (gameMode: GameMode) => {
+    setPendingGameMode(gameMode);
+    setMode('select-line');
   };
 
   // 路線選擇畫面
@@ -72,7 +80,7 @@ export default function StudyChiPage() {
             {mtrLines.map((line) => (
               <button
                 key={line.id}
-                onClick={() => selectLineAndPlay(line.id, 'train')}
+                onClick={() => selectLineAndPlay(line.id)}
                 className="w-full bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
               >
                 <div 
@@ -139,7 +147,7 @@ export default function StudyChiPage() {
           {/* 遊戲選擇 */}
           <div className="space-y-4">
             <button
-              onClick={() => setMode('select-line')}
+              onClick={() => startLineSelection('train')}
               className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
             >
               <span className="text-4xl">🚄</span>
@@ -161,7 +169,7 @@ export default function StudyChiPage() {
             </button>
 
             <button
-              onClick={() => setMode('select-line')}
+              onClick={() => startLineSelection('landmark')}
               className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
             >
               <span className="text-4xl">🏢</span>
@@ -172,18 +180,29 @@ export default function StudyChiPage() {
             </button>
 
             <button
-              onClick={() => setMode('select-line')}
+              onClick={() => startLineSelection('listening')}
               className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
             >
               <span className="text-4xl">🎧</span>
               <div className="text-left">
                 <h2 className="text-xl font-bold text-gray-800">聆聽測驗</h2>
-                <p className="text-gray-500 text-sm">聽站名，揀答案</p>
+                <p className="text-gray-500 text-sm">聽站名，揀答案（顏色提示）</p>
               </div>
             </button>
 
             <button
-              onClick={() => setMode('select-line')}
+              onClick={() => startLineSelection('neighbor')}
+              className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
+            >
+              <span className="text-4xl">🚉</span>
+              <div className="text-left">
+                <h2 className="text-xl font-bold text-gray-800">前後站估中間</h2>
+                <p className="text-gray-500 text-sm">睇前後站，估中間係邊個站</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => startLineSelection('speaking')}
               className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
             >
               <span className="text-4xl">🎤</span>
@@ -258,6 +277,14 @@ export default function StudyChiPage() {
       )}
       {mode === 'listening' && (
         <ListeningQuiz
+          line={selectedLine}
+          onBack={() => setMode('menu')}
+          onScore={(points) => setScore(s => s + points)}
+          speak={speak}
+        />
+      )}
+      {mode === 'neighbor' && (
+        <NeighborQuiz
           line={selectedLine}
           onBack={() => setMode('menu')}
           onScore={(points) => setScore(s => s + points)}

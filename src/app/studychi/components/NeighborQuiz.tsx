@@ -1,0 +1,310 @@
+/**
+ * 前後站估中間 - 新練習模式
+ * 顯示前後兩個站，估中間係咩站
+ */
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MTRLine, MTRStation } from '../data/mtr-stations';
+
+interface NeighborQuizProps {
+  line: MTRLine;
+  onBack: () => void;
+  onScore: (points: number) => void;
+  speak: (text: string, lang?: string, rate?: number) => void;
+}
+
+interface Question {
+  prevStation: MTRStation;
+  targetStation: MTRStation;
+  nextStation: MTRStation;
+  options: MTRStation[];
+}
+
+export function NeighborQuiz({ line, onBack, onScore, speak }: NeighborQuizProps) {
+  const [question, setQuestion] = useState<Question | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [score, setScore] = useState(0);
+  const [round, setRound] = useState(1);
+  const [showResult, setShowResult] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const maxRounds = 10;
+
+  // 生成題目
+  const generateQuestion = () => {
+    // 只選有前後站的（排除第一個和最後一個）
+    const validStations = line.stations.filter((_, index) => 
+      index > 0 && index < line.stations.length - 1
+    );
+    
+    if (validStations.length === 0) return;
+
+    // 隨機選一個目標站
+    const target = validStations[Math.floor(Math.random() * validStations.length)];
+    const targetIndex = line.stations.findIndex(s => s.id === target.id);
+    
+    const prevStation = line.stations[targetIndex - 1];
+    const nextStation = line.stations[targetIndex + 1];
+
+    // 生成選項（包含正確答案和3個干擾項）
+    const otherStations = line.stations.filter(s => s.id !== target.id);
+    const distractors = [...otherStations]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3);
+    
+    const options = [...distractors, target].sort(() => Math.random() - 0.5);
+
+    setQuestion({
+      prevStation,
+      targetStation: target,
+      nextStation,
+      options
+    });
+
+    setSelectedAnswer(null);
+    setIsCorrect(null);
+    setShowHint(false);
+  };
+
+  // 初始化
+  useEffect(() => {
+    generateQuestion();
+  }, []);
+
+  // 讀出題目
+  const speakQuestion = () => {
+    if (!question) return;
+    const text = `${question.prevStation.name}之後，${question.nextStation.name}之前，係邊個站？`;
+    speak(text, 'zh-HK', 0.7);
+  };
+
+  const handleAnswer = (stationId: string) => {
+    if (selectedAnswer || !question) return;
+    
+    setSelectedAnswer(stationId);
+    const correct = stationId === question.targetStation.id;
+    setIsCorrect(correct);
+    
+    if (correct) {
+      setScore(s => s + 10);
+      onScore(10);
+    }
+
+    // 下一題或結束
+    setTimeout(() => {
+      if (round < maxRounds) {
+        setRound(r => r + 1);
+        generateQuestion();
+      } else {
+        setShowResult(true);
+      }
+    }, 2500);
+  };
+
+  const getOptionStyle = (option: MTRStation) => {
+    // 根據選項所屬路線顯示顏色邊框
+    const baseStyle = {
+      borderWidth: '4px',
+      borderColor: option.lineColorCode,
+      backgroundColor: `${option.lineColorCode}15`,
+    };
+
+    if (selectedAnswer === null) {
+      return baseStyle;
+    }
+
+    if (option.id === question?.targetStation.id) {
+      // 正確答案
+      return {
+        ...baseStyle,
+        borderColor: '#22c55e',
+        backgroundColor: '#dcfce7',
+      };
+    }
+
+    if (selectedAnswer === option.id && !isCorrect) {
+      // 錯誤選擇
+      return {
+        ...baseStyle,
+        borderColor: '#ef4444',
+        backgroundColor: '#fee2e2',
+      };
+    }
+
+    return {
+      ...baseStyle,
+      opacity: 0.5,
+    };
+  };
+
+  if (showResult) {
+    return (
+      <div className="max-w-md mx-auto p-4">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-3xl p-8 shadow-xl text-center"
+        >
+          <div className="text-6xl mb-4">🎯</div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">練習完成！</h3>
+          <p className="text-gray-600 mb-4">你答對咗 {score / 10} / {maxRounds} 題</p>
+          <div className="text-5xl font-bold mb-6" style={{ color: line.colorCode }}>
+            {score} 分
+          </div>
+          <button
+            onClick={onBack}
+            className="w-full py-4 rounded-xl text-white font-bold text-lg"
+            style={{ backgroundColor: line.colorCode }}
+          >
+            返回主頁
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!question) {
+    return (
+      <div className="max-w-md mx-auto p-4 text-center">
+        <p className="text-gray-500">載入緊...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-md mx-auto p-4">
+      {/* 頂部欄 */}
+      <div className="flex items-center justify-between mb-6">
+        <button onClick={onBack} className="text-gray-600 hover:text-gray-800 font-medium">
+          ← 返回
+        </button>
+        <h2 className="text-xl font-bold text-gray-800">🚉 前後站估中間</h2>
+        <span className="text-sm font-medium text-gray-500">{round}/{maxRounds}</span>
+      </div>
+
+      {/* 分數 */}
+      <div className="bg-white rounded-2xl p-4 shadow-lg mb-6 text-center">
+        <p className="text-3xl font-bold" style={{ color: line.colorCode }}>⭐ {score}</p>
+      </div>
+
+      {/* 題目顯示區 */}
+      <motion.div 
+        className="bg-white rounded-3xl p-6 shadow-lg mb-6"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
+        <div className="flex items-center justify-center gap-3 mb-6">
+          {/* 前一站 */}
+          <div className="text-center">
+            <motion.div 
+              className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl mb-2 shadow-md"
+              style={{ 
+                backgroundColor: `${question.prevStation.lineColorCode}20`,
+                border: `3px solid ${question.prevStation.lineColorCode}`
+              }}
+              whileHover={{ scale: 1.05 }}
+              onClick={() => speak(question.prevStation.name, 'zh-HK', 0.6)}
+            >
+              {question.prevStation.landmarkIcon}
+            </motion.div>
+            <p className="font-bold text-gray-700">{question.prevStation.name}</p>
+            <p className="text-xs text-gray-400">前一站</p>
+          </div>
+
+          {/* 箭頭 */}
+          <div className="flex flex-col items-center">
+            <span className="text-2xl text-gray-400">→</span>
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center my-2 border-4 border-dashed border-gray-300">
+              <span className="text-3xl">❓</span>
+            </div>
+            <span className="text-2xl text-gray-400">→</span>
+          </div>
+
+          {/* 後一站 */}
+          <div className="text-center">
+            <motion.div 
+              className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl mb-2 shadow-md"
+              style={{ 
+                backgroundColor: `${question.nextStation.lineColorCode}20`,
+                border: `3px solid ${question.nextStation.lineColorCode}`
+              }}
+              whileHover={{ scale: 1.05 }}
+              onClick={() => speak(question.nextStation.name, 'zh-HK', 0.6)}
+            >
+              {question.nextStation.landmarkIcon}
+            </motion.div>
+            <p className="font-bold text-gray-700">{question.nextStation.name}</p>
+            <p className="text-xs text-gray-400">後一站</p>
+          </div>
+        </div>
+
+        {/* 播放題目按鈕 */}
+        <button
+          onClick={speakQuestion}
+          className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2"
+          style={{ backgroundColor: line.colorCode }}
+        >
+          <span className="text-xl">🔊</span>
+          聽題目
+        </button>
+      </motion.div>
+
+      {/* 選項 */}
+      <div className="grid grid-cols-2 gap-4">
+        <AnimatePresence mode="wait">
+          {question.options.map((option, index) => (
+            <motion.button
+              key={option.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              onClick={() => handleAnswer(option.id)}
+              disabled={selectedAnswer !== null}
+              className="p-5 rounded-2xl font-bold text-center transition-all text-lg shadow-md hover:shadow-lg active:scale-95"
+              style={getOptionStyle(option)}
+            >
+              {option.name}
+            </motion.button>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* 提示按鈕 */}
+      <div className="mt-4 text-center">
+        <button
+          onClick={() => setShowHint(!showHint)}
+          className="text-sm text-blue-500 hover:text-blue-600 font-medium"
+          disabled={selectedAnswer !== null}
+        >
+          {showHint ? '隱藏提示' : '💡 需要提示？'}
+        </button>
+        
+        <AnimatePresence>
+          {showHint && (
+            <motion.p
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-2 text-sm text-gray-500 bg-yellow-50 rounded-xl p-3"
+            >
+              呢個站附近係：{question.targetStation.landmark}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* 進度條 */}
+      <div className="mt-6 h-3 bg-gray-200 rounded-full overflow-hidden">
+        <motion.div 
+          className="h-full rounded-full"
+          style={{ backgroundColor: line.colorCode }}
+          initial={{ width: 0 }}
+          animate={{ width: `${(round / maxRounds) * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+}

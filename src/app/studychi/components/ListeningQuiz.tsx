@@ -1,11 +1,12 @@
 /**
- * 聆聽測驗組件
- * 聽站名，揀答案
+ * 聆聽測驗組件 - 改進版
+ * 聽站名，揀答案，選項顯示該站顏色
  */
 
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MTRLine, MTRStation } from '../data/mtr-stations';
 
 interface ListeningQuizProps {
@@ -23,6 +24,7 @@ export function ListeningQuiz({ line, onBack, onScore, speak }: ListeningQuizPro
   const [score, setScore] = useState(0);
   const [round, setRound] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showResult, setShowResult] = useState(false);
   const maxRounds = 10;
 
   // 初始化題目
@@ -35,8 +37,9 @@ export function ListeningQuiz({ line, onBack, onScore, speak }: ListeningQuizPro
     const target = line.stations[Math.floor(Math.random() * line.stations.length)];
     setCurrentStation(target);
     
-    // 隨機選3個其他站作為選項
-    const otherStations = line.stations.filter(s => s.id !== target.id);
+    // 隨機選3個其他站作為選項（從所有路線選，增加難度）
+    const allStations = [...line.stations];
+    const otherStations = allStations.filter(s => s.id !== target.id);
     const shuffled = [...otherStations].sort(() => Math.random() - 0.5).slice(0, 3);
     
     // 加入正確答案並重新排序
@@ -67,112 +70,162 @@ export function ListeningQuiz({ line, onBack, onScore, speak }: ListeningQuizPro
       onScore(10);
     }
 
-    // 下一題
+    // 下一題或結束
     setTimeout(() => {
       if (round < maxRounds) {
         setRound(r => r + 1);
         generateQuestion();
+      } else {
+        setShowResult(true);
       }
     }, 2000);
   };
 
-  const isGameOver = round >= maxRounds && selectedAnswer !== null;
+  const getOptionStyle = (option: MTRStation) => {
+    // 根據選項所屬路線顯示顏色邊框
+    const baseStyle = {
+      borderWidth: '4px',
+      borderColor: option.lineColorCode,
+      backgroundColor: `${option.lineColorCode}15`, // 15 = 約10% 透明度
+    };
+
+    if (selectedAnswer === null) {
+      return baseStyle;
+    }
+
+    if (option.id === currentStation?.id) {
+      // 正確答案
+      return {
+        ...baseStyle,
+        borderColor: '#22c55e',
+        backgroundColor: '#dcfce7',
+      };
+    }
+
+    if (selectedAnswer === option.id && !isCorrect) {
+      // 錯誤選擇
+      return {
+        ...baseStyle,
+        borderColor: '#ef4444',
+        backgroundColor: '#fee2e2',
+      };
+    }
+
+    // 其他未選選項變淡
+    return {
+      ...baseStyle,
+      opacity: 0.5,
+    };
+  };
+
+  if (showResult) {
+    return (
+      <div className="max-w-md mx-auto p-4">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-3xl p-8 shadow-xl text-center"
+        >
+          <div className="text-6xl mb-4">🎉</div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">測驗完成！</h3>
+          <p className="text-gray-600 mb-4">你答對咗 {score / 10} / {maxRounds} 題</p>
+          <div className="text-5xl font-bold mb-6" style={{ color: line.colorCode }}>
+            {score} 分
+          </div>
+          <button
+            onClick={onBack}
+            className="w-full py-4 rounded-xl text-white font-bold text-lg"
+            style={{ backgroundColor: line.colorCode }}
+          >
+            返回主頁
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto p-4">
       {/* 頂部欄 */}
       <div className="flex items-center justify-between mb-6">
-        <button onClick={onBack} className="text-gray-600 hover:text-gray-800">
+        <button onClick={onBack} className="text-gray-600 hover:text-gray-800 font-medium">
           ← 返回
         </button>
         <h2 className="text-xl font-bold text-gray-800">🎧 聆聽測驗</h2>
-        <span className="text-sm text-gray-500">{Math.min(round, maxRounds)}/{maxRounds}</span>
+        <span className="text-sm font-medium text-gray-500">{round}/{maxRounds}</span>
       </div>
 
       {/* 分數 */}
       <div className="bg-white rounded-2xl p-4 shadow-lg mb-6 text-center">
-        <p className="text-3xl font-bold text-orange-500">⭐ {score}</p>
+        <p className="text-3xl font-bold" style={{ color: line.colorCode }}>⭐ {score}</p>
       </div>
 
-      {/* 遊戲結束畫面 */}
-      {isGameOver ? (
-        <div className="bg-white rounded-2xl p-8 shadow-lg text-center">
-          <div className="text-6xl mb-4">🎉</div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">完成！</h3>
-          <p className="text-gray-600 mb-4">你答對咗 {score / 10} 題</p>
-          <button
-            onClick={onBack}
-            className="px-8 py-3 rounded-xl text-white font-bold"
-            style={{ backgroundColor: line.colorCode }}
-          >
-            返回主頁
-          </button>
-        </div>
-      ) : currentStation ? (
+      {currentStation && (
         <>
           {/* 播放區 */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg mb-6 text-center">
-            <p className="text-gray-500 mb-6">聽清楚，跟住揀答案！</p>
+          <motion.div 
+            className="bg-white rounded-3xl p-8 shadow-lg mb-6 text-center"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+          >
+            <p className="text-gray-500 mb-6 text-lg">聽清楚，揀出正確嘅站名！</p>
             
-            {/* 播放按鈕 */}
-            <button
+            {/* 大播放按鈕 */}
+            <motion.button
               onClick={playQuestion}
               disabled={isPlaying}
-              className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 transition-all ${
-                isPlaying ? 'bg-gray-300' : 'hover:scale-110'
+              whileTap={{ scale: 0.95 }}
+              className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl transition-all ${
+                isPlaying ? 'animate-pulse' : 'hover:shadow-2xl'
               }`}
-              style={{ backgroundColor: isPlaying ? undefined : line.colorCode }}
+              style={{ backgroundColor: line.colorCode }}
             >
-              <span className="text-5xl">{isPlaying ? '🔊' : '▶️'}</span>
-            </button>
+              <span className="text-6xl">{isPlaying ? '🔊' : '▶️'}</span>
+            </motion.button>
             
             <p className="text-gray-400 text-sm">
-              {isPlaying ? '播放中...' : '按一下聽站名'}
+              {isPlaying ? '播放緊...' : '撳一下聽站名'}
             </p>
-          </div>
+          </motion.div>
 
-          {/* 選項 */}
+          {/* 選項 - 根據所屬路線顯示顏色 */}
           <div className="grid grid-cols-2 gap-4">
-            {options.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => handleAnswer(option.id)}
-                disabled={selectedAnswer !== null || isPlaying}
-                className={`p-4 rounded-xl font-bold text-center transition-all ${
-                  selectedAnswer === option.id
-                    ? isCorrect
-                      ? 'bg-green-500 text-white'
-                      : 'bg-red-500 text-white'
-                    : selectedAnswer && option.id === currentStation.id
-                      ? 'bg-green-500 text-white'
-                      : 'bg-white shadow-lg hover:shadow-xl'
-                }`}
-              >
-                <span className="text-2xl block mb-2">{option.landmarkIcon}</span>
-                <span className="text-lg">{option.name}</span>
-              </button>
-            ))}
+            <AnimatePresence mode="wait">
+              {options.map((option, index) => (
+                <motion.button
+                  key={option.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => handleAnswer(option.id)}
+                  disabled={selectedAnswer !== null}
+                  className={`p-5 rounded-2xl font-bold text-center transition-all text-lg shadow-md hover:shadow-lg active:scale-95`}
+                  style={getOptionStyle(option)}
+                >
+                  {option.name}
+                </motion.button>
+              ))}
+            </AnimatePresence>
           </div>
 
           {/* 提示 */}
-          <div className="mt-6 bg-yellow-50 rounded-xl p-4">
-            <p className="text-sm text-yellow-700 text-center">
-              💡 唔記得可以按上面個掣再聽多次！
+          <div className="mt-6 bg-blue-50 rounded-2xl p-4 text-center">
+            <p className="text-sm text-blue-600">
+              💡 留意每個選項嘅顏色框代表嗰個站所屬嘅路線！
             </p>
           </div>
 
-          {/* 進度 */}
-          <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full transition-all duration-500"
-              style={{ 
-                width: `${(round / maxRounds) * 100}%`,
-                backgroundColor: line.colorCode 
-              }}
+          {/* 進度條 */}
+          <div className="mt-4 h-3 bg-gray-200 rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full rounded-full"
+              style={{ backgroundColor: line.colorCode }}
+              initial={{ width: 0 }}
+              animate={{ width: `${(round / maxRounds) * 100}%` }}
             />
           </div>
         </>
-      ) : null}
+      )}
     </div>
   );
 }
