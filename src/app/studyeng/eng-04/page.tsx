@@ -1,18 +1,36 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { lesson4 } from '../data/cvc-lessons';
 import FlashCard from '../components/FlashCard';
 import ListeningQuiz from '../components/ListeningQuiz';
 import MatchingGame from '../components/MatchingGame';
+import ParentQuiz from '../components/ParentQuiz';
+import PhonicsGuide from '../components/PhonicsGuide';
 
-type GameMode = 'learn' | 'quiz' | 'match';
+type GameMode = 'learn' | 'quiz' | 'match' | 'parent' | 'phonics';
 
 export default function Lesson4Page() {
   const [gameMode, setGameMode] = useState<GameMode>('learn');
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
+
+  const handleNext = () => {
+    if (currentWordIndex < lesson4.words.length - 1) {
+      setCurrentWordIndex(i => i + 1);
+    } else {
+      setCurrentWordIndex(0);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentWordIndex > 0) {
+      setCurrentWordIndex(i => i - 1);
+    } else {
+      setCurrentWordIndex(lesson4.words.length - 1);
+    }
+  };
 
   const renderGameMode = () => {
     switch (gameMode) {
@@ -20,19 +38,26 @@ export default function Lesson4Page() {
         return (
           <FlashCard
             word={lesson4.words[currentWordIndex]}
-            onComplete={() => {
-              if (currentWordIndex < lesson4.words.length - 1) {
-                setCurrentWordIndex(i => i + 1);
-              } else {
-                setCurrentWordIndex(0);
-              }
-            }}
+            onNext={handleNext}
+            onPrev={handlePrev}
+            currentIndex={currentWordIndex}
+            totalCount={lesson4.words.length}
           />
         );
       case 'quiz':
         return <ListeningQuiz words={lesson4.words} onComplete={(s, t) => console.log('Score:', s, t)} />;
       case 'match':
         return <MatchingGame words={lesson4.words} />;
+      case 'parent':
+        return (
+          <ParentQuiz
+            words={lesson4.words}
+            onComplete={(s, t) => console.log('Parent quiz:', s, t)}
+            onExit={() => setGameMode('learn')}
+          />
+        );
+      case 'phonics':
+        return <PhonicsGuide onBack={() => setGameMode('learn')} />;
       default:
         return null;
     }
@@ -40,7 +65,6 @@ export default function Lesson4Page() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
-      {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/studyeng" className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors">
@@ -58,12 +82,13 @@ export default function Lesson4Page() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* 模式選擇 */}
-        <div className="flex justify-center gap-2 mb-8">
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
           {[
             { id: 'learn', label: '📚 學習', color: 'orange' },
-            { id: 'quiz', label: '🎧 聽力', color: 'amber' },
-            { id: 'match', label: '🎮 配對', color: 'yellow' },
+            { id: 'parent', label: '👨‍👩‍👧‍👦 家長測驗', color: 'amber' },
+            { id: 'quiz', label: '🎧 聽力', color: 'yellow' },
+            { id: 'match', label: '🎮 配對', color: 'lime' },
+            { id: 'phonics', label: '📖 拼音教學', color: 'green' },
           ].map((mode) => (
             <button
               key={mode.id}
@@ -82,30 +107,17 @@ export default function Lesson4Page() {
           ))}
         </div>
 
-        {/* 遊戲區域 */}
-        <motion.div
-          key={gameMode}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-6 shadow-lg"
-        >
-          {renderGameMode()}
-        </motion.div>
-
-        {/* 學習進度 */}
-        {gameMode === 'learn' && (
-          <div className="mt-6 text-center">
-            <p className="text-gray-500 text-sm">
-              單字 {currentWordIndex + 1} / {lesson4.words.length}
-            </p>
-            <div className="w-48 h-2 bg-gray-200 rounded-full mx-auto mt-2 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-orange-400 to-amber-500 transition-all"
-                style={{ width: `${((currentWordIndex + 1) / lesson4.words.length) * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={gameMode}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-white/50 rounded-3xl p-4 shadow-lg"
+          >
+            {renderGameMode()}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );
