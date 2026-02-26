@@ -1,5 +1,5 @@
 /**
- * TryChi 中文挑戰管理後台
+ * TryChi 中英文挑戰管理後台
  * 管理標題、副標題、圖標
  */
 
@@ -16,6 +16,9 @@ interface TryChiConfig {
   chineseTitle: string;
   chineseSubtitle: string;
   chineseEmoji: string;
+  englishTitle: string;
+  englishSubtitle: string;
+  englishEmoji: string;
 }
 
 const defaultConfig: TryChiConfig = {
@@ -25,9 +28,12 @@ const defaultConfig: TryChiConfig = {
   chineseTitle: '基礎漢字挑戰',
   chineseSubtitle: '幼稚園目標：500個中文字',
   chineseEmoji: '✍️',
+  englishTitle: '小朋友講英文',
+  englishSubtitle: 'CVC拼音單字學習',
+  englishEmoji: '🔤',
 };
 
-const emojiOptions = ['🚇', '🚉', '🚊', '🚋', '✍️', '✏️', '📝', '📚', '📖', '🎒', '🏫', '🎓', '👶', '🧒', '🇭🇰', '🎯', '🎮', '🎪', '🎨', '🎭'];
+const emojiOptions = ['🚇', '🚉', '🚊', '🚋', '✍️', '✏️', '📝', '📚', '📖', '🎒', '🏫', '🎓', '👶', '🧒', '🇭🇰', '🎯', '🎮', '🎪', '🎨', '🎭', '🔤', '🔡', '🇬🇧', '🇺🇸', 'A', 'B', 'C'];
 
 export default function TryChiAdminPage() {
   const { isLoading } = useRequireAdmin('/');
@@ -38,7 +44,7 @@ export default function TryChiAdminPage() {
   useEffect(() => {
     const saved = localStorage.getItem('trychi-config');
     if (saved) {
-      setConfig(JSON.parse(saved));
+      setConfig({ ...defaultConfig, ...JSON.parse(saved) });
     }
   }, []);
 
@@ -76,7 +82,7 @@ export default function TryChiAdminPage() {
           <Link href="/admin" className="text-gray-500 hover:text-gray-700">
             ← 返回後台
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">🎨 TryChi 內容管理</h1>
+          <h1 className="text-2xl font-bold text-gray-900">🎨 中英文挑戰內容管理</h1>
         </div>
         <div className="flex gap-2">
           <button
@@ -97,7 +103,7 @@ export default function TryChiAdminPage() {
       {/* 即時預覽 */}
       <div className="bg-gradient-to-b from-[#FFF8E7] to-[#FFE4B5] rounded-2xl p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-700 mb-4">👀 即時預覽</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* 預覽卡片 1 */}
           <div className="bg-[#74B9FF] rounded-2xl p-5 shadow-lg">
             <div className="flex items-center gap-3">
@@ -105,8 +111,8 @@ export default function TryChiAdminPage() {
                 {config.mtrEmoji}
               </div>
               <div>
-                <h3 className="text-xl font-extrabold text-white">{config.mtrTitle}</h3>
-                <p className="text-white/90 text-sm">{config.mtrSubtitle}</p>
+                <h3 className="text-lg font-extrabold text-white">{config.mtrTitle}</h3>
+                <p className="text-white/90 text-xs">{config.mtrSubtitle}</p>
               </div>
             </div>
           </div>
@@ -117,8 +123,20 @@ export default function TryChiAdminPage() {
                 {config.chineseEmoji}
               </div>
               <div>
-                <h3 className="text-xl font-extrabold text-white">{config.chineseTitle}</h3>
-                <p className="text-white/90 text-sm">{config.chineseSubtitle}</p>
+                <h3 className="text-lg font-extrabold text-white">{config.chineseTitle}</h3>
+                <p className="text-white/90 text-xs">{config.chineseSubtitle}</p>
+              </div>
+            </div>
+          </div>
+          {/* 預覽卡片 3 - 新增英文 */}
+          <div className="bg-[#A29BFE] rounded-2xl p-5 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-3xl">
+                {config.englishEmoji}
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-white">{config.englishTitle}</h3>
+                <p className="text-white/90 text-xs">{config.englishSubtitle}</p>
               </div>
             </div>
           </div>
@@ -126,12 +144,12 @@ export default function TryChiAdminPage() {
       </div>
 
       {/* 編輯表單 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* 港鐵小站長設定 */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl">🚇</span>
-            <h2 className="text-lg font-bold text-gray-800">港鐵小站長設定</h2>
+            <h2 className="text-lg font-bold text-gray-800">港鐵小站長</h2>
           </div>
           
           <div className="space-y-4">
@@ -183,7 +201,7 @@ export default function TryChiAdminPage() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl">✍️</span>
-            <h2 className="text-lg font-bold text-gray-800">基礎漢字挑戰設定</h2>
+            <h2 className="text-lg font-bold text-gray-800">基礎漢字挑戰</h2>
           </div>
           
           <div className="space-y-4">
@@ -226,6 +244,58 @@ export default function TryChiAdminPage() {
                 value={config.chineseSubtitle}
                 onChange={(e) => setConfig({ ...config, chineseSubtitle: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 小朋友講英文設定 - 新增 */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-2xl">🔤</span>
+            <h2 className="text-lg font-bold text-gray-800">小朋友講英文</h2>
+          </div>
+          
+          <div className="space-y-4">
+            {/* 圖標選擇 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-2">圖標</label>
+              <div className="grid grid-cols-8 gap-2">
+                {emojiOptions.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => setConfig({ ...config, englishEmoji: emoji })}
+                    className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all ${
+                      config.englishEmoji === emoji
+                        ? 'bg-purple-500 text-white ring-2 ring-purple-300'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 標題 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">標題</label>
+              <input
+                type="text"
+                value={config.englishTitle}
+                onChange={(e) => setConfig({ ...config, englishTitle: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* 副標題 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">副標題</label>
+              <input
+                type="text"
+                value={config.englishSubtitle}
+                onChange={(e) => setConfig({ ...config, englishSubtitle: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
           </div>
