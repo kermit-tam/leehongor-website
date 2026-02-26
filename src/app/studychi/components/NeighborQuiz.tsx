@@ -49,13 +49,43 @@ export function NeighborQuiz({ line, onBack, onScore, speak }: NeighborQuizProps
     const prevStation = line.stations[targetIndex - 1];
     const nextStation = line.stations[targetIndex + 1];
 
-    // 生成選項（包含正確答案和3個干擾項）
-    const otherStations = line.stations.filter(s => s.id !== target.id);
-    const distractors = [...otherStations]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
+    // 生成選項（包含正確答案和5個「附近站」作為干擾項）
+    // 從目標站前後各3個站內選干擾項，增加難度
+    const nearbyStations: MTRStation[] = [];
     
-    const options = [...distractors, target].sort(() => Math.random() - 0.5);
+    // 向前取最多3個站
+    for (let i = targetIndex - 3; i < targetIndex; i++) {
+      if (i >= 0 && line.stations[i].id !== target.id) {
+        nearbyStations.push(line.stations[i]);
+      }
+    }
+    
+    // 向後取最多3個站
+    for (let i = targetIndex + 3; i > targetIndex; i--) {
+      if (i < line.stations.length && line.stations[i].id !== target.id) {
+        nearbyStations.push(line.stations[i]);
+      }
+    }
+    
+    // 如果附近站不夠5個，從其他站補充
+    const otherStations = line.stations.filter(s => 
+      s.id !== target.id && !nearbyStations.find(ns => ns.id === s.id)
+    );
+    
+    // 隨機排序附近站，取最多5個
+    const selectedNearby = [...nearbyStations]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 5);
+    
+    // 如果不夠5個，從其他站補充
+    const neededCount = 5 - selectedNearby.length;
+    const extraDistractors = neededCount > 0 
+      ? [...otherStations].sort(() => Math.random() - 0.5).slice(0, neededCount)
+      : [];
+    
+    // 最終選項：正確答案 + 5個干擾項 = 6個選項
+    const options = [...selectedNearby, ...extraDistractors, target]
+      .sort(() => Math.random() - 0.5);
 
     setQuestion({
       prevStation,
@@ -252,8 +282,8 @@ export function NeighborQuiz({ line, onBack, onScore, speak }: NeighborQuizProps
         </button>
       </motion.div>
 
-      {/* 選項 */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* 選項 - 6個選項，3列2行 */}
+      <div className="grid grid-cols-3 gap-3">
         <AnimatePresence mode="wait">
           {question.options.map((option, index) => (
             <motion.button
@@ -263,7 +293,7 @@ export function NeighborQuiz({ line, onBack, onScore, speak }: NeighborQuizProps
               transition={{ delay: index * 0.1 }}
               onClick={() => handleAnswer(option.id)}
               disabled={selectedAnswer !== null}
-              className="p-5 rounded-2xl font-bold text-center transition-all text-lg shadow-md hover:shadow-lg active:scale-95"
+              className="p-4 rounded-xl font-bold text-center transition-all text-base shadow-md hover:shadow-lg active:scale-95"
               style={getOptionStyle(option)}
             >
               {option.name}
