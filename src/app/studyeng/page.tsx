@@ -61,6 +61,44 @@ export default function StudyEngPage() {
           </p>
         </div>
 
+        {/* P2 課程入口 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <Link href="/studyeng/p2">
+            <div className="relative overflow-hidden rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
+              <div className="p-6 md:p-8 flex items-center gap-6">
+                <div className="flex-shrink-0 w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-white text-4xl">
+                  📖
+                </div>
+                <div className="flex-1 text-white">
+                  <h2 className="text-xl md:text-2xl font-bold mb-1">
+                    二年班英文課程
+                  </h2>
+                  <p className="text-white/80 text-sm mb-2">
+                    Primary 2 English - Helping at Home
+                  </p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="bg-white/20 px-3 py-1 rounded-full">
+                      📚 生字 + Grammar
+                    </span>
+                    <span className="bg-white/20 px-3 py-1 rounded-full">
+                      📝 串字練習
+                    </span>
+                  </div>
+                </div>
+                <div className="text-white text-3xl">→</div>
+              </div>
+              <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full bg-white/10" />
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* CVC 課程標題 */}
+        <h2 className="text-xl font-bold text-gray-800 mb-4">🔤 CVC 拼音課程（初階）</h2>
+
         {/* Lesson Cards */}
         <div className="grid gap-6">
           {allLessons.map((lesson, index) => {
