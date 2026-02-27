@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { P2Sentence } from '../data/p2-lesson';
 
@@ -18,20 +18,60 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showHint, setShowHint] = useState(false);
-
+  
+  // 用 ref 防止重複檢查
+  const checkedRef = useRef(false);
   const currentSentence = sentences[currentIndex];
 
-  // 初始化題目 - 將句子拆分成單詞並打亂
+  // 初始化題目
   useEffect(() => {
     if (!currentSentence) return;
+    
+    // 重置檢查標記
+    checkedRef.current = false;
+    
     const words = currentSentence.pattern.split(' ');
-    // 打亂順序
     const shuffled = [...words].sort(() => Math.random() - 0.5);
+    
     setAvailableWords(shuffled);
     setUserSentence([]);
     setIsCorrect(null);
     setShowHint(false);
-  }, [currentSentence]);
+  }, [currentIndex, currentSentence]);
+
+  // 檢查答案
+  useEffect(() => {
+    // 條件檢查：用晒所有字詞、未檢查過、有當前句子
+    if (userSentence.length === 0 || availableWords.length > 0 || checkedRef.current || !currentSentence) {
+      return;
+    }
+    
+    // 標記已檢查
+    checkedRef.current = true;
+    
+    const userAnswer = userSentence.join(' ');
+    const correct = userAnswer.toLowerCase() === currentSentence.pattern.toLowerCase();
+    
+    setIsCorrect(correct);
+    
+    if (correct) {
+      setScore(s => s + 1);
+    }
+
+    // 2秒後下一題
+    const timer = setTimeout(() => {
+      if (currentIndex < sentences.length - 1) {
+        setCurrentIndex(i => i + 1);
+      } else {
+        // 最後一題，顯示結果
+        const finalScore = score + (correct ? 1 : 0);
+        setShowResult(true);
+        onComplete?.(finalScore, sentences.length);
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [userSentence.length, availableWords.length, currentSentence, currentIndex, sentences.length, score, onComplete]);
 
   // 發音
   const speakSentence = useCallback((text: string) => {
@@ -47,13 +87,11 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
   const selectWord = (word: string, index: number) => {
     if (isCorrect !== null) return;
     
-    // 從可用字詞移除
     const newAvailable = [...availableWords];
     newAvailable.splice(index, 1);
     setAvailableWords(newAvailable);
     
-    // 加到用戶句子
-    setUserSentence([...userSentence, word]);
+    setUserSentence(prev => [...prev, word]);
   };
 
   // 移除已選字詞
@@ -65,47 +103,13 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
     newUserSentence.splice(index, 1);
     setUserSentence(newUserSentence);
     
-    // 加回可用字詞
-    setAvailableWords([...availableWords, word]);
+    setAvailableWords(prev => [...prev, word]);
   };
-
-  // 檢查答案 - 當用晒所有字詞時自動檢查
-  useEffect(() => {
-    if (userSentence.length > 0 && availableWords.length === 0 && currentSentence && isCorrect === null) {
-      // 用晒所有字詞，自動檢查
-      const userAnswer = userSentence.join(' ');
-      const correct = userAnswer.toLowerCase() === currentSentence.pattern.toLowerCase();
-      
-      setIsCorrect(correct);
-      
-      if (correct) {
-        setScore(s => s + 1);
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
-        audio.volume = 0.3;
-        audio.play().catch(() => {});
-      } else {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3');
-        audio.volume = 0.3;
-        audio.play().catch(() => {});
-      }
-
-      // 2秒後下一題
-      const timer = setTimeout(() => {
-        if (currentIndex < sentences.length - 1) {
-          setCurrentIndex(i => i + 1);
-        } else {
-          setShowResult(true);
-          onComplete?.(score + (correct ? 1 : 0), sentences.length);
-        }
-      }, 2500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [userSentence, availableWords, currentSentence, currentIndex, sentences.length, score, onComplete, isCorrect]);
 
   // 重置
   const reset = () => {
     if (!currentSentence) return;
+    checkedRef.current = false;
     const words = currentSentence.pattern.split(' ');
     const shuffled = [...words].sort(() => Math.random() - 0.5);
     setAvailableWords(shuffled);
@@ -127,11 +131,6 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
           <p className="text-gray-600 mb-4">
             答對 <span className="text-3xl font-bold text-green-500">{score}</span> / {sentences.length} 題
           </p>
-          <div className="text-sm text-gray-500 mb-6">
-            {percentage >= 80 ? '句子結構掌握得很好！' : 
-             percentage >= 60 ? '繼續練習，會越來越熟！' : 
-             '多讀幾次課本，加油！'}
-          </div>
           <button
             onClick={onExit}
             className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-lg"
@@ -139,6 +138,14 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
             返回
           </button>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (!currentSentence) {
+    return (
+      <div className="max-w-md mx-auto p-4 text-center">
+        <p className="text-gray-500">載入緊...</p>
       </div>
     );
   }
@@ -160,11 +167,6 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
       </div>
 
       {/* 題目區 */}
-      {!currentSentence ? (
-        <div className="text-center p-8">
-          <p className="text-gray-500">載入緊...</p>
-        </div>
-      ) : (
       <motion.div
         key={currentSentence.id}
         initial={{ opacity: 0, y: 20 }}
@@ -258,7 +260,6 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
           )}
         </AnimatePresence>
       </motion.div>
-      )}
 
       {/* 功能按鈕 */}
       <div className="flex gap-3">
@@ -270,7 +271,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
           🔄 重新開始
         </button>
         <button
-          onClick={() => currentSentence && speakSentence(currentSentence.pattern)}
+          onClick={() => speakSentence(currentSentence.pattern)}
           className="flex-1 py-3 rounded-xl bg-yellow-100 text-yellow-600 font-bold flex items-center justify-center gap-1"
         >
           <span>🔊</span> 聽正確句子
@@ -293,7 +294,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
             className="mt-4 p-4 bg-yellow-50 rounded-xl text-center"
           >
             <p className="text-yellow-700">
-              第一個字係: <span className="font-bold text-xl">{currentSentence?.pattern.split(' ')[0]}</span>
+              第一個字係: <span className="font-bold text-xl">{currentSentence.pattern.split(' ')[0]}</span>
             </p>
           </motion.div>
         )}
