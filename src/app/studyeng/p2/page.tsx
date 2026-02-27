@@ -9,8 +9,9 @@ import SpellingGame from './components/SpellingGame';
 import ListeningSpelling from './components/ListeningSpelling';
 import VerbPractice from './components/VerbPractice';
 import SentenceBuilder from './components/SentenceBuilder';
+import PresentTenseQuiz from './components/PresentTenseQuiz';
 
-type GameMode = 'menu' | 'vocab' | 'spelling' | 'listening' | 'verb' | 'sentence';
+type GameMode = 'menu' | 'vocab' | 'spelling' | 'listening' | 'verb' | 'sentence' | 'present';
 
 export default function P2Page() {
   const [gameMode, setGameMode] = useState<GameMode>('menu');
@@ -97,10 +98,22 @@ export default function P2Page() {
               </div>
             </button>
 
+            {/* Present Tense */}
+            <button
+              onClick={() => setGameMode('present')}
+              className="w-full bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4 border-2 border-pink-100"
+            >
+              <span className="text-4xl">🎯</span>
+              <div className="text-left">
+                <h2 className="text-xl font-bold text-pink-700">Present Tense</h2>
+                <p className="text-pink-500 text-sm">單數 vs 複數動詞練習（20題）</p>
+              </div>
+            </button>
+
             {/* 課程資訊 */}
             <div className="bg-blue-50 rounded-2xl p-6 mt-8">
               <h3 className="font-bold text-blue-800 mb-3">📋 課程內容</h3>
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-2 gap-4 text-center">
                 <div className="bg-white rounded-xl p-3">
                   <p className="text-2xl font-bold text-blue-500">{p2Lesson.vocabCount}</p>
                   <p className="text-gray-500 text-sm">生字</p>
@@ -112,6 +125,10 @@ export default function P2Page() {
                 <div className="bg-white rounded-xl p-3">
                   <p className="text-2xl font-bold text-green-500">{p2Lesson.verbCount}</p>
                   <p className="text-gray-500 text-sm">動詞</p>
+                </div>
+                <div className="bg-white rounded-xl p-3">
+                  <p className="text-2xl font-bold text-pink-500">20</p>
+                  <p className="text-gray-500 text-sm">Present Tense</p>
                 </div>
               </div>
             </div>
@@ -165,6 +182,14 @@ export default function P2Page() {
           />
         );
 
+      case 'present':
+        return (
+          <PresentTenseQuiz
+            onComplete={(s, t) => console.log('Present Tense:', s, t)}
+            onExit={() => setGameMode('menu')}
+          />
+        );
+
       default:
         return null;
     }
@@ -199,6 +224,7 @@ export default function P2Page() {
               { id: 'listening', label: '🎧 聽寫' },
               { id: 'verb', label: '📝 動詞' },
               { id: 'sentence', label: '🧩 句子' },
+              { id: 'present', label: '🎯 Present' },
             ].map((mode) => (
               <button
                 key={mode.id}
