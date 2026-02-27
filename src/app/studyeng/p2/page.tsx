@@ -10,8 +10,9 @@ import ListeningSpelling from './components/ListeningSpelling';
 import VerbPractice from './components/VerbPractice';
 import SentenceBuilder from './components/SentenceBuilder';
 import PresentTenseQuiz from './components/PresentTenseQuiz';
+import AAnQuiz from './components/AAnQuiz';
 
-type GameMode = 'menu' | 'vocab' | 'spelling' | 'listening' | 'verb' | 'sentence' | 'present';
+type GameMode = 'menu' | 'vocab' | 'spelling' | 'listening' | 'verb' | 'sentence' | 'present' | 'aan';
 
 export default function P2Page() {
   const [gameMode, setGameMode] = useState<GameMode>('menu');
@@ -110,6 +111,18 @@ export default function P2Page() {
               </div>
             </button>
 
+            {/* A / An */}
+            <button
+              onClick={() => setGameMode('aan')}
+              className="w-full bg-gradient-to-r from-blue-50 to-yellow-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4 border-2 border-yellow-200"
+            >
+              <span className="text-4xl">🍎</span>
+              <div className="text-left">
+                <h2 className="text-xl font-bold text-orange-600">A / An 練習</h2>
+                <p className="text-orange-400 text-sm">冠詞用法：a cat / an apple（20題）</p>
+              </div>
+            </button>
+
             {/* 課程資訊 */}
             <div className="bg-blue-50 rounded-2xl p-6 mt-8">
               <h3 className="font-bold text-blue-800 mb-3">📋 課程內容</h3>
@@ -129,6 +142,10 @@ export default function P2Page() {
                 <div className="bg-white rounded-xl p-3">
                   <p className="text-2xl font-bold text-pink-500">20</p>
                   <p className="text-gray-500 text-sm">Present Tense</p>
+                </div>
+                <div className="bg-white rounded-xl p-3">
+                  <p className="text-2xl font-bold text-orange-500">20</p>
+                  <p className="text-gray-500 text-sm">A / An</p>
                 </div>
               </div>
             </div>
@@ -190,6 +207,14 @@ export default function P2Page() {
           />
         );
 
+      case 'aan':
+        return (
+          <AAnQuiz
+            onComplete={(s, t) => console.log('A/An:', s, t)}
+            onExit={() => setGameMode('menu')}
+          />
+        );
+
       default:
         return null;
     }
@@ -225,6 +250,7 @@ export default function P2Page() {
               { id: 'verb', label: '📝 動詞' },
               { id: 'sentence', label: '🧩 句子' },
               { id: 'present', label: '🎯 Present' },
+              { id: 'aan', label: '🍎 A/An' },
             ].map((mode) => (
               <button
                 key={mode.id}
