@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import type { P2Sentence } from '../data/p2-lesson';
 
@@ -18,17 +18,12 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showHint, setShowHint] = useState(false);
-  
-  // 用 ref 防止重複檢查
-  const checkedRef = useRef(false);
+
   const currentSentence = sentences[currentIndex];
 
-  // 初始化題目
-  useEffect(() => {
+  // 初始化題目 - 組件掛載時或 currentIndex 改變時運行
+  const initQuestion = useCallback(() => {
     if (!currentSentence) return;
-    
-    // 重置檢查標記
-    checkedRef.current = false;
     
     const words = currentSentence.pattern.split(' ');
     const shuffled = [...words].sort(() => Math.random() - 0.5);
@@ -37,41 +32,17 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
     setUserSentence([]);
     setIsCorrect(null);
     setShowHint(false);
-  }, [currentIndex, currentSentence]);
+  }, [currentSentence]);
 
-  // 檢查答案
-  useEffect(() => {
-    // 條件檢查：用晒所有字詞、未檢查過、有當前句子
-    if (userSentence.length === 0 || availableWords.length > 0 || checkedRef.current || !currentSentence) {
-      return;
-    }
-    
-    // 標記已檢查
-    checkedRef.current = true;
-    
-    const userAnswer = userSentence.join(' ');
-    const correct = userAnswer.toLowerCase() === currentSentence.pattern.toLowerCase();
-    
-    setIsCorrect(correct);
-    
-    if (correct) {
-      setScore(s => s + 1);
-    }
+  // 只在掛載或 currentIndex 改變時初始化
+  useState(() => {
+    initQuestion();
+  });
 
-    // 2秒後下一題
-    const timer = setTimeout(() => {
-      if (currentIndex < sentences.length - 1) {
-        setCurrentIndex(i => i + 1);
-      } else {
-        // 最後一題，顯示結果
-        const finalScore = score + (correct ? 1 : 0);
-        setShowResult(true);
-        onComplete?.(finalScore, sentences.length);
-      }
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, [userSentence.length, availableWords.length, currentSentence, currentIndex, sentences.length, score, onComplete]);
+  // 手動觸發初始化
+  useState(() => {
+    initQuestion();
+  });
 
   // 發音
   const speakSentence = useCallback((text: string) => {
@@ -91,7 +62,13 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
     newAvailable.splice(index, 1);
     setAvailableWords(newAvailable);
     
-    setUserSentence(prev => [...prev, word]);
+    const newUserSentence = [...userSentence, word];
+    setUserSentence(newUserSentence);
+    
+    // 如果用晒所有字詞，自動檢查
+    if (newAvailable.length === 0) {
+      checkAnswer(newUserSentence);
+    }
   };
 
   // 移除已選字詞
@@ -106,10 +83,47 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
     setAvailableWords(prev => [...prev, word]);
   };
 
+  // 檢查答案
+  const checkAnswer = (sentence: string[]) => {
+    if (!currentSentence) return;
+    
+    const userAnswer = sentence.join(' ');
+    const correct = userAnswer.toLowerCase() === currentSentence.pattern.toLowerCase();
+    
+    setIsCorrect(correct);
+    
+    if (correct) {
+      setScore(s => s + 1);
+    }
+
+    // 2秒後下一題
+    setTimeout(() => {
+      if (currentIndex < sentences.length - 1) {
+        // 去下一題
+        const nextIndex = currentIndex + 1;
+        setCurrentIndex(nextIndex);
+        
+        // 初始化下一題
+        const nextSentence = sentences[nextIndex];
+        if (nextSentence) {
+          const words = nextSentence.pattern.split(' ');
+          const shuffled = [...words].sort(() => Math.random() - 0.5);
+          setAvailableWords(shuffled);
+          setUserSentence([]);
+          setIsCorrect(null);
+          setShowHint(false);
+        }
+      } else {
+        // 最後一題
+        setShowResult(true);
+        onComplete?.(score + (correct ? 1 : 0), sentences.length);
+      }
+    }, 2000);
+  };
+
   // 重置
   const reset = () => {
     if (!currentSentence) return;
-    checkedRef.current = false;
     const words = currentSentence.pattern.split(' ');
     const shuffled = [...words].sort(() => Math.random() - 0.5);
     setAvailableWords(shuffled);
@@ -167,12 +181,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
       </div>
 
       {/* 題目區 */}
-      <motion.div
-        key={currentSentence.id}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-3xl p-6 shadow-xl mb-6"
-      >
+      <div className="bg-white rounded-3xl p-6 shadow-xl mb-6">
         <p className="text-gray-500 mb-4 text-center">將字詞排列成正確句子</p>
 
         {/* 意思提示 */}
@@ -218,16 +227,9 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
           ))}
         </div>
 
-        {/* 自動檢查提示 */}
-        {availableWords.length === 0 && isCorrect === null && (
-          <p className="text-center text-gray-400 text-sm">
-            檢查緊答案...
-          </p>
-        )}
-
         {/* 結果顯示 */}
         {isCorrect !== null && (
-          <div className={`rounded-xl p-4 text-center ${
+          <div className={`rounded-xl p-4 text-center mt-4 ${
             isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
           }`}>
             {isCorrect ? (
@@ -240,7 +242,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
             )}
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* 功能按鈕 */}
       <div className="flex gap-3">
