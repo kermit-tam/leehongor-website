@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { p2Lesson, p2Vocabulary, p2Verbs } from './data/p2-lesson';
+import { p2Lesson, p2Vocabulary, p2Verbs, p2Sentences } from './data/p2-lesson';
 import VocabCard from './components/VocabCard';
 import SpellingGame from './components/SpellingGame';
 import ListeningSpelling from './components/ListeningSpelling';
 import VerbPractice from './components/VerbPractice';
+import SentenceBuilder from './components/SentenceBuilder';
 
-type GameMode = 'menu' | 'vocab' | 'spelling' | 'listening' | 'verb';
+type GameMode = 'menu' | 'vocab' | 'spelling' | 'listening' | 'verb' | 'sentence';
 
 export default function P2Page() {
   const [gameMode, setGameMode] = useState<GameMode>('menu');
@@ -84,6 +85,18 @@ export default function P2Page() {
               </div>
             </button>
 
+            {/* 重組句子 */}
+            <button
+              onClick={() => setGameMode('sentence')}
+              className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4"
+            >
+              <span className="text-4xl">🧩</span>
+              <div className="text-left">
+                <h2 className="text-xl font-bold text-gray-800">重組句子</h2>
+                <p className="text-gray-500 text-sm">排列字詞組成正確句子</p>
+              </div>
+            </button>
+
             {/* 課程資訊 */}
             <div className="bg-blue-50 rounded-2xl p-6 mt-8">
               <h3 className="font-bold text-blue-800 mb-3">📋 課程內容</h3>
@@ -143,6 +156,15 @@ export default function P2Page() {
           />
         );
 
+      case 'sentence':
+        return (
+          <SentenceBuilder
+            sentences={p2Sentences}
+            onComplete={(s, t) => console.log('Sentences:', s, t)}
+            onExit={() => setGameMode('menu')}
+          />
+        );
+
       default:
         return null;
     }
@@ -176,6 +198,7 @@ export default function P2Page() {
               { id: 'spelling', label: '🧩 拼字' },
               { id: 'listening', label: '🎧 聽寫' },
               { id: 'verb', label: '📝 動詞' },
+              { id: 'sentence', label: '🧩 句子' },
             ].map((mode) => (
               <button
                 key={mode.id}
