@@ -71,7 +71,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
 
   // 檢查答案 - 當用晒所有字詞時自動檢查
   useEffect(() => {
-    if (userSentence.length > 0 && availableWords.length === 0 && currentSentence) {
+    if (userSentence.length > 0 && availableWords.length === 0 && currentSentence && isCorrect === null) {
       // 用晒所有字詞，自動檢查
       const userAnswer = userSentence.join(' ');
       const correct = userAnswer.toLowerCase() === currentSentence.pattern.toLowerCase();
@@ -90,7 +90,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
       }
 
       // 2秒後下一題
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         if (currentIndex < sentences.length - 1) {
           setCurrentIndex(i => i + 1);
         } else {
@@ -98,8 +98,10 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
           onComplete?.(score + (correct ? 1 : 0), sentences.length);
         }
       }, 2500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [userSentence, availableWords, currentSentence, currentIndex, sentences.length, score, onComplete]);
+  }, [userSentence, availableWords, currentSentence, currentIndex, sentences.length, score, onComplete, isCorrect]);
 
   // 重置
   const reset = () => {
