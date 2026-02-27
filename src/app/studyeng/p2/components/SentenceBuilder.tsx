@@ -23,6 +23,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
 
   // 初始化題目 - 將句子拆分成單詞並打亂
   useEffect(() => {
+    if (!currentSentence) return;
     const words = currentSentence.pattern.split(' ');
     // 打亂順序
     const shuffled = [...words].sort(() => Math.random() - 0.5);
@@ -70,7 +71,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
 
   // 檢查答案 - 當用晒所有字詞時自動檢查
   useEffect(() => {
-    if (userSentence.length > 0 && availableWords.length === 0) {
+    if (userSentence.length > 0 && availableWords.length === 0 && currentSentence) {
       // 用晒所有字詞，自動檢查
       const userAnswer = userSentence.join(' ');
       const correct = userAnswer.toLowerCase() === currentSentence.pattern.toLowerCase();
@@ -98,10 +99,11 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
         }
       }, 2500);
     }
-  }, [userSentence, availableWords, currentSentence.pattern, currentIndex, sentences.length, score, onComplete]);
+  }, [userSentence, availableWords, currentSentence, currentIndex, sentences.length, score, onComplete]);
 
   // 重置
   const reset = () => {
+    if (!currentSentence) return;
     const words = currentSentence.pattern.split(' ');
     const shuffled = [...words].sort(() => Math.random() - 0.5);
     setAvailableWords(shuffled);
@@ -156,6 +158,11 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
       </div>
 
       {/* 題目區 */}
+      {!currentSentence ? (
+        <div className="text-center p-8">
+          <p className="text-gray-500">載入緊...</p>
+        </div>
+      ) : (
       <motion.div
         key={currentSentence.id}
         initial={{ opacity: 0, y: 20 }}
@@ -249,6 +256,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
           )}
         </AnimatePresence>
       </motion.div>
+      )}
 
       {/* 功能按鈕 */}
       <div className="flex gap-3">
@@ -260,7 +268,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
           🔄 重新開始
         </button>
         <button
-          onClick={() => speakSentence(currentSentence.pattern)}
+          onClick={() => currentSentence && speakSentence(currentSentence.pattern)}
           className="flex-1 py-3 rounded-xl bg-yellow-100 text-yellow-600 font-bold flex items-center justify-center gap-1"
         >
           <span>🔊</span> 聽正確句子
@@ -283,7 +291,7 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
             className="mt-4 p-4 bg-yellow-50 rounded-xl text-center"
           >
             <p className="text-yellow-700">
-              第一個字係: <span className="font-bold text-xl">{currentSentence.pattern.split(' ')[0]}</span>
+              第一個字係: <span className="font-bold text-xl">{currentSentence?.pattern.split(' ')[0]}</span>
             </p>
           </motion.div>
         )}
