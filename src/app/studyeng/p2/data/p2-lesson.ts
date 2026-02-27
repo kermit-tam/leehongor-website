@@ -142,6 +142,37 @@ export const p2Sentences: P2Sentence[] = [
     pattern: 'She does not water the plants.',
     meaning: '她不澆水。',
     words: ['water the plants', 'make the bed', 'set the table', 'hang the clothes']
+  },
+  // 新增句子
+  {
+    id: 'p2-s6',
+    pattern: 'Does he study hard?',
+    meaning: '他學習勤力嗎？',
+    words: ['study hard', 'work hard', 'play games', 'watch TV']
+  },
+  {
+    id: 'p2-s7',
+    pattern: 'My room is tidy.',
+    meaning: '我的房間很整齊。',
+    words: ['tidy', 'untidy', 'clean', 'dirty']
+  },
+  {
+    id: 'p2-s8',
+    pattern: 'She is helpful and polite.',
+    meaning: '她樂於助人又有禮貌。',
+    words: ['helpful', 'polite', 'honest', 'hard-working']
+  },
+  {
+    id: 'p2-s9',
+    pattern: 'He walks to school every day.',
+    meaning: '他每天步行上學。',
+    words: ['walks to school', 'reads books', 'cooks dinner', 'carries a bag']
+  },
+  {
+    id: 'p2-s10',
+    pattern: 'Don\'t be rude!',
+    meaning: '不要無禮貌！',
+    words: ['rude', 'lazy', 'silly', 'careless']
   }
 ];
 
@@ -166,7 +197,7 @@ export const p2Lesson = {
   titleZh: '第一課：在家幫忙',
   description: '學習形容詞、家務動詞同第三人稱變化',
   vocabCount: p2Vocabulary.length,
-  sentenceCount: p2Sentences.length,
+  sentenceCount: 10, // 5個原有 + 5個新增
   verbCount: p2Verbs.length
 };
 
