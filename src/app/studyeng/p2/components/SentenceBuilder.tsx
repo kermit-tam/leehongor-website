@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { P2Sentence } from '../data/p2-lesson';
 
 interface SentenceBuilderProps {
@@ -186,13 +186,11 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
             <span className="text-gray-400">點擊下面字詞組成句子...</span>
           ) : (
             userSentence.map((word, index) => (
-              <motion.button
-                key={`${word}-${index}`}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
+              <button
+                key={`selected-${index}`}
                 onClick={() => removeWord(index)}
                 disabled={isCorrect !== null}
-                className={`px-3 py-2 rounded-xl font-bold text-lg shadow transition-all ${
+                className={`px-3 py-2 rounded-xl font-bold text-lg shadow active:scale-95 transition-all ${
                   isCorrect === null 
                     ? 'bg-blue-500 text-white hover:bg-blue-600' 
                     : isCorrect 
@@ -201,64 +199,47 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
                 }`}
               >
                 {word}
-              </motion.button>
+              </button>
             ))
           )}
         </div>
 
         {/* 可用字詞 */}
         <div className="flex flex-wrap gap-2 justify-center mb-4">
-          <AnimatePresence>
-            {availableWords.map((word, index) => (
-              <motion.button
-                key={`${word}-${index}`}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => selectWord(word, index)}
-                disabled={isCorrect !== null}
-                className="px-3 py-2 rounded-xl bg-white border-2 border-blue-200 text-blue-700 font-bold text-lg shadow hover:border-blue-400 hover:bg-blue-50 transition-all disabled:opacity-50"
-              >
-                {word}
-              </motion.button>
-            ))}
-          </AnimatePresence>
+          {availableWords.map((word, index) => (
+            <button
+              key={`word-${index}`}
+              onClick={() => selectWord(word, index)}
+              disabled={isCorrect !== null}
+              className="px-3 py-2 rounded-xl bg-white border-2 border-blue-200 text-blue-700 font-bold text-lg shadow hover:border-blue-400 hover:bg-blue-50 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {word}
+            </button>
+          ))}
         </div>
 
         {/* 自動檢查提示 */}
         {availableWords.length === 0 && isCorrect === null && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center text-gray-400 text-sm"
-          >
+          <p className="text-center text-gray-400 text-sm">
             檢查緊答案...
-          </motion.p>
+          </p>
         )}
 
         {/* 結果顯示 */}
-        <AnimatePresence>
-          {isCorrect !== null && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className={`rounded-xl p-4 text-center ${
-                isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}
-            >
-              {isCorrect ? (
-                <p className="font-bold text-lg">✅ 正確！Good job!</p>
-              ) : (
-                <>
-                  <p className="font-bold text-lg mb-2">❌ 不正確</p>
-                  <p>正確答案: <span className="font-bold">{currentSentence.pattern}</span></p>
-                </>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {isCorrect !== null && (
+          <div className={`rounded-xl p-4 text-center ${
+            isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}>
+            {isCorrect ? (
+              <p className="font-bold text-lg">✅ 正確！Good job!</p>
+            ) : (
+              <>
+                <p className="font-bold text-lg mb-2">❌ 不正確</p>
+                <p>正確答案: <span className="font-bold">{currentSentence.pattern}</span></p>
+              </>
+            )}
+          </div>
+        )}
       </motion.div>
 
       {/* 功能按鈕 */}
@@ -285,20 +266,13 @@ export default function SentenceBuilder({ sentences, onComplete, onExit }: Sente
       </div>
 
       {/* 提示 */}
-      <AnimatePresence>
-        {showHint && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-4 p-4 bg-yellow-50 rounded-xl text-center"
-          >
-            <p className="text-yellow-700">
-              第一個字係: <span className="font-bold text-xl">{currentSentence.pattern.split(' ')[0]}</span>
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {showHint && (
+        <div className="mt-4 p-4 bg-yellow-50 rounded-xl text-center">
+          <p className="text-yellow-700">
+            第一個字係: <span className="font-bold text-xl">{currentSentence.pattern.split(' ')[0]}</span>
+          </p>
+        </div>
+      )}
 
       {/* 說明 */}
       <p className="text-center text-gray-400 text-sm mt-6">
