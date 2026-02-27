@@ -107,7 +107,7 @@ export default function P2Page() {
               <span className="text-4xl">🎯</span>
               <div className="text-left">
                 <h2 className="text-xl font-bold text-pink-700">Present Tense</h2>
-                <p className="text-pink-500 text-sm">單數 vs 複數動詞練習（20題）</p>
+                <p className="text-pink-500 text-sm">單數 vs 複數動詞練習（40題）👩👨可選語音</p>
               </div>
             </button>
 
@@ -140,7 +140,7 @@ export default function P2Page() {
                   <p className="text-gray-500 text-sm">動詞</p>
                 </div>
                 <div className="bg-white rounded-xl p-3">
-                  <p className="text-2xl font-bold text-pink-500">20</p>
+                  <p className="text-2xl font-bold text-pink-500">40</p>
                   <p className="text-gray-500 text-sm">Present Tense</p>
                 </div>
                 <div className="bg-white rounded-xl p-3">

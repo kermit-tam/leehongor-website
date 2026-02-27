@@ -13,8 +13,9 @@ export interface PresentTenseQuestion {
   sentence: string;     // 完整句子（顯示用）
 }
 
-// 20條 Present Tense 練習題目
+// 40條 Present Tense 練習題目（原有20 + 新增20個一年班動詞）
 export const presentTenseQuestions: PresentTenseQuestion[] = [
+  // ========== 原有20題 ==========
   // 單數 He/She/It - 一般動詞 +s
   {
     id: 'pt-01',
@@ -201,6 +202,207 @@ export const presentTenseQuestions: PresentTenseQuestion[] = [
     options: ['go', 'gos', 'goes', 'goies'],
     emoji: '🚗',
     sentence: 'We go home.'
+  },
+
+  // ========== 新增20題（一年班動詞）==========
+  // 新增：say
+  {
+    id: 'pt-21',
+    subject: 'He',
+    verb: 'say',
+    correct: 'says',
+    options: ['say', 'says', 'sayes', 'saies'],
+    emoji: '💬',
+    sentence: 'He says hello.'
+  },
+  {
+    id: 'pt-22',
+    subject: 'I',
+    verb: 'say',
+    correct: 'say',
+    options: ['say', 'says', 'sayes', 'saies'],
+    emoji: '💬',
+    sentence: 'I say thank you.'
+  },
+
+  // 新增：eat
+  {
+    id: 'pt-23',
+    subject: 'She',
+    verb: 'eat',
+    correct: 'eats',
+    options: ['eat', 'eats', 'eates', 'eaties'],
+    emoji: '🍽️',
+    sentence: 'She eats an apple.'
+  },
+  {
+    id: 'pt-24',
+    subject: 'They',
+    verb: 'eat',
+    correct: 'eat',
+    options: ['eat', 'eats', 'eates', 'eaties'],
+    emoji: '🍽️',
+    sentence: 'They eat lunch.'
+  },
+
+  // 新增：drink
+  {
+    id: 'pt-25',
+    subject: 'He',
+    verb: 'drink',
+    correct: 'drinks',
+    options: ['drink', 'drinks', 'drinkes', 'drinkies'],
+    emoji: '🥤',
+    sentence: 'He drinks water.'
+  },
+  {
+    id: 'pt-26',
+    subject: 'You',
+    verb: 'drink',
+    correct: 'drink',
+    options: ['drink', 'drinks', 'drinkes', 'drinkies'],
+    emoji: '🥤',
+    sentence: 'You drink milk.'
+  },
+
+  // 新增：sleep
+  {
+    id: 'pt-27',
+    subject: 'It',
+    verb: 'sleep',
+    correct: 'sleeps',
+    options: ['sleep', 'sleeps', 'sleepes', 'sleepies'],
+    emoji: '😴',
+    sentence: 'It sleeps at night.'
+  },
+  {
+    id: 'pt-28',
+    subject: 'We',
+    verb: 'sleep',
+    correct: 'sleep',
+    options: ['sleep', 'sleeps', 'sleepes', 'sleepies'],
+    emoji: '😴',
+    sentence: 'We sleep early.'
+  },
+
+  // 新增：draw
+  {
+    id: 'pt-29',
+    subject: 'She',
+    verb: 'draw',
+    correct: 'draws',
+    options: ['draw', 'draws', 'drawes', 'drawies'],
+    emoji: '🎨',
+    sentence: 'She draws pictures.'
+  },
+  {
+    id: 'pt-30',
+    subject: 'I',
+    verb: 'draw',
+    correct: 'draw',
+    options: ['draw', 'draws', 'drawes', 'drawies'],
+    emoji: '🎨',
+    sentence: 'I draw a cat.'
+  },
+
+  // 新增：write
+  {
+    id: 'pt-31',
+    subject: 'He',
+    verb: 'write',
+    correct: 'writes',
+    options: ['write', 'writes', 'writees', 'writies'],
+    emoji: '✏️',
+    sentence: 'He writes letters.'
+  },
+  {
+    id: 'pt-32',
+    subject: 'They',
+    verb: 'write',
+    correct: 'write',
+    options: ['write', 'writes', 'writees', 'writies'],
+    emoji: '✏️',
+    sentence: 'They write stories.'
+  },
+
+  // 新增：talk
+  {
+    id: 'pt-33',
+    subject: 'She',
+    verb: 'talk',
+    correct: 'talks',
+    options: ['talk', 'talks', 'talkes', 'talkies'],
+    emoji: '🗣️',
+    sentence: 'She talks loudly.'
+  },
+  {
+    id: 'pt-34',
+    subject: 'You',
+    verb: 'talk',
+    correct: 'talk',
+    options: ['talk', 'talks', 'talkes', 'talkies'],
+    emoji: '🗣️',
+    sentence: 'You talk quietly.'
+  },
+
+  // 新增：climb
+  {
+    id: 'pt-35',
+    subject: 'It',
+    verb: 'climb',
+    correct: 'climbs',
+    options: ['climb', 'climbs', 'climbes', 'climies'],
+    emoji: '🐒',
+    sentence: 'It climbs trees.'
+  },
+  {
+    id: 'pt-36',
+    subject: 'We',
+    verb: 'climb',
+    correct: 'climb',
+    options: ['climb', 'climbs', 'climbes', 'climies'],
+    emoji: '🧗',
+    sentence: 'We climb hills.'
+  },
+
+  // 新增：swim
+  {
+    id: 'pt-37',
+    subject: 'He',
+    verb: 'swim',
+    correct: 'swims',
+    options: ['swim', 'swims', 'swimes', 'swimies'],
+    emoji: '🏊',
+    sentence: 'He swims fast.'
+  },
+  {
+    id: 'pt-38',
+    subject: 'They',
+    verb: 'swim',
+    correct: 'swim',
+    options: ['swim', 'swims', 'swimes', 'swimies'],
+    emoji: '🏊‍♀️',
+    sentence: 'They swim in the pool.'
+  },
+
+  // 新增：sit
+  {
+    id: 'pt-39',
+    subject: 'She',
+    verb: 'sit',
+    correct: 'sits',
+    options: ['sit', 'sits', 'sites', 'sities'],
+    emoji: '🪑',
+    sentence: 'She sits down.'
+  },
+  {
+    id: 'pt-40',
+    subject: 'I',
+    verb: 'sit',
+    correct: 'sit',
+    options: ['sit', 'sits', 'sites', 'sities'],
+    emoji: '🪑',
+    sentence: 'I sit here.'
   }
 ];
 

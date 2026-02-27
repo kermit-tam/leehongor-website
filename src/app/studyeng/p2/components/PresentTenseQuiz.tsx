@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { presentTenseQuestions, presentTenseRules, shuffleQuestions } from '../data/present-tense';
 
@@ -17,18 +17,58 @@ export default function PresentTenseQuiz({ onComplete, onExit }: PresentTenseQui
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female'); // 預設女聲
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   const currentQuestion = questions[currentIndex];
+
+  // 獲取可用語音
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      // 過濾英文語音
+      const englishVoices = voices.filter(v => v.lang.startsWith('en'));
+      setAvailableVoices(englishVoices);
+    };
+
+    loadVoices();
+    // 某些瀏覽器需要等待 voiceschanged 事件
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }, []);
 
   // 發音
   const speak = useCallback((text: string) => {
     if (typeof window === 'undefined') return;
     window.speechSynthesis.cancel();
+    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = 0.7;
+    utterance.pitch = voiceGender === 'female' ? 1.2 : 0.8;
+    
+    // 嘗試選擇特定性別的語音
+    if (availableVoices.length > 0) {
+      // 尋找包含特定關鍵詞的語音
+      const preferredVoice = availableVoices.find(v => {
+        const name = v.name.toLowerCase();
+        if (voiceGender === 'female') {
+          return name.includes('female') || name.includes('woman') || name.includes('girl') || 
+                 name.includes('samantha') || name.includes('victoria') || name.includes('karen');
+        } else {
+          return name.includes('male') || name.includes('man') || name.includes('boy') || 
+                 name.includes('daniel') || name.includes('fred') || name.includes('alex');
+        }
+      });
+      
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+    }
+    
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [voiceGender, availableVoices]);
 
   // 選擇答案
   const selectOption = (option: string) => {
@@ -105,17 +145,44 @@ export default function PresentTenseQuiz({ onComplete, onExit }: PresentTenseQui
   return (
     <div className="max-w-md mx-auto p-4">
       {/* 頂部 */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <button onClick={onExit} className="text-gray-500 hover:text-gray-700">← 退出</button>
         <span className="text-sm text-gray-500">{currentIndex + 1} / {questions.length}</span>
       </div>
 
       {/* 進度 */}
-      <div className="h-2 bg-gray-200 rounded-full mb-6 overflow-hidden">
+      <div className="h-2 bg-gray-200 rounded-full mb-4 overflow-hidden">
         <motion.div
           className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
           animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
         />
+      </div>
+
+      {/* 語音選擇 */}
+      <div className="bg-gray-50 rounded-xl p-3 mb-4 flex items-center justify-between">
+        <span className="text-sm text-gray-600">🔊 語音：</span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setVoiceGender('female')}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+              voiceGender === 'female' 
+                ? 'bg-pink-500 text-white' 
+                : 'bg-white text-gray-600 border border-gray-200'
+            }`}
+          >
+            👩 女聲
+          </button>
+          <button
+            onClick={() => setVoiceGender('male')}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+              voiceGender === 'male' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-white text-gray-600 border border-gray-200'
+            }`}
+          >
+            👨 男聲
+          </button>
+        </div>
       </div>
 
       {/* 題目區 */}
@@ -201,12 +268,12 @@ export default function PresentTenseQuiz({ onComplete, onExit }: PresentTenseQui
         onClick={() => speak(currentQuestion.sentence)}
         className="w-full py-3 rounded-xl bg-yellow-100 text-yellow-700 font-bold flex items-center justify-center gap-2"
       >
-        <span>🔊</span> 聽完整句子
+        <span>🔊</span> 聽完整句子（{voiceGender === 'female' ? '👩' : '👨'}）
       </button>
 
       {/* 說明 */}
       <p className="text-center text-gray-400 text-sm mt-4">
-        💡 He/She/It（單數）動詞要 +s/+es/+ies<br/>
+        💡 He/She/It（單數）動詞要 +s / +es / +ies<br/>
         I/We/You/They（複數）動詞保持原形
       </p>
     </div>
