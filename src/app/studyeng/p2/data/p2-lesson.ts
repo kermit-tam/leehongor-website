@@ -176,18 +176,53 @@ export const p2Sentences: P2Sentence[] = [
   }
 ];
 
-// ===== 動詞第三人稱變化 =====
+// ===== 動詞第三人稱變化（40個）=====
 export const p2Verbs: P2Verb[] = [
+  // +s 規則（一般動詞）
   { base: 'walk', thirdPerson: 'walks', emoji: '🚶', meaning: '行路', rule: 'add-s' },
-  { base: 'set', thirdPerson: 'sets', emoji: '🍽️', meaning: '擺放', rule: 'add-s' },
-  { base: 'hang', thirdPerson: 'hangs', emoji: '👕', meaning: '掛', rule: 'add-s' },
-  { base: 'carry', thirdPerson: 'carries', emoji: '📦', meaning: '攜帶', rule: 'y-to-ies' },
-  { base: 'read', thirdPerson: 'reads', emoji: '📖', meaning: '閱讀', rule: 'add-s' },
-  { base: 'study', thirdPerson: 'studies', emoji: '📚', meaning: '學習', rule: 'y-to-ies' },
-  { base: 'wash', thirdPerson: 'washes', emoji: '🧼', meaning: '洗', rule: 'add-es' },
-  { base: 'watch', thirdPerson: 'watches', emoji: '📺', meaning: '看', rule: 'add-es' },
   { base: 'play', thirdPerson: 'plays', emoji: '🎮', meaning: '玩', rule: 'add-s' },
-  { base: 'cook', thirdPerson: 'cooks', emoji: '👨‍🍳', meaning: '煮', rule: 'add-s' }
+  { base: 'cook', thirdPerson: 'cooks', emoji: '👨‍🍳', meaning: '煮', rule: 'add-s' },
+  { base: 'read', thirdPerson: 'reads', emoji: '📖', meaning: '閱讀', rule: 'add-s' },
+  { base: 'run', thirdPerson: 'runs', emoji: '🏃', meaning: '跑', rule: 'add-s' },
+  { base: 'eat', thirdPerson: 'eats', emoji: '🍽️', meaning: '食', rule: 'add-s' },
+  { base: 'drink', thirdPerson: 'drinks', emoji: '🥤', meaning: '飲', rule: 'add-s' },
+  { base: 'sleep', thirdPerson: 'sleeps', emoji: '😴', meaning: '瞓覺', rule: 'add-s' },
+  { base: 'draw', thirdPerson: 'draws', emoji: '🎨', meaning: '畫', rule: 'add-s' },
+  { base: 'write', thirdPerson: 'writes', emoji: '✏️', meaning: '寫', rule: 'add-s' },
+  { base: 'talk', thirdPerson: 'talks', emoji: '🗣️', meaning: '講話', rule: 'add-s' },
+  { base: 'climb', thirdPerson: 'climbs', emoji: '🧗', meaning: '攀爬', rule: 'add-s' },
+  { base: 'swim', thirdPerson: 'swims', emoji: '🏊', meaning: '游水', rule: 'add-s' },
+  { base: 'sit', thirdPerson: 'sits', emoji: '🪑', meaning: '坐', rule: 'add-s' },
+  { base: 'jump', thirdPerson: 'jumps', emoji: '🦘', meaning: '跳', rule: 'add-s' },
+  { base: 'sing', thirdPerson: 'sings', emoji: '🎤', meaning: '唱歌', rule: 'add-s' },
+  { base: 'dance', thirdPerson: 'dances', emoji: '💃', meaning: '跳舞', rule: 'add-s' },
+  { base: 'help', thirdPerson: 'helps', emoji: '🤝', meaning: '幫忙', rule: 'add-s' },
+  { base: 'look', thirdPerson: 'looks', emoji: '👀', meaning: '睇', rule: 'add-s' },
+  { base: 'work', thirdPerson: 'works', emoji: '💼', meaning: '做嘢', rule: 'add-s' },
+  
+  // +es 規則（s, x, ch, sh, o, z 結尾）
+  { base: 'watch', thirdPerson: 'watches', emoji: '📺', meaning: '看', rule: 'add-es' },
+  { base: 'wash', thirdPerson: 'washes', emoji: '🧼', meaning: '洗', rule: 'add-es' },
+  { base: 'go', thirdPerson: 'goes', emoji: '🚗', meaning: '去', rule: 'add-es' },
+  { base: 'do', thirdPerson: 'does', emoji: '✅', meaning: '做', rule: 'add-es' },
+  { base: 'fix', thirdPerson: 'fixes', emoji: '🔧', meaning: '修理', rule: 'add-es' },
+  { base: 'mix', thirdPerson: 'mixes', emoji: '🥣', meaning: '混合', rule: 'add-es' },
+  { base: 'catch', thirdPerson: 'catches', emoji: '🤲', meaning: '接住', rule: 'add-es' },
+  { base: 'teach', thirdPerson: 'teaches', emoji: '👨‍🏫', meaning: '教', rule: 'add-es' },
+  { base: 'push', thirdPerson: 'pushes', emoji: '🚪', meaning: '推', rule: 'add-es' },
+  { base: 'finish', thirdPerson: 'finishes', emoji: '✔️', meaning: '完成', rule: 'add-es' },
+  { base: 'kiss', thirdPerson: 'kisses', emoji: '💋', meaning: '錫', rule: 'add-es' },
+  { base: 'pass', thirdPerson: 'passes', emoji: '🏈', meaning: '傳', rule: 'add-es' },
+  
+  // y → ies 規則（輔音 + y 結尾）
+  { base: 'carry', thirdPerson: 'carries', emoji: '📦', meaning: '攜帶', rule: 'y-to-ies' },
+  { base: 'study', thirdPerson: 'studies', emoji: '📚', meaning: '學習', rule: 'y-to-ies' },
+  { base: 'fly', thirdPerson: 'flies', emoji: '🦋', meaning: '飛', rule: 'y-to-ies' },
+  { base: 'try', thirdPerson: 'tries', emoji: '🎯', meaning: '嘗試', rule: 'y-to-ies' },
+  { base: 'cry', thirdPerson: 'cries', emoji: '😢', meaning: '喊', rule: 'y-to-ies' },
+  { base: 'worry', thirdPerson: 'worries', emoji: '😰', meaning: '擔心', rule: 'y-to-ies' },
+  { base: 'hurry', thirdPerson: 'hurries', emoji: '⏰', meaning: '催促', rule: 'y-to-ies' },
+  { base: 'tidy', thirdPerson: 'tidies', emoji: '🧹', meaning: '整理', rule: 'y-to-ies' }
 ];
 
 // 課程資料
