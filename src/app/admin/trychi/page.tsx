@@ -19,6 +19,9 @@ interface TryChiConfig {
   englishTitle: string;
   englishSubtitle: string;
   englishEmoji: string;
+  mathTitle: string;
+  mathSubtitle: string;
+  mathEmoji: string;
 }
 
 const defaultConfig: TryChiConfig = {
@@ -31,9 +34,12 @@ const defaultConfig: TryChiConfig = {
   englishTitle: '小朋友講英文',
   englishSubtitle: 'CVC拼音單字學習',
   englishEmoji: '🔤',
+  mathTitle: '⚡ 閃電加法王',
+  mathSubtitle: '加法挑戰，愈計愈快！',
+  mathEmoji: '🔢',
 };
 
-const emojiOptions = ['🚇', '🚉', '🚊', '🚋', '✍️', '✏️', '📝', '📚', '📖', '🎒', '🏫', '🎓', '👶', '🧒', '🇭🇰', '🎯', '🎮', '🎪', '🎨', '🎭', '🔤', '🔡', '🇬🇧', '🇺🇸', 'A', 'B', 'C'];
+const emojiOptions = ['🚇', '🚉', '🚊', '🚋', '✍️', '✏️', '📝', '📚', '📖', '🎒', '🏫', '🎓', '👶', '🧒', '🇭🇰', '🎯', '🎮', '🎪', '🎨', '🎭', '🔤', '🔡', '🇬🇧', '🇺🇸', '🔢', '➕', '✖️', '⚡', '🧮', '📐', 'A', 'B', 'C'];
 
 export default function TryChiAdminPage() {
   const { isLoading } = useRequireAdmin('/');
@@ -103,7 +109,7 @@ export default function TryChiAdminPage() {
       {/* 即時預覽 */}
       <div className="bg-gradient-to-b from-[#FFF8E7] to-[#FFE4B5] rounded-2xl p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-700 mb-4">👀 即時預覽</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 預覽卡片 1 */}
           <div className="bg-[#74B9FF] rounded-2xl p-5 shadow-lg">
             <div className="flex items-center gap-3">
@@ -128,7 +134,7 @@ export default function TryChiAdminPage() {
               </div>
             </div>
           </div>
-          {/* 預覽卡片 3 - 新增英文 */}
+          {/* 預覽卡片 3 - 英文 */}
           <div className="bg-[#A29BFE] rounded-2xl p-5 shadow-lg">
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-3xl">
@@ -137,6 +143,18 @@ export default function TryChiAdminPage() {
               <div>
                 <h3 className="text-lg font-extrabold text-white">{config.englishTitle}</h3>
                 <p className="text-white/90 text-xs">{config.englishSubtitle}</p>
+              </div>
+            </div>
+          </div>
+          {/* 預覽卡片 4 - 數學 */}
+          <div className="bg-[#9B59B6] rounded-2xl p-5 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-3xl">
+                {config.mathEmoji}
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-white">{config.mathTitle}</h3>
+                <p className="text-white/90 text-xs">{config.mathSubtitle}</p>
               </div>
             </div>
           </div>
@@ -301,6 +319,58 @@ export default function TryChiAdminPage() {
           </div>
         </div>
       </div>
+
+        {/* 數學天地設定 - 新增 */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-2xl">🔢</span>
+            <h2 className="text-lg font-bold text-gray-800">數學天地</h2>
+          </div>
+          
+          <div className="space-y-4">
+            {/* 圖標選擇 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-2">圖標</label>
+              <div className="grid grid-cols-8 gap-2">
+                {emojiOptions.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => setConfig({ ...config, mathEmoji: emoji })}
+                    className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all ${
+                      config.mathEmoji === emoji
+                        ? 'bg-purple-600 text-white ring-2 ring-purple-300'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 標題 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">標題</label>
+              <input
+                type="text"
+                value={config.mathTitle}
+                onChange={(e) => setConfig({ ...config, mathTitle: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+              />
+            </div>
+
+            {/* 副標題 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">副標題</label>
+              <input
+                type="text"
+                value={config.mathSubtitle}
+                onChange={(e) => setConfig({ ...config, mathSubtitle: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
 
       {/* 說明 */}
       <div className="mt-8 bg-blue-50 rounded-xl p-4">

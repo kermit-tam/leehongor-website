@@ -1,5 +1,5 @@
 /**
- * 中英文挑戰入口
+ * 中英數挑戰入口
  * Cocomelon 風格 - 鮮艷明亮、兒童友善
  * 支援後台自定義標題、副標題、圖標
  */
@@ -19,6 +19,9 @@ interface TryChiConfig {
   englishTitle: string;
   englishSubtitle: string;
   englishEmoji: string;
+  mathTitle: string;
+  mathSubtitle: string;
+  mathEmoji: string;
 }
 
 const defaultConfig: TryChiConfig = {
@@ -31,6 +34,9 @@ const defaultConfig: TryChiConfig = {
   englishTitle: '小朋友講英文',
   englishSubtitle: 'CVC拼音單字學習',
   englishEmoji: '🔤',
+  mathTitle: '⚡ 閃電加法王',
+  mathSubtitle: '加法挑戰，愈計愈快！',
+  mathEmoji: '🔢',
 };
 
 // BB 風格圖標組件
@@ -71,6 +77,17 @@ const BabyEnglishIcon = () => (
   </svg>
 );
 
+const BabyMathIcon = () => (
+  <svg viewBox="0 0 100 100" className="w-16 h-16">
+    <circle cx="50" cy="50" r="45" fill="#9B59B6" />
+    <circle cx="50" cy="50" r="35" fill="#8E44AD" />
+    <text x="50" y="55" textAnchor="middle" fill="white" fontSize="36" fontWeight="bold">1+2</text>
+    <circle cx="28" cy="35" r="4" fill="#FFE66D" />
+    <circle cx="72" cy="35" r="4" fill="#FFE66D" />
+    <path d="M40 70 Q50 76 60 70" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round" />
+  </svg>
+);
+
 export default function TryChiPage() {
   const [config, setConfig] = useState<TryChiConfig>(defaultConfig);
 
@@ -95,12 +112,12 @@ export default function TryChiPage() {
 
         {/* 標題 */}
         <div className="text-center mb-8">
-          <div className="text-6xl mb-4">🇭🇰</div>
-          <h1 className="text-4xl font-extrabold text-[#2D3436] mb-3">中英文挑戰</h1>
+          <div className="text-6xl mb-4">🎯</div>
+          <h1 className="text-4xl font-extrabold text-[#2D3436] mb-3">中英數挑戰</h1>
           <p className="text-[#636E72] font-medium text-lg">選擇你想挑戰的項目</p>
         </div>
 
-        {/* 三個挑戰選項 */}
+        {/* 四個挑戰選項 */}
         <div className="space-y-5">
           {/* 港鐵小站長 */}
           <Link href="/studychi">
@@ -134,7 +151,7 @@ export default function TryChiPage() {
             </div>
           </Link>
 
-          {/* 小朋友講英文 - 新增 */}
+          {/* 小朋友講英文 */}
           <Link href="/studyeng">
             <div className="bg-[#A29BFE] rounded-3xl p-6 shadow-[0_8px_0_#6C5CE7] hover:shadow-[0_4px_0_#6C5CE7] hover:translate-y-1 transition-all active:scale-95">
               <div className="flex items-center gap-4">
@@ -149,12 +166,28 @@ export default function TryChiPage() {
               </div>
             </div>
           </Link>
+
+          {/* 數學天地 - 新增 */}
+          <Link href="/studymath">
+            <div className="bg-[#9B59B6] rounded-3xl p-6 shadow-[0_8px_0_#8E44AD] hover:shadow-[0_4px_0_#8E44AD] hover:translate-y-1 transition-all active:scale-95">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                  {config.mathEmoji === '🔢' ? <BabyMathIcon /> : <span className="text-4xl">{config.mathEmoji}</span>}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-extrabold text-white mb-1">{config.mathTitle}</h2>
+                  <p className="text-white/90 font-medium">{config.mathSubtitle}</p>
+                </div>
+                <span className="text-3xl text-white">→</span>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* 說明 */}
         <div className="mt-8 bg-[#55EFC4] rounded-2xl p-4 text-center shadow-[0_4px_0_#00B894]">
           <p className="text-sm text-[#006266] font-bold">
-            💡 三個挑戰都唔需要登入，直接就可以玩！
+            💡 四個挑戰都唔需要登入，直接就可以玩！
           </p>
         </div>
       </div>
