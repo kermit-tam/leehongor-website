@@ -132,37 +132,27 @@ export default function LightningMath() {
     }
   }, []);
 
-  // 產生加法題目
+  // 產生加法題目（單位數加單位數：1-9 + 1-9）
   const generateQuestions = useCallback((): Question[] => {
     const qs: Question[] = [];
-    const levels = [
-      { min: 2, max: 10, count: 5 },
-      { min: 6, max: 15, count: 5 },
-      { min: 10, max: 19, count: 5 }
-    ];
     
-    levels.forEach(level => {
-      for (let i = 0; i < level.count; i++) {
-        let q = generateAddQuestion(level.min, level.max);
-        while (qs.length > 0 && qs[qs.length-1].answer === q.answer) {
-          q = generateAddQuestion(level.min, level.max);
-        }
-        qs.push(q);
+    for (let i = 0; i < 15; i++) {
+      let q = generateAddQuestion();
+      // 避免連續兩題答案相同
+      while (qs.length > 0 && qs[qs.length-1].answer === q.answer) {
+        q = generateAddQuestion();
       }
-    });
-    
-    for (let i = qs.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [qs[i], qs[j]] = [qs[j], qs[i]];
+      qs.push(q);
     }
     
     return qs;
   }, []);
 
-  const generateAddQuestion = (min: number, max: number): Question => {
-    const answer = Math.floor(Math.random() * (max - min + 1)) + min;
-    const a = Math.floor(Math.random() * (answer - 1)) + 1;
-    const b = answer - a;
+  const generateAddQuestion = (): Question => {
+    // 單位數：1-9
+    const a = Math.floor(Math.random() * 9) + 1;  // 1-9
+    const b = Math.floor(Math.random() * 9) + 1;  // 1-9
+    const answer = a + b;  // 答案範圍：2-18
     return { text: `${a} + ${b}`, a, b, answer };
   };
 
@@ -272,7 +262,7 @@ export default function LightningMath() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
         <div className="bg-white/95 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
-          <Link href="/trychi" className="absolute top-4 left-4 text-gray-500 hover:text-gray-700">
+          <Link href="/trymath" className="absolute top-4 left-4 text-gray-500 hover:text-gray-700">
             ← 返回
           </Link>
           <h1 className="text-4xl font-black mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -347,7 +337,7 @@ export default function LightningMath() {
             >
               再玩一次 🔄
             </button>
-            <Link href="/trychi" className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-bold flex items-center justify-center">
+            <Link href="/trymath" className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-bold flex items-center justify-center">
               返回
             </Link>
           </div>

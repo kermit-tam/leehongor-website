@@ -17,15 +17,14 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems: { label: string; href: string; icon: string }[] = [
-    { label: '輕鬆學', href: '/posts', icon: '📚' },
-    { label: '系統學', href: '/learn', icon: '🎯' },
-    { label: '考試模式', href: '/exam', icon: '📝' },
-    { label: '排行榜', href: '/leaderboard', icon: '🏆' },
-    { label: '中文挑戰', href: '/trychi', icon: '🇭🇰' },
+    { label: '輕鬆學', href: '/posts', icon: '' },
+    { label: '系統學', href: '/learn', icon: '' },
+    { label: '考試模式', href: '/exam', icon: '' },
+    { label: '排行榜', href: '/leaderboard', icon: '' },
   ];
 
   if (isAdmin) {
-    navItems.push({ label: '後台', href: '/admin', icon: '⚙️' });
+    navItems.push({ label: '後台', href: '/admin', icon: '' });
   }
 
   return (
@@ -34,7 +33,6 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
-            <span className="text-xl">🎌</span>
             <span className="font-normal text-lg tracking-wider text-[#4A4A4A]">
               利康哥日文
             </span>
