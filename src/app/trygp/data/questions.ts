@@ -435,6 +435,8 @@ export const allQuestions: Question[] = [
     question: '【實驗題】實驗中，玩具車（A／B）會走得較遠，風吹的方向與玩具車行走的方向是（相同／相反）的。',
     answer: 'A；相同',
     hint: '風扇的風力較強',
+    images: ['/images/gp/gp_exp_a.png', '/images/gp/gp_exp_b.png'],
+    imageLabels: ['實驗一：玩具車A', '實驗二：玩具車B'],
   },
   {
     id: 32,

@@ -34,10 +34,18 @@ export default function TryGPPage() {
 
   const handleAnswer = (qId: number, answer: string | string[]) => {
     setAnswers(prev => ({ ...prev, [qId]: answer }));
-    // 自動檢查答案
-    setTimeout(() => {
-      setChecked(prev => ({ ...prev, [qId]: true }));
-    }, 300);
+    // 只有簡單MC題先自動檢查，其他要等用戶按確認
+    const q = allQuestions.find(qq => qq.id === qId);
+    if (q && (q.type === 'mc' || q.type === 'mc-word-bank' || q.type === 'short-answer')) {
+      setTimeout(() => {
+        setChecked(prev => ({ ...prev, [qId]: true }));
+      }, 300);
+    }
+  };
+
+  // 確認答案（用於配對、排序、看圖判斷、分類題）
+  const handleConfirm = (qId: number) => {
+    setChecked(prev => ({ ...prev, [qId]: true }));
   };
 
   const handleReveal = (qId: number) => {
@@ -231,12 +239,14 @@ export default function TryGPPage() {
   // 渲染看圖判斷題 (Q27, Q28)
   const renderImageTrueFalse = (q: Question) => {
     if (!q.options || !q.images) return null;
+    const currentAnswers = (answers[q.id] as string[]) || [];
+    const isAllAnswered = currentAnswers.length === 4 && currentAnswers.every(a => a);
     
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {q.options.map((opt, idx) => {
-            const userAnswer = (answers[q.id] as string[])?.[idx];
+            const userAnswer = currentAnswers?.[idx];
             const correctAnswer = (q.answer as string[])[idx];
             const isCorrect = userAnswer === correctAnswer;
             
@@ -250,15 +260,14 @@ export default function TryGPPage() {
                   <button
                     onClick={() => {
                       if (checked[q.id]) return;
-                      const current = (answers[q.id] as string[]) || [];
-                      const newAnswers = [...current];
+                      const newAnswers = [...currentAnswers];
                       newAnswers[idx] = '✓';
                       handleAnswer(q.id, newAnswers);
                     }}
                     disabled={checked[q.id]}
                     className={`flex-1 py-2 rounded-lg font-bold ${
                       userAnswer === '✓'
-                        ? isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                        ? checked[q.id] ? (isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white') : 'bg-blue-500 text-white'
                         : checked[q.id] && correctAnswer === '✓' ? 'bg-green-200 text-green-800' : 'bg-gray-100 hover:bg-green-100'
                     }`}
                   >
@@ -267,15 +276,14 @@ export default function TryGPPage() {
                   <button
                     onClick={() => {
                       if (checked[q.id]) return;
-                      const current = (answers[q.id] as string[]) || [];
-                      const newAnswers = [...current];
+                      const newAnswers = [...currentAnswers];
                       newAnswers[idx] = '✗';
                       handleAnswer(q.id, newAnswers);
                     }}
                     disabled={checked[q.id]}
                     className={`flex-1 py-2 rounded-lg font-bold ${
                       userAnswer === '✗'
-                        ? isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                        ? checked[q.id] ? (isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white') : 'bg-blue-500 text-white'
                         : checked[q.id] && correctAnswer === '✗' ? 'bg-green-200 text-green-800' : 'bg-gray-100 hover:bg-red-100'
                     }`}
                   >
@@ -286,6 +294,16 @@ export default function TryGPPage() {
             );
           })}
         </div>
+        
+        {/* 確認答案按鈕 */}
+        {!checked[q.id] && isAllAnswered && (
+          <button
+            onClick={() => handleConfirm(q.id)}
+            className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold shadow-lg"
+          >
+            ✅ 確認答案
+          </button>
+        )}
       </div>
     );
   };
@@ -296,6 +314,20 @@ export default function TryGPPage() {
     
     return (
       <div className="space-y-4">
+        {/* 圖片（如果有） */}
+        {q.images && q.imageLabels && (
+          <div className="flex flex-col sm:flex-row gap-4">
+            {q.images.map((img, idx) => (
+              <div key={idx} className="flex-1 bg-white rounded-xl p-3 shadow-sm">
+                <div className="text-center font-bold text-gray-600 mb-2 text-sm">{q.imageLabels?.[idx]}</div>
+                <div className="relative w-full" style={{ aspectRatio: '4/3' }}>
+                  <Image src={img} alt={q.imageLabels?.[idx] || ''} fill className="object-contain" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
         {q.hint && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
             <p className="text-sm text-yellow-700">💡 提示：{q.hint}</p>
@@ -429,6 +461,16 @@ export default function TryGPPage() {
           </div>
         </div>
         
+        {/* 確認答案按鈕 */}
+        {!checked[q.id] && isComplete && (
+          <button
+            onClick={() => handleConfirm(q.id)}
+            className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold shadow-lg"
+          >
+            ✅ 確認答案
+          </button>
+        )}
+        
         {/* 重置按 */}
         {!checked[q.id] && (
           <button
@@ -531,6 +573,16 @@ export default function TryGPPage() {
             </div>
           </div>
         </div>
+        
+        {/* 確認答案按鈕 */}
+        {!checked[q.id] && (yesSelected.length + noSelected.length) === 4 && (
+          <button
+            onClick={() => handleConfirm(q.id)}
+            className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold shadow-lg"
+          >
+            ✅ 確認答案
+          </button>
+        )}
       </div>
     );
   };
@@ -622,6 +674,16 @@ export default function TryGPPage() {
             })}
           </div>
         </div>
+        
+        {/* 確認答案按鈕 */}
+        {!checked[q.id] && currentMatches.length === 2 && currentMatches.every(m => m) && (
+          <button
+            onClick={() => handleConfirm(q.id)}
+            className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold shadow-lg"
+          >
+            ✅ 確認答案
+          </button>
+        )}
         
         {/* 重置按 */}
         {!checked[q.id] && (
@@ -722,6 +784,16 @@ export default function TryGPPage() {
               ))}
             </div>
           </div>
+        )}
+        
+        {/* 確認答案按鈕 */}
+        {!checked[q.id] && remainingOptions.length === 0 && currentOrder.length > 0 && (
+          <button
+            onClick={() => handleConfirm(q.id)}
+            className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold shadow-lg"
+          >
+            ✅ 確認答案
+          </button>
         )}
         
         {/* 重置按 */}
