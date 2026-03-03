@@ -3,7 +3,7 @@
  * General Practice (GP) Questions - P2 Second Term Exam
  */
 
-export type QuestionType = 'mc-word-bank' | 'mc' | 'fill-table' | 'short-answer' | 'matching' | 'image-true-false' | 'classify' | 'experiment';
+export type QuestionType = 'mc-word-bank' | 'mc' | 'short-answer' | 'matching' | 'matching-toy' | 'image-true-false' | 'classify' | 'experiment' | 'ordering';
 
 export interface Option {
   label: string;
@@ -311,7 +311,7 @@ export const allQuestions: Question[] = [
     hint: '幫助有需要的人的機構',
   },
   
-  // ===== 配對題（同一個畫面）=====
+  // ===== 配對題 I（科學家）=====
   {
     id: 23,
     type: 'matching',
@@ -324,6 +324,50 @@ export const allQuestions: Question[] = [
       { label: '蔡倫', text: '' },
     ],
     answer: ['D', 'C', 'E', 'A', 'B'],
+  },
+  
+  // ===== 配對題 II（玩具同電池）=====
+  {
+    id: 24,
+    type: 'matching-toy',
+    question: '【配對題 II】把以下玩具和電池配對（答案不可重複使用）',
+    images: ['/images/gp/gp_q24_toy_a.png', '/images/gp/gp_q24_toy_b.png'],
+    imageLabels: ['玩具 A', '玩具 B'],
+    options: [
+      { label: 'A', text: 'AAA 乾電池' },
+      { label: 'B', text: '鋰離子電池' },
+      { label: 'C', text: '鈕型乾電池' },
+    ],
+    answer: ['A', 'C'],
+  },
+  
+  // ===== 排序題（升旗禮程序）=====
+  {
+    id: 25,
+    type: 'ordering',
+    question: '【排序題】根據學校升旗禮的程序，順序排列。',
+    options: [
+      { label: 'A', text: '全體肅立' },
+      { label: 'B', text: '升國旗、奏唱國歌' },
+      { label: 'C', text: '升旗隊進場' },
+      { label: 'D', text: '升旗隊離場' },
+      { label: 'E', text: '國旗下講話' },
+    ],
+    answer: ['A', 'C', 'B', 'E', 'D'],
+  },
+  
+  // ===== 排序題（歷史事件）=====
+  {
+    id: 26,
+    type: 'ordering',
+    question: '【排序題】按以下歷史事件發展的先後次序排列出來。',
+    options: [
+      { label: 'A', text: '人們主要在洞穴裏群居生活' },
+      { label: 'B', text: '秦始皇修築萬里長城' },
+      { label: 'C', text: '夏朝建立' },
+      { label: 'D', text: '不同的部落在河流附近居住' },
+    ],
+    answer: ['A', 'D', 'C', 'B'],
   },
   
   // ===== 看圖判斷題 =====

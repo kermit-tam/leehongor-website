@@ -26,6 +26,8 @@ export default function TryGPPage() {
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [selectedScientist, setSelectedScientist] = useState<number | null>(null);
+  const [selectedToy, setSelectedToy] = useState<number | null>(null);
+  const [orderingSequence, setOrderingSequence] = useState<number[]>([]);
 
   const question = allQuestions[currentQ];
   const totalQuestions = allQuestions.length;
@@ -72,6 +74,8 @@ export default function TryGPPage() {
     setShowResult(false);
     setScore(0);
     setSelectedScientist(null);
+    setSelectedToy(null);
+    setOrderingSequence([]);
   };
 
   // 讀卷功能
@@ -531,6 +535,208 @@ export default function TryGPPage() {
     );
   };
 
+  // 渲染玩具配對題 (Q24)
+  const renderMatchingToy = (q: Question) => {
+    const currentMatches = (answers[q.id] as string[]) || [];
+    const batteryOptions = [
+      { label: 'A', text: 'AAA 乾電池' },
+      { label: 'B', text: '鋰離子電池' },
+      { label: 'C', text: '鈕型乾電池' },
+    ];
+    
+    const handleToyClick = (idx: number) => {
+      if (checked[q.id]) return;
+      setSelectedToy(idx);
+    };
+    
+    const handleBatteryClick = (label: string) => {
+      if (checked[q.id] || selectedToy === null) return;
+      
+      const newMatches = [...currentMatches];
+      newMatches[selectedToy] = label;
+      handleAnswer(q.id, newMatches);
+      setSelectedToy(null);
+    };
+    
+    return (
+      <div className="space-y-4">
+        {/* 提示 */}
+        <p className="text-sm text-gray-500">
+          {selectedToy === null ? '請先點擊左邊的玩具，再點擊右邊的電池類型' : `正在為「玩具${String.fromCharCode(65 + selectedToy)}」選擇電池`}
+        </p>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {/* 左邊：玩具圖片 */}
+          <div className="space-y-3">
+            <p className="font-bold text-gray-700 mb-2">玩具</p>
+            {q.images?.map((img, idx) => {
+              const match = currentMatches[idx];
+              const isSelected = selectedToy === idx;
+              const toyLabel = String.fromCharCode(65 + idx); // A, B
+              
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleToyClick(idx)}
+                  disabled={checked[q.id] || !!match}
+                  className={`w-full bg-white rounded-lg p-3 shadow-sm transition-all ${
+                    isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                  } ${checked[q.id] ? 'cursor-not-allowed' : ''} ${match ? 'opacity-70' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-20 h-20">
+                      <Image src={img} alt={`玩具${toyLabel}`} fill className="object-contain" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <span className="font-bold text-gray-600">玩具 {toyLabel}</span>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm ${
+                      match ? (match === (q.answer as string[])[idx] ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700') : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {match || '?'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          
+          {/* 右邊：電池選項 */}
+          <div className="space-y-2">
+            <p className="font-bold text-gray-700 mb-2">電池類型</p>
+            {batteryOptions.map(opt => {
+              const isUsed = currentMatches.includes(opt.label);
+              
+              return (
+                <button
+                  key={opt.label}
+                  onClick={() => handleBatteryClick(opt.label)}
+                  disabled={checked[q.id] || isUsed || selectedToy === null}
+                  className={`w-full rounded-lg p-3 shadow-sm text-left transition-all ${
+                    isUsed ? 'bg-gray-100 opacity-50' : selectedToy !== null ? 'bg-white hover:bg-blue-50' : 'bg-white opacity-70'
+                  } ${checked[q.id] ? 'cursor-not-allowed' : ''}`}
+                >
+                  <span className="font-bold">{opt.label}.</span> {opt.text}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* 重置按 */}
+        {!checked[q.id] && (
+          <button
+            onClick={() => {
+              handleAnswer(q.id, []);
+              setSelectedToy(null);
+            }}
+            className="w-full py-2 text-sm text-gray-500 hover:text-gray-700"
+          >
+            重新配對
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // 渲染排序題 (Q25, Q26)
+  const renderOrdering = (q: Question) => {
+    const currentOrder = (answers[q.id] as string[]) || [];
+    const allOptions = q.options || [];
+    const correctOrder = q.answer as string[];
+    
+    // 將答案轉換為選項對象
+    const orderedOptions = currentOrder.map(label => allOptions.find(o => o.label === label)).filter(Boolean);
+    const remainingOptions = allOptions.filter(opt => !currentOrder.includes(opt.label));
+    
+    const handleOptionClick = (label: string) => {
+      if (checked[q.id]) return;
+      
+      const newOrder = [...currentOrder, label];
+      handleAnswer(q.id, newOrder);
+    };
+    
+    const handleRemove = (index: number) => {
+      if (checked[q.id]) return;
+      
+      const newOrder = currentOrder.filter((_, i) => i !== index);
+      handleAnswer(q.id, newOrder);
+    };
+    
+    return (
+      <div className="space-y-4">
+        {/* 排序結果區域 */}
+        <div className="bg-blue-50 rounded-xl p-4">
+          <p className="font-bold text-blue-700 mb-3">排序（先後次序）：</p>
+          <div className="space-y-2 min-h-[60px]">
+            {orderedOptions.length === 0 ? (
+              <p className="text-gray-400 text-sm">請點擊下方選項加入排序</p>
+            ) : (
+              orderedOptions.map((opt, idx) => {
+                const isCorrect = !checked[q.id] || correctOrder[idx] === opt?.label;
+                
+                return (
+                  <div 
+                    key={`${opt?.label}-${idx}`}
+                    className={`flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm ${
+                      checked[q.id] ? (isCorrect ? 'border-2 border-green-400' : 'border-2 border-red-400') : ''
+                    }`}
+                  >
+                    <span className="bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="flex-1">{opt?.label}. {opt?.text}</span>
+                    {!checked[q.id] && (
+                      <button
+                        onClick={() => handleRemove(idx)}
+                        className="text-red-400 hover:text-red-600 px-2"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    {checked[q.id] && (
+                      <span className={`text-sm ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                        {isCorrect ? '✓' : `應為 ${correctOrder[idx]}`}
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+        
+        {/* 待選選項 */}
+        {remainingOptions.length > 0 && !checked[q.id] && (
+          <div className="space-y-2">
+            <p className="font-bold text-gray-700">請選擇：</p>
+            <div className="grid grid-cols-1 gap-2">
+              {remainingOptions.map(opt => (
+                <button
+                  key={opt.label}
+                  onClick={() => handleOptionClick(opt.label)}
+                  className="bg-white rounded-lg p-3 shadow-sm text-left hover:bg-blue-50 transition-all"
+                >
+                  <span className="font-bold">{opt.label}.</span> {opt.text}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* 重置按 */}
+        {!checked[q.id] && currentOrder.length > 0 && (
+          <button
+            onClick={() => handleAnswer(q.id, [])}
+            className="w-full py-2 text-sm text-gray-500 hover:text-gray-700"
+          >
+            重新排序
+          </button>
+        )}
+      </div>
+    );
+  };
+
   // 渲染題目
   const renderQuestion = (q: Question) => {
     switch (q.type) {
@@ -545,6 +751,10 @@ export default function TryGPPage() {
         return renderShortAnswer(q);
       case 'matching':
         return renderMatching(q);
+      case 'matching-toy':
+        return renderMatchingToy(q);
+      case 'ordering':
+        return renderOrdering(q);
       case 'classify':
         return renderClassify(q);
       default:
@@ -634,7 +844,7 @@ export default function TryGPPage() {
             className="bg-white rounded-3xl p-6 shadow-xl mb-6"
           >
             {/* 供詞填充題顯示詞庫 */}
-            {question.wordBank && question.type !== 'fill-table' && (
+            {question.wordBank && (
               <div className="bg-blue-50 rounded-xl p-3 mb-4">
                 <p className="text-sm text-blue-700 font-bold mb-2">詞庫：</p>
                 <div className="flex flex-wrap gap-2">
@@ -676,6 +886,8 @@ export default function TryGPPage() {
             onClick={() => {
               setCurrentQ(Math.max(0, currentQ - 1));
               setSelectedScientist(null);
+              setSelectedToy(null);
+              setOrderingSequence([]);
             }}
             disabled={currentQ === 0}
             className="px-6 py-3 bg-white rounded-xl font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -688,6 +900,8 @@ export default function TryGPPage() {
               onClick={() => {
                 setCurrentQ(currentQ + 1);
                 setSelectedScientist(null);
+                setSelectedToy(null);
+                setOrderingSequence([]);
               }}
               className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl font-bold shadow-lg"
             >
@@ -713,6 +927,8 @@ export default function TryGPPage() {
                 onClick={() => {
                   setCurrentQ(idx);
                   setSelectedScientist(null);
+                  setSelectedToy(null);
+                  setOrderingSequence([]);
                 }}
                 className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
                   currentQ === idx
