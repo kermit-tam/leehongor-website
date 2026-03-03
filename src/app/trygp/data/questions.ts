@@ -284,71 +284,19 @@ export const allQuestions: Question[] = [
     hint: '幫助有需要的人的機構',
   },
   
-  // ===== 配對題（分拆為多題MC）=====
+  // ===== 配對題（同一個畫面）=====
   {
-    id: 231,
-    type: 'mc',
-    question: '【配對題】萊特兄弟',
+    id: 23,
+    type: 'matching',
+    question: '【配對題】把以下的科學家和他們的發明或貢獻配對（答案不可重複使用）',
     options: [
-      { label: 'A', text: '發明電燈泡' },
-      { label: 'B', text: '改良造紙方法' },
-      { label: 'C', text: '發明活字印刷術' },
-      { label: 'D', text: '發明了飛機' },
-      { label: 'E', text: '通過實驗驗證或革新多個不同理論，推動科學發展' },
+      { label: '萊特兄弟', text: '' },
+      { label: '畢昇', text: '' },
+      { label: '伽利略', text: '' },
+      { label: '愛迪生', text: '' },
+      { label: '蔡倫', text: '' },
     ],
-    answer: 'D',
-  },
-  {
-    id: 232,
-    type: 'mc',
-    question: '【配對題】畢昇',
-    options: [
-      { label: 'A', text: '發明電燈泡' },
-      { label: 'B', text: '改良造紙方法' },
-      { label: 'C', text: '發明活字印刷術' },
-      { label: 'D', text: '發明了飛機' },
-      { label: 'E', text: '通過實驗驗證或革新多個不同理論，推動科學發展' },
-    ],
-    answer: 'C',
-  },
-  {
-    id: 233,
-    type: 'mc',
-    question: '【配對題】伽利略',
-    options: [
-      { label: 'A', text: '發明電燈泡' },
-      { label: 'B', text: '改良造紙方法' },
-      { label: 'C', text: '發明活字印刷術' },
-      { label: 'D', text: '發明了飛機' },
-      { label: 'E', text: '通過實驗驗證或革新多個不同理論，推動科學發展' },
-    ],
-    answer: 'E',
-  },
-  {
-    id: 234,
-    type: 'mc',
-    question: '【配對題】愛迪生',
-    options: [
-      { label: 'A', text: '發明電燈泡' },
-      { label: 'B', text: '改良造紙方法' },
-      { label: 'C', text: '發明活字印刷術' },
-      { label: 'D', text: '發明了飛機' },
-      { label: 'E', text: '通過實驗驗證或革新多個不同理論，推動科學發展' },
-    ],
-    answer: 'A',
-  },
-  {
-    id: 235,
-    type: 'mc',
-    question: '【配對題】蔡倫',
-    options: [
-      { label: 'A', text: '發明電燈泡' },
-      { label: 'B', text: '改良造紙方法' },
-      { label: 'C', text: '發明活字印刷術' },
-      { label: 'D', text: '發明了飛機' },
-      { label: 'E', text: '通過實驗驗證或革新多個不同理論，推動科學發展' },
-    ],
-    answer: 'B',
+    answer: ['D', 'C', 'E', 'A', 'B'],
   },
   
   // ===== 看圖判斷題 =====
@@ -392,15 +340,16 @@ export const allQuestions: Question[] = [
       { label: 'C', text: '輕言放棄' },
       { label: 'D', text: '具探究精神' },
     ],
-    answer: ['應有：A、D', '不應有：B、C'],
+    answer: ['AD', 'BC'],
   },
   
   // ===== 實驗題 =====
   {
     id: 30,
-    type: 'mc',
-    question: '【實驗題】以下哪一項是實驗中要測試的項目？',
+    type: 'experiment',
+    question: '【實驗題】根據以下實驗回答問題',
     images: ['/images/gp/gp_exp_a.png', '/images/gp/gp_exp_b.png'],
+    imageLabels: ['實驗一：玩具車A', '實驗二：玩具車B'],
     options: [
       { label: 'A', text: '桌子的斜度' },
       { label: 'B', text: '玩具車的大小' },

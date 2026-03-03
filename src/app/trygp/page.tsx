@@ -62,8 +62,8 @@ export default function TryGPPage() {
   const renderMCOptions = (q: Question) => {
     if (!q.options) return null;
     
-    // 有圖片的MC題
-    if (q.images && q.imageLabels) {
+    // 有圖片的MC題 (Q15)
+    if (q.images && q.imageLabels && q.images.length === 4) {
       return (
         <div className="space-y-4">
           {/* 圖片網格 */}
@@ -117,7 +117,50 @@ export default function TryGPPage() {
     );
   };
 
-  // 渲染看圖判斷題
+  // 渲染實驗題 (Q30)
+  const renderExperiment = (q: Question) => {
+    if (!q.options) return null;
+    
+    return (
+      <div className="space-y-4">
+        {/* 實驗圖片 - 橫向排列 */}
+        {q.images && q.imageLabels && (
+          <div className="flex gap-4">
+            {q.images.map((img, idx) => (
+              <div key={idx} className="flex-1 bg-white rounded-xl p-3 shadow-sm">
+                <div className="text-center font-bold text-gray-600 mb-2 text-sm">{q.imageLabels?.[idx]}</div>
+                <div className="relative h-40 w-full">
+                  <Image src={img} alt={q.imageLabels?.[idx] || ''} fill className="object-contain" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* 問題 */}
+        <p className="font-bold text-gray-700">以下哪一項是實驗中要測試的項目？</p>
+        
+        {/* 選項 */}
+        <div className="space-y-3">
+          {q.options.map(opt => (
+            <button
+              key={opt.label}
+              onClick={() => handleAnswer(q.id, opt.label)}
+              className={`w-full p-4 rounded-xl text-left transition-all ${
+                answers[q.id] === opt.label
+                  ? 'bg-green-500 text-white shadow-lg'
+                  : 'bg-white hover:bg-green-50 shadow-sm'
+              }`}
+            >
+              <span className="font-bold">{opt.label}.</span> {opt.text}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染看圖判斷題 (Q27, Q28)
   const renderImageTrueFalse = (q: Question) => {
     if (!q.options || !q.images) return null;
     
@@ -220,7 +263,7 @@ export default function TryGPPage() {
     );
   };
 
-  // 渲染填表題
+  // 渲染填表題 (Q16) - 橫向顯示
   const renderFillTable = (q: Question) => {
     if (!q.options) return null;
     const currentAnswers = (answers[q.id] as string[]) || [];
@@ -239,15 +282,15 @@ export default function TryGPPage() {
           </div>
         )}
         
-        {/* 表格 */}
-        <div className="space-y-3">
-          {q.options.map((opt, idx) => (
-            <div key={opt.label} className="bg-white rounded-xl p-4 shadow-sm">
-              <div className="flex items-center gap-3">
-                <span className="font-bold text-gray-600 w-16">{opt.label}</span>
-                <div className="flex-1 flex items-center gap-2 flex-wrap">
+        {/* 橫向表格 */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="grid grid-cols-3 divide-x divide-gray-200">
+            {q.options.map((opt, idx) => (
+              <div key={opt.label} className="p-4">
+                <div className="font-bold text-gray-700 mb-3 text-center">{opt.label}</div>
+                <div className="text-sm text-gray-600 mb-3 min-h-[60px]">
                   {opt.text.split('______').map((part, partIdx) => (
-                    <span key={partIdx} className="flex items-center gap-2">
+                    <span key={partIdx}>
                       {part}
                       {partIdx < opt.text.split('______').length - 1 && (
                         <select
@@ -257,7 +300,7 @@ export default function TryGPPage() {
                             newAnswers[idx] = e.target.value;
                             handleAnswer(q.id, newAnswers);
                           }}
-                          className="bg-yellow-50 border-2 border-yellow-300 rounded-lg px-3 py-1 text-sm"
+                          className="bg-yellow-50 border-2 border-yellow-300 rounded px-2 py-1 text-sm mx-1"
                         >
                           <option value="">請選擇</option>
                           {q.wordBank?.map(word => (
@@ -269,18 +312,85 @@ export default function TryGPPage() {
                   ))}
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     );
   };
 
-  // 渲染分類題
+  // 渲染配對題 (Q23) - 同一個畫面
+  const renderMatching = (q: Question) => {
+    const currentMatches = (answers[q.id] as string[]) || [];
+    const scientistsList = ['萊特兄弟', '畢昇', '伽利略', '愛迪生', '蔡倫'];
+    const optionsList = [
+      { label: 'A', text: '發明電燈泡' },
+      { label: 'B', text: '改良造紙方法' },
+      { label: 'C', text: '發明活字印刷術' },
+      { label: 'D', text: '發明了飛機' },
+      { label: 'E', text: '通過實驗驗證或革新多個不同理論，推動科學發展' },
+    ];
+    
+    return (
+      <div className="space-y-4">
+        {/* 提示 */}
+        <p className="text-sm text-gray-500">點擊科學家，再點擊對應的發明進行配對</p>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {/* 左邊：科學家 */}
+          <div className="space-y-2">
+            <p className="font-bold text-gray-700 mb-2">科學家</p>
+            {scientistsList.map((name, idx) => (
+              <div key={name} className="bg-white rounded-lg p-3 shadow-sm flex items-center gap-2">
+                <span className="font-bold text-gray-600 w-20">{name}</span>
+                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm min-w-[40px] text-center">
+                  {currentMatches[idx] || '?'}
+                </span>
+              </div>
+            ))}
+          </div>
+          
+          {/* 右邊：發明 */}
+          <div className="space-y-2">
+            <p className="font-bold text-gray-700 mb-2">發明或貢獻</p>
+            {optionsList.map(opt => (
+              <button
+                key={opt.label}
+                onClick={() => {
+                  // 找到當前選中的科學家索引（第一個未配對的）
+                  const firstEmptyIdx = currentMatches.findIndex(m => !m);
+                  const targetIdx = firstEmptyIdx === -1 ? currentMatches.length : firstEmptyIdx;
+                  
+                  if (targetIdx < 5) {
+                    const newMatches = [...currentMatches];
+                    newMatches[targetIdx] = opt.label;
+                    handleAnswer(q.id, newMatches);
+                  }
+                }}
+                className={`w-full bg-white rounded-lg p-3 shadow-sm text-left text-sm hover:bg-green-50 transition-all ${
+                  currentMatches.includes(opt.label) ? 'opacity-50' : ''
+                }`}
+              >
+                <span className="font-bold">{opt.label}.</span> {opt.text}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* 重置按 */}
+        <button
+          onClick={() => handleAnswer(q.id, [])}
+          className="w-full py-2 text-sm text-gray-500 hover:text-gray-700"
+        >
+          重新配對
+        </button>
+      </div>
+    );
+  };
+
+  // 渲染分類題 (Q29)
   const renderClassify = (q: Question) => {
     if (!q.options) return null;
-    const selectedYes = (answers[q.id] as string[])?.filter((_, i) => i < 2) || [];
-    const selectedNo = (answers[q.id] as string[])?.filter((_, i) => i >= 2) || [];
     
     return (
       <div className="space-y-4">
@@ -288,21 +398,23 @@ export default function TryGPPage() {
           {/* 應有 */}
           <div className="bg-green-50 rounded-xl p-4">
             <p className="font-bold text-green-700 mb-3">✅ 應有的條件</p>
-            <div className="space-y-2 min-h-[100px] border-2 border-dashed border-green-300 rounded-lg p-2">
+            <div className="space-y-2">
               {q.options.map(opt => (
                 <button
                   key={opt.label}
                   onClick={() => {
-                    const current = (answers[q.id] as string[]) || [];
-                    const idx = current.indexOf(opt.label);
-                    if (idx > -1) {
-                      handleAnswer(q.id, current.filter((_, i) => i !== idx));
+                    const current = (answers[q.id] as string) || '';
+                    let selected = current.split('|')[0] || '';
+                    if (selected.includes(opt.label)) {
+                      selected = selected.replace(opt.label, '').replace(/,/g, ',').replace(/^,|,$/g, '');
                     } else {
-                      handleAnswer(q.id, [...current, opt.label]);
+                      selected = selected ? selected + ',' + opt.label : opt.label;
                     }
+                    const notSelected = ((answers[q.id] as string) || '').split('|')[1] || '';
+                    handleAnswer(q.id, selected + '|' + notSelected);
                   }}
                   className={`w-full p-2 rounded-lg text-sm text-left transition-all ${
-                    ((answers[q.id] as string[]) || []).includes(opt.label)
+                    ((answers[q.id] as string) || '').split('|')[0]?.includes(opt.label)
                       ? 'bg-green-500 text-white'
                       : 'bg-white hover:bg-green-100'
                   }`}
@@ -316,40 +428,31 @@ export default function TryGPPage() {
           {/* 不應有 */}
           <div className="bg-red-50 rounded-xl p-4">
             <p className="font-bold text-red-700 mb-3">❌ 不應有的態度</p>
-            <div className="space-y-2 min-h-[100px] border-2 border-dashed border-red-300 rounded-lg p-2">
-              {/* 暫時共用選擇，實際應該分開 */}
+            <div className="space-y-2">
+              {q.options.map(opt => (
+                <button
+                  key={opt.label}
+                  onClick={() => {
+                    const current = (answers[q.id] as string) || '';
+                    const selected = current.split('|')[0] || '';
+                    let notSelected = current.split('|')[1] || '';
+                    if (notSelected.includes(opt.label)) {
+                      notSelected = notSelected.replace(opt.label, '').replace(/,/g, ',').replace(/^,|,$/g, '');
+                    } else {
+                      notSelected = notSelected ? notSelected + ',' + opt.label : opt.label;
+                    }
+                    handleAnswer(q.id, selected + '|' + notSelected);
+                  }}
+                  className={`w-full p-2 rounded-lg text-sm text-left transition-all ${
+                    ((answers[q.id] as string) || '').split('|')[1]?.includes(opt.label)
+                      ? 'bg-red-500 text-white'
+                      : 'bg-white hover:bg-red-100'
+                  }`}
+                >
+                  {opt.label}. {opt.text}
+                </button>
+              ))}
             </div>
-          </div>
-        </div>
-        
-        {/* 簡化為MC形式 */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="font-bold text-gray-700 mb-3">請選擇正確答案：</p>
-          <div className="space-y-2">
-            <button
-              onClick={() => handleAnswer(q.id, 'AD-BC')}
-              className={`w-full p-3 rounded-lg text-left ${
-                answers[q.id] === 'AD-BC' ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-green-100'
-              }`}
-            >
-              A. 應有：A、D；不應有：B、C
-            </button>
-            <button
-              onClick={() => handleAnswer(q.id, 'AB-CD')}
-              className={`w-full p-3 rounded-lg text-left ${
-                answers[q.id] === 'AB-CD' ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-green-100'
-              }`}
-            >
-              B. 應有：A、B；不應有：C、D
-            </button>
-            <button
-              onClick={() => handleAnswer(q.id, 'BC-AD')}
-              className={`w-full p-3 rounded-lg text-left ${
-                answers[q.id] === 'BC-AD' ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-green-100'
-              }`}
-            >
-              C. 應有：B、C；不應有：A、D
-            </button>
           </div>
         </div>
       </div>
@@ -362,12 +465,16 @@ export default function TryGPPage() {
       case 'mc':
       case 'mc-word-bank':
         return renderMCOptions(q);
+      case 'experiment':
+        return renderExperiment(q);
       case 'image-true-false':
         return renderImageTrueFalse(q);
       case 'short-answer':
         return renderShortAnswer(q);
       case 'fill-table':
         return renderFillTable(q);
+      case 'matching':
+        return renderMatching(q);
       case 'classify':
         return renderClassify(q);
       default:
@@ -472,17 +579,6 @@ export default function TryGPPage() {
             <h2 className="text-xl font-bold text-gray-800 mb-6 leading-relaxed">
               {question.question}
             </h2>
-            
-            {/* 實驗題圖片 */}
-            {question.images && question.type === 'mc' && (
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                {question.images.map((img, idx) => (
-                  <div key={idx} className="relative h-40 w-full bg-gray-50 rounded-xl overflow-hidden">
-                    <Image src={img} alt={`實驗圖 ${idx + 1}`} fill className="object-contain" />
-                  </div>
-                ))}
-              </div>
-            )}
             
             {/* 答案區域 */}
             {renderQuestion(question)}
