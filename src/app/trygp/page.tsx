@@ -86,13 +86,25 @@ export default function TryGPPage() {
     setOrderingSequence([]);
   };
 
-  // 讀卷功能
+  // 讀卷功能 - 把填空位讀成「乜乜」
   const readQuestion = (q: Question) => {
     if ('speechSynthesis' in window) {
-      // 取消之前的朗讀
       window.speechSynthesis.cancel();
       
-      const text = q.question;
+      // 將 ___ 或 ______ 替換成「乜乜」
+      const text = q.question.replace(/_{2,}/g, '乜乜');
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-HK';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // 讀答案功能
+  const readAnswer = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'zh-HK';
       utterance.rate = 0.9;
@@ -167,6 +179,24 @@ export default function TryGPPage() {
               </button>
             ))}
           </div>
+          
+          {/* 讀答案按鈕 */}
+          {answers[q.id] && !Array.isArray(answers[q.id]) && (
+            <button
+              onClick={() => {
+                const selectedOption = q.options?.find(o => o.label === answers[q.id]);
+                if (selectedOption) {
+                  readAnswer(selectedOption.text);
+                }
+              }}
+              className="w-full py-3 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+              讀答案：{q.options?.find(o => o.label === answers[q.id])?.text}
+            </button>
+          )}
         </div>
       );
     }
@@ -188,6 +218,24 @@ export default function TryGPPage() {
             <span className="font-bold">{opt.label}.</span> {opt.text}
           </button>
         ))}
+        
+        {/* 讀答案按鈕 */}
+        {answers[q.id] && !Array.isArray(answers[q.id]) && (
+          <button
+            onClick={() => {
+              const selectedOption = q.options?.find(o => o.label === answers[q.id]);
+              if (selectedOption) {
+                readAnswer(selectedOption.text);
+              }
+            }}
+            className="w-full py-3 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            </svg>
+            讀答案：{q.options?.find(o => o.label === answers[q.id])?.text}
+          </button>
+        )}
       </div>
     );
   };
