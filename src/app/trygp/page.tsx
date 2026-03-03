@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { CEMNavbar } from '@/components/cem-navbar';
@@ -14,18 +14,28 @@ type RevealedState = {
   [key: number]: boolean;
 };
 
+type CheckedState = {
+  [key: number]: boolean;
+};
+
 export default function TryGPPage() {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<AnswerState>({});
   const [revealed, setRevealed] = useState<RevealedState>({});
+  const [checked, setChecked] = useState<CheckedState>({});
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
+  const [selectedScientist, setSelectedScientist] = useState<number | null>(null);
 
   const question = allQuestions[currentQ];
   const totalQuestions = allQuestions.length;
 
   const handleAnswer = (qId: number, answer: string | string[]) => {
     setAnswers(prev => ({ ...prev, [qId]: answer }));
+    // 自動檢查答案
+    setTimeout(() => {
+      setChecked(prev => ({ ...prev, [qId]: true }));
+    }, 300);
   };
 
   const handleReveal = (qId: number) => {
@@ -35,8 +45,12 @@ export default function TryGPPage() {
   const checkAnswer = (q: Question, userAnswer: string | string[] | undefined): boolean => {
     if (!userAnswer) return false;
     if (Array.isArray(q.answer)) {
-      return Array.isArray(userAnswer) && 
-        q.answer.every((ans, i) => userAnswer[i] === ans);
+      if (!Array.isArray(userAnswer)) return false;
+      // 配對題和看圖判斷題
+      if (q.type === 'image-true-false') {
+        return q.answer.every((ans, i) => userAnswer[i] === ans);
+      }
+      return q.answer.every((ans, i) => userAnswer[i] === ans);
     }
     return userAnswer === q.answer;
   };
@@ -54,8 +68,55 @@ export default function TryGPPage() {
     setCurrentQ(0);
     setAnswers({});
     setRevealed({});
+    setChecked({});
     setShowResult(false);
     setScore(0);
+    setSelectedScientist(null);
+  };
+
+  // 讀卷功能
+  const readQuestion = (q: Question) => {
+    if ('speechSynthesis' in window) {
+      // 取消之前的朗讀
+      window.speechSynthesis.cancel();
+      
+      const text = q.question;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-HK';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // 顯示答案狀態
+  const renderAnswerStatus = (q: Question) => {
+    if (!checked[q.id]) return null;
+    
+    const isCorrect = checkAnswer(q, answers[q.id]);
+    if (isCorrect) {
+      return (
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="bg-green-100 border-2 border-green-500 rounded-xl p-3 mb-4 text-center"
+        >
+          <span className="text-2xl">✅</span>
+          <p className="font-bold text-green-700">答對了！</p>
+        </motion.div>
+      );
+    } else {
+      return (
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="bg-red-100 border-2 border-red-500 rounded-xl p-3 mb-4 text-center"
+        >
+          <span className="text-2xl">❌</span>
+          <p className="font-bold text-red-700">答錯了</p>
+          <p className="text-sm text-red-600">正確答案：{Array.isArray(q.answer) ? q.answer.join(', ') : q.answer}</p>
+        </motion.div>
+      );
+    }
   };
 
   // 渲染MC選項
@@ -82,12 +143,13 @@ export default function TryGPPage() {
             {q.options.map(opt => (
               <button
                 key={opt.label}
-                onClick={() => handleAnswer(q.id, opt.label)}
+                onClick={() => !checked[q.id] && handleAnswer(q.id, opt.label)}
+                disabled={checked[q.id]}
                 className={`p-4 rounded-xl text-left transition-all ${
                   answers[q.id] === opt.label
-                    ? 'bg-green-500 text-white shadow-lg'
-                    : 'bg-white hover:bg-green-50 shadow-sm'
-                }`}
+                    ? checkAnswer(q, opt.label) ? 'bg-green-500 text-white shadow-lg' : 'bg-red-500 text-white shadow-lg'
+                    : checked[q.id] && q.answer === opt.label ? 'bg-green-200 text-green-800' : 'bg-white hover:bg-green-50 shadow-sm'
+                } ${checked[q.id] ? 'cursor-not-allowed opacity-70' : ''}`}
               >
                 <span className="font-bold">{opt.label}.</span> {opt.text}
               </button>
@@ -103,12 +165,13 @@ export default function TryGPPage() {
         {q.options.map(opt => (
           <button
             key={opt.label}
-            onClick={() => handleAnswer(q.id, opt.label)}
+            onClick={() => !checked[q.id] && handleAnswer(q.id, opt.label)}
+            disabled={checked[q.id]}
             className={`w-full p-4 rounded-xl text-left transition-all ${
               answers[q.id] === opt.label
-                ? 'bg-green-500 text-white shadow-lg'
-                : 'bg-white hover:bg-green-50 shadow-sm'
-            }`}
+                ? checkAnswer(q, opt.label) ? 'bg-green-500 text-white shadow-lg' : 'bg-red-500 text-white shadow-lg'
+                : checked[q.id] && q.answer === opt.label ? 'bg-green-200 text-green-800' : 'bg-white hover:bg-green-50 shadow-sm'
+            } ${checked[q.id] ? 'cursor-not-allowed opacity-70' : ''}`}
           >
             <span className="font-bold">{opt.label}.</span> {opt.text}
           </button>
@@ -145,12 +208,13 @@ export default function TryGPPage() {
           {q.options.map(opt => (
             <button
               key={opt.label}
-              onClick={() => handleAnswer(q.id, opt.label)}
+              onClick={() => !checked[q.id] && handleAnswer(q.id, opt.label)}
+              disabled={checked[q.id]}
               className={`w-full p-4 rounded-xl text-left transition-all ${
                 answers[q.id] === opt.label
-                  ? 'bg-green-500 text-white shadow-lg'
-                  : 'bg-white hover:bg-green-50 shadow-sm'
-              }`}
+                  ? checkAnswer(q, opt.label) ? 'bg-green-500 text-white shadow-lg' : 'bg-red-500 text-white shadow-lg'
+                  : checked[q.id] && q.answer === opt.label ? 'bg-green-200 text-green-800' : 'bg-white hover:bg-green-50 shadow-sm'
+              } ${checked[q.id] ? 'cursor-not-allowed opacity-70' : ''}`}
             >
               <span className="font-bold">{opt.label}.</span> {opt.text}
             </button>
@@ -167,46 +231,56 @@ export default function TryGPPage() {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          {q.options.map((opt, idx) => (
-            <div key={opt.label} className="bg-white rounded-xl p-3 shadow-sm">
-              <div className="relative h-32 w-full mb-3">
-                <Image src={q.images![idx]} alt={opt.text} fill className="object-contain" />
+          {q.options.map((opt, idx) => {
+            const userAnswer = (answers[q.id] as string[])?.[idx];
+            const correctAnswer = (q.answer as string[])[idx];
+            const isCorrect = userAnswer === correctAnswer;
+            
+            return (
+              <div key={opt.label} className="bg-white rounded-xl p-3 shadow-sm">
+                <div className="relative h-32 w-full mb-3">
+                  <Image src={q.images![idx]} alt={opt.text} fill className="object-contain" />
+                </div>
+                <p className="text-sm text-gray-600 mb-2">{opt.label}. {opt.text}</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (checked[q.id]) return;
+                      const current = (answers[q.id] as string[]) || [];
+                      const newAnswers = [...current];
+                      newAnswers[idx] = '✓';
+                      handleAnswer(q.id, newAnswers);
+                    }}
+                    disabled={checked[q.id]}
+                    className={`flex-1 py-2 rounded-lg font-bold ${
+                      userAnswer === '✓'
+                        ? isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                        : checked[q.id] && correctAnswer === '✓' ? 'bg-green-200 text-green-800' : 'bg-gray-100 hover:bg-green-100'
+                    }`}
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (checked[q.id]) return;
+                      const current = (answers[q.id] as string[]) || [];
+                      const newAnswers = [...current];
+                      newAnswers[idx] = '✗';
+                      handleAnswer(q.id, newAnswers);
+                    }}
+                    disabled={checked[q.id]}
+                    className={`flex-1 py-2 rounded-lg font-bold ${
+                      userAnswer === '✗'
+                        ? isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                        : checked[q.id] && correctAnswer === '✗' ? 'bg-green-200 text-green-800' : 'bg-gray-100 hover:bg-red-100'
+                    }`}
+                  >
+                    ✗
+                  </button>
+                </div>
               </div>
-              <p className="text-sm text-gray-600 mb-2">{opt.label}. {opt.text}</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    const current = (answers[q.id] as string[]) || [];
-                    const newAnswers = [...current];
-                    newAnswers[idx] = '✓';
-                    handleAnswer(q.id, newAnswers);
-                  }}
-                  className={`flex-1 py-2 rounded-lg font-bold ${
-                    (answers[q.id] as string[])?.[idx] === '✓'
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-100 hover:bg-green-100'
-                  }`}
-                >
-                  ✓
-                </button>
-                <button
-                  onClick={() => {
-                    const current = (answers[q.id] as string[]) || [];
-                    const newAnswers = [...current];
-                    newAnswers[idx] = '✗';
-                    handleAnswer(q.id, newAnswers);
-                  }}
-                  className={`flex-1 py-2 rounded-lg font-bold ${
-                    (answers[q.id] as string[])?.[idx] === '✗'
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gray-100 hover:bg-red-100'
-                  }`}
-                >
-                  ✗
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -242,17 +316,19 @@ export default function TryGPPage() {
             <div className="flex gap-3 mt-3">
               <button
                 onClick={() => handleAnswer(q.id, 'correct')}
+                disabled={checked[q.id]}
                 className={`flex-1 py-2 rounded-lg font-bold ${
                   answers[q.id] === 'correct' ? 'bg-green-500 text-white' : 'bg-white hover:bg-green-200'
-                }`}
+                } ${checked[q.id] ? 'cursor-not-allowed' : ''}`}
               >
                 👍 啱咗
               </button>
               <button
                 onClick={() => handleAnswer(q.id, 'wrong')}
+                disabled={checked[q.id]}
                 className={`flex-1 py-2 rounded-lg font-bold ${
                   answers[q.id] === 'wrong' ? 'bg-red-500 text-white' : 'bg-white hover:bg-red-200'
-                }`}
+                } ${checked[q.id] ? 'cursor-not-allowed' : ''}`}
               >
                 👎 錯咗
               </button>
@@ -263,63 +339,7 @@ export default function TryGPPage() {
     );
   };
 
-  // 渲染填表題 (Q16) - 橫向顯示
-  const renderFillTable = (q: Question) => {
-    if (!q.options) return null;
-    const currentAnswers = (answers[q.id] as string[]) || [];
-    
-    return (
-      <div className="space-y-4">
-        {/* 詞庫 */}
-        {q.wordBank && (
-          <div className="bg-blue-50 rounded-xl p-3">
-            <p className="text-sm text-blue-700 font-bold mb-2">詞庫：</p>
-            <div className="flex flex-wrap gap-2">
-              {q.wordBank.map(word => (
-                <span key={word} className="bg-white px-3 py-1 rounded-full text-sm shadow-sm">{word}</span>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* 橫向表格 */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="grid grid-cols-3 divide-x divide-gray-200">
-            {q.options.map((opt, idx) => (
-              <div key={opt.label} className="p-4">
-                <div className="font-bold text-gray-700 mb-3 text-center">{opt.label}</div>
-                <div className="text-sm text-gray-600 mb-3 min-h-[60px]">
-                  {opt.text.split('______').map((part, partIdx) => (
-                    <span key={partIdx}>
-                      {part}
-                      {partIdx < opt.text.split('______').length - 1 && (
-                        <select
-                          value={currentAnswers[idx] || ''}
-                          onChange={(e) => {
-                            const newAnswers = [...currentAnswers];
-                            newAnswers[idx] = e.target.value;
-                            handleAnswer(q.id, newAnswers);
-                          }}
-                          className="bg-yellow-50 border-2 border-yellow-300 rounded px-2 py-1 text-sm mx-1"
-                        >
-                          <option value="">請選擇</option>
-                          {q.wordBank?.map(word => (
-                            <option key={word} value={word}>{word}</option>
-                          ))}
-                        </select>
-                      )}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 渲染配對題 (Q23) - 同一個畫面
+  // 渲染配對題 (Q23) - 兩邊選擇
   const renderMatching = (q: Question) => {
     const currentMatches = (answers[q.id] as string[]) || [];
     const scientistsList = ['萊特兄弟', '畢昇', '伽利略', '愛迪生', '蔡倫'];
@@ -331,59 +351,92 @@ export default function TryGPPage() {
       { label: 'E', text: '通過實驗驗證或革新多個不同理論，推動科學發展' },
     ];
     
+    const handleScientistClick = (idx: number) => {
+      if (checked[q.id]) return;
+      setSelectedScientist(idx);
+    };
+    
+    const handleOptionClick = (label: string) => {
+      if (checked[q.id] || selectedScientist === null) return;
+      
+      const newMatches = [...currentMatches];
+      newMatches[selectedScientist] = label;
+      handleAnswer(q.id, newMatches);
+      setSelectedScientist(null);
+    };
+    
+    // 檢查是否全部配對完成
+    const isComplete = currentMatches.length === 5 && currentMatches.every(m => m);
+    
     return (
       <div className="space-y-4">
         {/* 提示 */}
-        <p className="text-sm text-gray-500">點擊科學家，再點擊對應的發明進行配對</p>
+        <p className="text-sm text-gray-500">
+          {selectedScientist === null ? '請先點擊左邊的科學家，再點擊右邊的發明' : `正在為「${scientistsList[selectedScientist]}」選擇答案`}
+        </p>
         
         <div className="grid grid-cols-2 gap-4">
           {/* 左邊：科學家 */}
           <div className="space-y-2">
             <p className="font-bold text-gray-700 mb-2">科學家</p>
-            {scientistsList.map((name, idx) => (
-              <div key={name} className="bg-white rounded-lg p-3 shadow-sm flex items-center gap-2">
-                <span className="font-bold text-gray-600 w-20">{name}</span>
-                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm min-w-[40px] text-center">
-                  {currentMatches[idx] || '?'}
-                </span>
-              </div>
-            ))}
+            {scientistsList.map((name, idx) => {
+              const match = currentMatches[idx];
+              const isSelected = selectedScientist === idx;
+              
+              return (
+                <button
+                  key={name}
+                  onClick={() => handleScientistClick(idx)}
+                  disabled={checked[q.id] || !!match}
+                  className={`w-full bg-white rounded-lg p-3 shadow-sm flex items-center justify-between transition-all ${
+                    isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                  } ${checked[q.id] ? 'cursor-not-allowed' : ''} ${match ? 'opacity-70' : ''}`}
+                >
+                  <span className="font-bold text-gray-600">{name}</span>
+                  <span className={`px-3 py-1 rounded-full text-sm ${
+                    match ? (match === (q.answer as string[])[idx] ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700') : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {match || '?'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
           
           {/* 右邊：發明 */}
           <div className="space-y-2">
             <p className="font-bold text-gray-700 mb-2">發明或貢獻</p>
-            {optionsList.map(opt => (
-              <button
-                key={opt.label}
-                onClick={() => {
-                  // 找到當前選中的科學家索引（第一個未配對的）
-                  const firstEmptyIdx = currentMatches.findIndex(m => !m);
-                  const targetIdx = firstEmptyIdx === -1 ? currentMatches.length : firstEmptyIdx;
-                  
-                  if (targetIdx < 5) {
-                    const newMatches = [...currentMatches];
-                    newMatches[targetIdx] = opt.label;
-                    handleAnswer(q.id, newMatches);
-                  }
-                }}
-                className={`w-full bg-white rounded-lg p-3 shadow-sm text-left text-sm hover:bg-green-50 transition-all ${
-                  currentMatches.includes(opt.label) ? 'opacity-50' : ''
-                }`}
-              >
-                <span className="font-bold">{opt.label}.</span> {opt.text}
-              </button>
-            ))}
+            {optionsList.map(opt => {
+              const isUsed = currentMatches.includes(opt.label);
+              
+              return (
+                <button
+                  key={opt.label}
+                  onClick={() => handleOptionClick(opt.label)}
+                  disabled={checked[q.id] || isUsed || selectedScientist === null}
+                  className={`w-full rounded-lg p-3 shadow-sm text-left text-sm transition-all ${
+                    isUsed ? 'bg-gray-100 opacity-50' : selectedScientist !== null ? 'bg-white hover:bg-blue-50' : 'bg-white opacity-70'
+                  } ${checked[q.id] ? 'cursor-not-allowed' : ''}`}
+                >
+                  <span className="font-bold">{opt.label}.</span> {opt.text}
+                </button>
+              );
+            })}
           </div>
         </div>
         
         {/* 重置按 */}
-        <button
-          onClick={() => handleAnswer(q.id, [])}
-          className="w-full py-2 text-sm text-gray-500 hover:text-gray-700"
-        >
-          重新配對
-        </button>
+        {!checked[q.id] && (
+          <button
+            onClick={() => {
+              handleAnswer(q.id, []);
+              setSelectedScientist(null);
+            }}
+            className="w-full py-2 text-sm text-gray-500 hover:text-gray-700"
+          >
+            重新配對
+          </button>
+        )}
       </div>
     );
   };
@@ -391,6 +444,9 @@ export default function TryGPPage() {
   // 渲染分類題 (Q29)
   const renderClassify = (q: Question) => {
     if (!q.options) return null;
+    const currentAnswer = (answers[q.id] as string) || '|';
+    const yesSelected = currentAnswer.split('|')[0]?.split(',').filter(Boolean) || [];
+    const noSelected = currentAnswer.split('|')[1]?.split(',').filter(Boolean) || [];
     
     return (
       <div className="space-y-4">
@@ -399,29 +455,37 @@ export default function TryGPPage() {
           <div className="bg-green-50 rounded-xl p-4">
             <p className="font-bold text-green-700 mb-3">✅ 應有的條件</p>
             <div className="space-y-2">
-              {q.options.map(opt => (
-                <button
-                  key={opt.label}
-                  onClick={() => {
-                    const current = (answers[q.id] as string) || '';
-                    let selected = current.split('|')[0] || '';
-                    if (selected.includes(opt.label)) {
-                      selected = selected.replace(opt.label, '').replace(/,/g, ',').replace(/^,|,$/g, '');
-                    } else {
-                      selected = selected ? selected + ',' + opt.label : opt.label;
-                    }
-                    const notSelected = ((answers[q.id] as string) || '').split('|')[1] || '';
-                    handleAnswer(q.id, selected + '|' + notSelected);
-                  }}
-                  className={`w-full p-2 rounded-lg text-sm text-left transition-all ${
-                    ((answers[q.id] as string) || '').split('|')[0]?.includes(opt.label)
-                      ? 'bg-green-500 text-white'
-                      : 'bg-white hover:bg-green-100'
-                  }`}
-                >
-                  {opt.label}. {opt.text}
-                </button>
-              ))}
+              {q.options.map(opt => {
+                const isSelected = yesSelected.includes(opt.label);
+                
+                return (
+                  <button
+                    key={`yes-${opt.label}`}
+                    onClick={() => {
+                      if (checked[q.id]) return;
+                      let newYes = [...yesSelected];
+                      let newNo = [...noSelected];
+                      
+                      if (isSelected) {
+                        newYes = newYes.filter(l => l !== opt.label);
+                      } else {
+                        newYes.push(opt.label);
+                        newNo = newNo.filter(l => l !== opt.label);
+                      }
+                      
+                      handleAnswer(q.id, newYes.join(',') + '|' + newNo.join(','));
+                    }}
+                    disabled={checked[q.id]}
+                    className={`w-full p-2 rounded-lg text-sm text-left transition-all ${
+                      isSelected
+                        ? checked[q.id] ? (['A','D'].includes(opt.label) ? 'bg-green-500 text-white' : 'bg-red-500 text-white') : 'bg-green-500 text-white'
+                        : 'bg-white hover:bg-green-100'
+                    }`}
+                  >
+                    {opt.label}. {opt.text}
+                  </button>
+                );
+              })}
             </div>
           </div>
           
@@ -429,29 +493,37 @@ export default function TryGPPage() {
           <div className="bg-red-50 rounded-xl p-4">
             <p className="font-bold text-red-700 mb-3">❌ 不應有的態度</p>
             <div className="space-y-2">
-              {q.options.map(opt => (
-                <button
-                  key={opt.label}
-                  onClick={() => {
-                    const current = (answers[q.id] as string) || '';
-                    const selected = current.split('|')[0] || '';
-                    let notSelected = current.split('|')[1] || '';
-                    if (notSelected.includes(opt.label)) {
-                      notSelected = notSelected.replace(opt.label, '').replace(/,/g, ',').replace(/^,|,$/g, '');
-                    } else {
-                      notSelected = notSelected ? notSelected + ',' + opt.label : opt.label;
-                    }
-                    handleAnswer(q.id, selected + '|' + notSelected);
-                  }}
-                  className={`w-full p-2 rounded-lg text-sm text-left transition-all ${
-                    ((answers[q.id] as string) || '').split('|')[1]?.includes(opt.label)
-                      ? 'bg-red-500 text-white'
-                      : 'bg-white hover:bg-red-100'
-                  }`}
-                >
-                  {opt.label}. {opt.text}
-                </button>
-              ))}
+              {q.options.map(opt => {
+                const isSelected = noSelected.includes(opt.label);
+                
+                return (
+                  <button
+                    key={`no-${opt.label}`}
+                    onClick={() => {
+                      if (checked[q.id]) return;
+                      let newYes = [...yesSelected];
+                      let newNo = [...noSelected];
+                      
+                      if (isSelected) {
+                        newNo = newNo.filter(l => l !== opt.label);
+                      } else {
+                        newNo.push(opt.label);
+                        newYes = newYes.filter(l => l !== opt.label);
+                      }
+                      
+                      handleAnswer(q.id, newYes.join(',') + '|' + newNo.join(','));
+                    }}
+                    disabled={checked[q.id]}
+                    className={`w-full p-2 rounded-lg text-sm text-left transition-all ${
+                      isSelected
+                        ? checked[q.id] ? (['B','C'].includes(opt.label) ? 'bg-green-500 text-white' : 'bg-red-500 text-white') : 'bg-red-500 text-white'
+                        : 'bg-white hover:bg-red-100'
+                    }`}
+                  >
+                    {opt.label}. {opt.text}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -471,8 +543,6 @@ export default function TryGPPage() {
         return renderImageTrueFalse(q);
       case 'short-answer':
         return renderShortAnswer(q);
-      case 'fill-table':
-        return renderFillTable(q);
       case 'matching':
         return renderMatching(q);
       case 'classify':
@@ -575,10 +645,25 @@ export default function TryGPPage() {
               </div>
             )}
             
-            {/* 題目 */}
-            <h2 className="text-xl font-bold text-gray-800 mb-6 leading-relaxed">
-              {question.question}
-            </h2>
+            {/* 題目 + 讀卷按鈕 */}
+            <div className="flex items-start gap-3 mb-6">
+              <h2 className="text-xl font-bold text-gray-800 leading-relaxed flex-1">
+                {question.question}
+              </h2>
+              <button
+                onClick={() => readQuestion(question)}
+                className="flex items-center gap-1 bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-2 rounded-lg text-sm font-bold transition-colors shrink-0"
+                title="讀卷"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+                讀卷
+              </button>
+            </div>
+            
+            {/* 答案狀態（答完後顯示） */}
+            {renderAnswerStatus(question)}
             
             {/* 答案區域 */}
             {renderQuestion(question)}
@@ -588,7 +673,10 @@ export default function TryGPPage() {
         {/* 導航按鈕 */}
         <div className="flex gap-3">
           <button
-            onClick={() => setCurrentQ(Math.max(0, currentQ - 1))}
+            onClick={() => {
+              setCurrentQ(Math.max(0, currentQ - 1));
+              setSelectedScientist(null);
+            }}
             disabled={currentQ === 0}
             className="px-6 py-3 bg-white rounded-xl font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -597,7 +685,10 @@ export default function TryGPPage() {
           
           {currentQ < totalQuestions - 1 ? (
             <button
-              onClick={() => setCurrentQ(currentQ + 1)}
+              onClick={() => {
+                setCurrentQ(currentQ + 1);
+                setSelectedScientist(null);
+              }}
               className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl font-bold shadow-lg"
             >
               下一題 →
@@ -619,12 +710,17 @@ export default function TryGPPage() {
             {allQuestions.map((q, idx) => (
               <button
                 key={q.id}
-                onClick={() => setCurrentQ(idx)}
+                onClick={() => {
+                  setCurrentQ(idx);
+                  setSelectedScientist(null);
+                }}
                 className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
                   currentQ === idx
                     ? 'bg-teal-500 text-white'
+                    : checked[q.id]
+                    ? checkAnswer(q, answers[q.id]) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     : answers[q.id]
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-yellow-100 text-yellow-700'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >

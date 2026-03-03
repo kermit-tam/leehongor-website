@@ -226,18 +226,45 @@ export const allQuestions: Question[] = [
     imageLabels: ['A', 'B', 'C', 'D'],
   },
   
-  // ===== 填表題 =====
+  // ===== 填表題（分拆為3題）=====
   {
     id: 16,
-    type: 'fill-table',
-    question: '五千年前中國先民的生活情況是怎樣的？',
+    type: 'mc',
+    question: '【填表題】五千年前中國先民的飲食情況：飼養家畜和______糧食。',
     wordBank: wordBankQ16,
     options: [
-      { label: '飲食', text: '飼養家畜和______糧食。' },
-      { label: '住所', text: '興建簡單的______居住。' },
-      { label: '醫療', text: '用______治病。' },
+      { label: 'A', text: '房屋' },
+      { label: 'B', text: '種植' },
+      { label: 'C', text: '打獵' },
+      { label: 'D', text: '草藥' },
     ],
-    answer: ['種植', '房屋', '草藥'],
+    answer: 'B',
+  },
+  {
+    id: 161,
+    type: 'mc',
+    question: '【填表題】五千年前中國先民的住所情況：興建簡單的______居住。',
+    wordBank: wordBankQ16,
+    options: [
+      { label: 'A', text: '房屋' },
+      { label: 'B', text: '種植' },
+      { label: 'C', text: '打獵' },
+      { label: 'D', text: '草藥' },
+    ],
+    answer: 'A',
+  },
+  {
+    id: 162,
+    type: 'mc',
+    question: '【填表題】五千年前中國先民的醫療情況：用______治病。',
+    wordBank: wordBankQ16,
+    options: [
+      { label: 'A', text: '房屋' },
+      { label: 'B', text: '種植' },
+      { label: 'C', text: '打獵' },
+      { label: 'D', text: '草藥' },
+    ],
+    answer: 'D',
   },
   
   // ===== 簡答題（開估模式）=====
