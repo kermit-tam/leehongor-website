@@ -131,12 +131,12 @@ export default function TryGPPage() {
     if (q.images && q.imageLabels && q.images.length === 4) {
       return (
         <div className="space-y-4">
-          {/* 圖片網格 */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* 圖片網格 - 手機單欄，桌面2欄 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {q.images.map((img, idx) => (
               <div key={idx} className="bg-white rounded-xl p-3 shadow-sm">
                 <div className="text-center font-bold text-gray-600 mb-2">{q.imageLabels?.[idx]}</div>
-                <div className="relative h-32 w-full">
+                <div className="relative w-full" style={{ aspectRatio: '4/3' }}>
                   <Image src={img} alt={`選項 ${q.imageLabels?.[idx]}`} fill className="object-contain" />
                 </div>
               </div>
@@ -190,13 +190,13 @@ export default function TryGPPage() {
     
     return (
       <div className="space-y-4">
-        {/* 實驗圖片 - 橫向排列 */}
+        {/* 實驗圖片 - 手機直向，桌面橫向 */}
         {q.images && q.imageLabels && (
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             {q.images.map((img, idx) => (
               <div key={idx} className="flex-1 bg-white rounded-xl p-3 shadow-sm">
                 <div className="text-center font-bold text-gray-600 mb-2 text-sm">{q.imageLabels?.[idx]}</div>
-                <div className="relative h-40 w-full">
+                <div className="relative w-full" style={{ aspectRatio: '4/3' }}>
                   <Image src={img} alt={q.imageLabels?.[idx] || ''} fill className="object-contain" />
                 </div>
               </div>
@@ -234,7 +234,7 @@ export default function TryGPPage() {
     
     return (
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {q.options.map((opt, idx) => {
             const userAnswer = (answers[q.id] as string[])?.[idx];
             const correctAnswer = (q.answer as string[])[idx];
@@ -242,7 +242,7 @@ export default function TryGPPage() {
             
             return (
               <div key={opt.label} className="bg-white rounded-xl p-3 shadow-sm">
-                <div className="relative h-32 w-full mb-3">
+                <div className="relative w-full mb-3" style={{ aspectRatio: '1/1' }}>
                   <Image src={q.images![idx]} alt={opt.text} fill className="object-contain" />
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{opt.label}. {opt.text}</p>
@@ -584,7 +584,7 @@ export default function TryGPPage() {
                   } ${checked[q.id] ? 'cursor-not-allowed' : ''} ${match ? 'opacity-70' : ''}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="relative w-20 h-20">
+                    <div className="relative w-24 h-24 shrink-0">
                       <Image src={img} alt={`玩具${toyLabel}`} fill className="object-contain" />
                     </div>
                     <div className="flex-1 text-left">
