@@ -138,7 +138,13 @@ const QUESTIONS: Question[] = [
   }
 ];
 
-type Screen = 'menu' | 'game' | 'result' | 'study';
+type Screen = 'menu' | 'game' | 'result' | 'study' | 'leaderboard';
+
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+  date: string;
+}
 
 export default function BaiNian() {
   const [screen, setScreen] = useState<Screen>('menu');
@@ -147,6 +153,8 @@ export default function BaiNian() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [questions] = useState<Question[]>(QUESTIONS);
+  const [playerName, setPlayerName] = useState('');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   const startGame = () => {
     setCurrentIndex(0);
@@ -174,6 +182,34 @@ export default function BaiNian() {
         setScreen('result');
       }
     }, 1500);
+  };
+
+  // 讀取排行榜
+  const loadLeaderboard = () => {
+    const saved = localStorage.getItem('leaderboard-bainian');
+    if (saved) setLeaderboard(JSON.parse(saved));
+    setScreen('leaderboard');
+  };
+
+  // 儲存分數到排行榜
+  const saveToLeaderboard = () => {
+    if (!playerName.trim()) return;
+    
+    const newEntry: LeaderboardEntry = {
+      name: playerName.trim(),
+      score,
+      date: new Date().toLocaleDateString('zh-HK')
+    };
+    
+    const saved = localStorage.getItem('leaderboard-bainian');
+    const current = saved ? JSON.parse(saved) : [];
+    const updated = [...current, newEntry]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+    
+    localStorage.setItem('leaderboard-bainian', JSON.stringify(updated));
+    setLeaderboard(updated);
+    setScreen('leaderboard');
   };
 
   // 溫習模式
@@ -222,6 +258,12 @@ export default function BaiNian() {
             >
               📚 溫習模式 (16詞)
             </button>
+            <button
+              onClick={loadLeaderboard}
+              className="w-full bg-gradient-to-r from-yellow-400 to-amber-400 text-white py-3 rounded-2xl text-lg font-bold shadow-lg"
+            >
+              🏆 排行榜
+            </button>
           </div>
         </motion.div>
       </div>
@@ -250,20 +292,96 @@ export default function BaiNian() {
           </p>
           
           <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="輸入你嘅名"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg focus:border-red-500 focus:outline-none"
+              maxLength={10}
+            />
+            
+            <button
+              onClick={saveToLeaderboard}
+              disabled={!playerName.trim()}
+              className="w-full bg-gradient-to-r from-yellow-400 to-amber-400 text-white py-4 rounded-2xl text-xl font-bold shadow-lg disabled:opacity-50"
+            >
+              🏆 儲存到排行榜
+            </button>
+            
             <button
               onClick={startGame}
-              className="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white py-4 rounded-2xl text-xl font-bold shadow-lg"
+              className="w-full bg-gray-100 text-gray-700 py-3 rounded-2xl text-lg font-bold hover:bg-gray-200"
             >
-              再玩一次 🔄
+              再玩一次
             </button>
+            
             <button
               onClick={() => setScreen('menu')}
-              className="w-full bg-gray-200 text-gray-700 py-4 rounded-2xl text-xl font-bold"
+              className="w-full bg-gray-200 text-gray-700 py-3 rounded-2xl text-lg font-bold"
             >
               返回選單
             </button>
           </div>
         </motion.div>
+      </div>
+    );
+  }
+
+  // 排行榜畫面
+  if (screen === 'leaderboard') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-yellow-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+          <h1 className="text-3xl font-black text-gray-800 mb-6 text-center">🏆 到外婆家拜年排行榜</h1>
+          
+          {leaderboard.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">暫時未有記錄</p>
+          ) : (
+            <div className="space-y-3 mb-6">
+              {leaderboard.map((entry, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center gap-4 p-4 rounded-xl ${
+                    idx === 0 ? 'bg-yellow-100' :
+                    idx === 1 ? 'bg-gray-100' :
+                    idx === 2 ? 'bg-orange-50' :
+                    'bg-gray-50'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                    idx === 0 ? 'bg-yellow-500 text-white' :
+                    idx === 1 ? 'bg-gray-400 text-white' :
+                    idx === 2 ? 'bg-orange-400 text-white' :
+                    'bg-gray-300 text-gray-700'
+                  }`}>
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-800">{entry.name}</p>
+                    <p className="text-sm text-gray-500">{entry.date}</p>
+                  </div>
+                  <div className="text-xl font-black text-red-600">{entry.score}分</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <button
+              onClick={startGame}
+              className="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white py-4 rounded-2xl text-xl font-bold shadow-lg"
+            >
+              🎮 再玩一次
+            </button>
+            <button
+              onClick={() => setScreen('menu')}
+              className="w-full bg-gray-200 text-gray-700 py-3 rounded-2xl text-lg font-bold"
+            >
+              ← 返回選單
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

@@ -12,6 +12,13 @@ interface Question {
   fruit: FruitType;
 }
 
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+  difficulty: Difficulty;
+  date: string;
+}
+
 const FRUITS: FruitType[] = ['🍎', '🍊', '🍌', '🍇', '🍓', '🍉', '🍑', '🥝'];
 
 const FRUIT_NAMES: Record<FruitType, string> = {
@@ -25,8 +32,14 @@ const FRUIT_NAMES: Record<FruitType, string> = {
   '🥝': '奇異果',
 };
 
+const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+  easy: '簡單',
+  medium: '中等',
+  hard: '困難',
+};
+
 export default function FruitCounting() {
-  const [screen, setScreen] = useState<'start' | 'game' | 'result'>('start');
+  const [screen, setScreen] = useState<'start' | 'game' | 'result' | 'leaderboard'>('start');
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQ, setCurrentQ] = useState(0);
@@ -35,6 +48,9 @@ export default function FruitCounting() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [showFruits, setShowFruits] = useState(true);
+  const [playerName, setPlayerName] = useState('');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [hasSaved, setHasSaved] = useState(false);
 
   // 生成題目
   const generateQuestions = useCallback((diff: Difficulty): Question[] => {
@@ -53,11 +69,51 @@ export default function FruitCounting() {
     return qs;
   }, []);
 
+  const loadLeaderboard = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('leaderboard-fruit');
+      if (saved) {
+        try {
+          setLeaderboard(JSON.parse(saved));
+        } catch {
+          setLeaderboard([]);
+        }
+      }
+    }
+  }, []);
+
+  const saveToLeaderboard = () => {
+    if (!playerName.trim()) return;
+    
+    const newEntry: LeaderboardEntry = {
+      name: playerName.trim(),
+      score,
+      difficulty,
+      date: new Date().toISOString(),
+    };
+    
+    const updated = [...leaderboard, newEntry].sort((a, b) => b.score - a.score).slice(0, 10);
+    setLeaderboard(updated);
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('leaderboard-fruit', JSON.stringify(updated));
+    }
+    
+    setHasSaved(true);
+    setTimeout(() => setScreen('leaderboard'), 500);
+  };
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, [loadLeaderboard]);
+
   const startGame = (diff: Difficulty) => {
     setDifficulty(diff);
     setQuestions(generateQuestions(diff));
     setCurrentQ(0);
     setScore(0);
+    setHasSaved(false);
+    setPlayerName('');
     setScreen('game');
     setShowFruits(true);
   };
@@ -105,6 +161,136 @@ export default function FruitCounting() {
     return Array.from(options).sort((a, b) => a - b);
   };
 
+  // 排行榜畫面
+  if (screen === 'leaderboard') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-400 via-yellow-300 to-pink-400 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl"
+        >
+          <Link href="/trymath" className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 text-2xl">
+            ←
+          </Link>
+          
+          <div className="text-6xl mb-4">🏆</div>
+          <h1 className="text-4xl font-black mb-2 text-yellow-600">數生果排行榜</h1>
+          <p className="text-gray-600 mb-6 text-lg">看看誰是數生果高手！</p>
+          
+          <div className="space-y-2 mb-6 max-h-[300px] overflow-y-auto">
+            {leaderboard.length === 0 ? (
+              <p className="text-gray-400 py-8">暫無記錄，快來挑戰吧！</p>
+            ) : (
+              leaderboard.map((entry, index) => (
+                <div 
+                  key={index} 
+                  className={`flex items-center justify-between p-3 rounded-xl ${
+                    index === 0 ? 'bg-yellow-100 border-2 border-yellow-400' :
+                    index === 1 ? 'bg-gray-100 border-2 border-gray-300' :
+                    index === 2 ? 'bg-orange-100 border-2 border-orange-300' :
+                    'bg-green-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                    </span>
+                    <span className="font-bold text-gray-800">{entry.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-green-600">{entry.score}/10</div>
+                    <div className="text-xs text-gray-500">{DIFFICULTY_LABELS[entry.difficulty]}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => setScreen('start')}
+              className="w-full bg-gradient-to-r from-green-400 to-green-500 text-white py-4 rounded-2xl text-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition-transform"
+            >
+              開始挑戰 🎮
+            </button>
+            <Link 
+              href="/trymath" 
+              className="block w-full bg-gray-200 text-gray-700 py-4 rounded-2xl text-xl font-bold"
+            >
+              返回
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // 結果畫面
+  if (screen === 'result') {
+    const stars = score >= 8 ? '⭐⭐⭐' : score >= 5 ? '⭐⭐' : '⭐';
+    const message = score >= 8 ? '太棒了！生果達人！' : score >= 5 ? '做得好！繼續加油！' : '再試一次！';
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-400 via-yellow-300 to-pink-400 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl"
+        >
+          <div className="text-6xl mb-4">{stars}</div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">{message}</h1>
+          <p className="text-2xl text-green-600 font-bold mb-6">{score} / 10 題答對</p>
+          
+          {!hasSaved && score > 0 && (
+            <div className="mb-6 space-y-3">
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="輸入你的名字"
+                className="w-full px-4 py-3 rounded-xl border-2 border-yellow-300 text-center text-lg focus:border-yellow-500 focus:outline-none"
+                maxLength={10}
+              />
+              <button
+                onClick={saveToLeaderboard}
+                disabled={!playerName.trim()}
+                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-white py-3 rounded-2xl text-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                💾 儲存到排行榜
+              </button>
+            </div>
+          )}
+          
+          {hasSaved && (
+            <p className="text-green-600 font-bold mb-6">✅ 已儲存到排行榜！</p>
+          )}
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => setScreen('start')}
+              className="w-full bg-gradient-to-r from-green-400 to-green-500 text-white py-4 rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition-transform"
+            >
+              再玩一次 🔄
+            </button>
+            <button
+              onClick={() => setScreen('leaderboard')}
+              className="w-full bg-gradient-to-r from-yellow-400 to-orange-400 text-white py-4 rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition-transform"
+            >
+              🏆 查看排行榜
+            </button>
+            <Link 
+              href="/trymath" 
+              className="block w-full bg-gray-200 text-gray-700 py-4 rounded-2xl text-xl font-bold"
+            >
+              返回
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   // 開始畫面
   if (screen === 'start') {
     return (
@@ -112,7 +298,7 @@ export default function FruitCounting() {
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl"
+          className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl relative"
         >
           <Link href="/trymath" className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 text-2xl">
             ←
@@ -141,41 +327,12 @@ export default function FruitCounting() {
             >
               🌳 困難 (5-15個)
             </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // 結果畫面
-  if (screen === 'result') {
-    const stars = score >= 8 ? '⭐⭐⭐' : score >= 5 ? '⭐⭐' : '⭐';
-    const message = score >= 8 ? '太棒了！生果達人！' : score >= 5 ? '做得好！繼續加油！' : '再試一次！';
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-400 via-yellow-300 to-pink-400 flex items-center justify-center p-4">
-        <motion.div 
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl"
-        >
-          <div className="text-6xl mb-4">{stars}</div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">{message}</h1>
-          <p className="text-2xl text-green-600 font-bold mb-6">{score} / 10 題答對</p>
-          
-          <div className="space-y-3">
             <button
-              onClick={() => setScreen('start')}
-              className="w-full bg-gradient-to-r from-green-400 to-green-500 text-white py-4 rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition-transform"
+              onClick={() => setScreen('leaderboard')}
+              className="w-full bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-800 py-4 rounded-2xl text-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition-transform"
             >
-              再玩一次 🔄
+              🏆 排行榜
             </button>
-            <Link 
-              href="/trymath" 
-              className="block w-full bg-gray-200 text-gray-700 py-4 rounded-2xl text-xl font-bold"
-            >
-              返回
-            </Link>
           </div>
         </motion.div>
       </div>

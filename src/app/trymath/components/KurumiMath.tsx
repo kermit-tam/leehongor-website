@@ -11,6 +11,13 @@ interface Question {
   answer: number;
 }
 
+interface LeaderboardEntry {
+  name: string;
+  wrongCount: number;
+  time: number;
+  date: string;
+}
+
 // 💜 可愛 Kuromi Emoji 組合
 const KuromiEmoji = ({ mood }: { mood: 'normal' | 'happy' | 'excited' | 'think' | 'cheer' }) => {
   const moodEmojis = {
@@ -185,21 +192,59 @@ export default function KurumiMath() {
   const [combo, setCombo] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [screen, setScreen] = useState<'start' | 'game' | 'result'>('start');
+  const [screen, setScreen] = useState<'start' | 'game' | 'result' | 'leaderboard'>('start');
   const [feedback, setFeedback] = useState<{ emoji: string; show: boolean }>({ emoji: '', show: false });
   const [errorMsg, setErrorMsg] = useState(false);
   const [kuromiMood, setKuromiMood] = useState<'normal' | 'happy' | 'excited' | 'think' | 'cheer'>('happy');
   const [customImage, setCustomImage] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [hasSaved, setHasSaved] = useState(false);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 加載已保存的自訂圖片
+  // 加載已保存的自訂圖片和排行榜
   useEffect(() => {
     const saved = localStorage.getItem('kuromi-custom-image');
     if (saved) setCustomImage(saved);
+    loadLeaderboard();
   }, []);
+
+  const loadLeaderboard = () => {
+    try {
+      const saved = localStorage.getItem('leaderboard-kurumi');
+      if (saved) {
+        setLeaderboard(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error('Failed to load leaderboard:', e);
+    }
+  };
+
+  const saveToLeaderboard = () => {
+    if (!playerName.trim() || hasSaved) return;
+    
+    const totalTime = Date.now() - startTime;
+    const newEntry: LeaderboardEntry = {
+      name: playerName.trim(),
+      wrongCount,
+      time: totalTime,
+      date: new Date().toLocaleDateString('zh-HK'),
+    };
+    
+    const updated = [...leaderboard, newEntry]
+      .sort((a, b) => {
+        if (a.wrongCount !== b.wrongCount) return a.wrongCount - b.wrongCount;
+        return a.time - b.time;
+      })
+      .slice(0, 20);
+    
+    setLeaderboard(updated);
+    localStorage.setItem('leaderboard-kurumi', JSON.stringify(updated));
+    setHasSaved(true);
+  };
 
   const initAudio = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -260,6 +305,8 @@ export default function KurumiMath() {
     setCurrentAnswer('');
     setScreen('game');
     setKuromiMood('think');
+    setHasSaved(false);
+    setPlayerName('');
     setStartTime(Date.now());
     
     timerIntervalRef.current = setInterval(() => {
@@ -334,6 +381,88 @@ export default function KurumiMath() {
     };
   }, []);
 
+  // 排行榜畫面
+  if (screen === 'leaderboard') {
+    const formatTime = (ms: number) => {
+      const mins = Math.floor(ms / 60000);
+      const secs = Math.floor((ms % 60000) / 1000);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-200 via-pink-200 to-purple-300 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white/95 rounded-3xl p-6 max-w-md w-full shadow-2xl max-h-[95vh] overflow-y-auto"
+        >
+          <Link href="/trymath" className="absolute top-4 left-4 text-gray-500 hover:text-gray-700">← 返回</Link>
+          
+          <div className="text-center mb-6">
+            <div className="text-4xl mb-2">🏆</div>
+            <h1 className="text-2xl font-black text-purple-700">🏆 Kuromi加法王排行榜</h1>
+            <p className="text-purple-600 text-sm">最強加法小能手</p>
+          </div>
+
+          {leaderboard.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">💜</div>
+              <p>暫時未有記錄</p>
+              <p className="text-sm">快來挑戰吧！</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {leaderboard.map((entry, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`flex items-center gap-3 p-3 rounded-xl ${
+                    index === 0 ? 'bg-gradient-to-r from-yellow-100 to-pink-100 border-2 border-yellow-300' :
+                    index === 1 ? 'bg-gradient-to-r from-gray-100 to-purple-50 border-2 border-gray-300' :
+                    index === 2 ? 'bg-gradient-to-r from-orange-50 to-pink-50 border-2 border-orange-300' :
+                    'bg-purple-50'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                    index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                    index === 1 ? 'bg-gray-400 text-gray-900' :
+                    index === 2 ? 'bg-orange-400 text-orange-900' :
+                    'bg-purple-200 text-purple-700'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-purple-800">{entry.name}</div>
+                    <div className="text-xs text-gray-500">{entry.date}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-pink-600">{formatTime(entry.time)}</div>
+                    <div className="text-xs text-gray-500">{entry.wrongCount} 錯</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2 mt-6">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={startGame}
+              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-full font-bold"
+            >
+              挑戰 💀
+            </motion.button>
+            <Link href="/trymath" className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-bold flex items-center justify-center">
+              返回
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   // 開始畫面
   if (screen === 'start') {
     return (
@@ -377,14 +506,24 @@ export default function KurumiMath() {
             </motion.div>
           )}
           
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={startGame}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-10 py-3 rounded-full text-lg font-bold shadow-lg"
-          >
-            開始挑戰 💀
-          </motion.button>
+          <div className="flex gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={startGame}
+              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full text-lg font-bold shadow-lg"
+            >
+              開始挑戰 💀
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setScreen('leaderboard')}
+              className="flex-1 bg-gradient-to-r from-pink-400 to-purple-400 text-white px-4 py-3 rounded-full text-base font-bold shadow-lg"
+            >
+              🏆 排行榜
+            </motion.button>
+          </div>
         </motion.div>
       </div>
     );
@@ -435,6 +574,41 @@ export default function KurumiMath() {
               <div className="text-xs text-gray-500">錯誤</div>
             </div>
           </div>
+
+          {/* 保存到排行榜 */}
+          {!hasSaved && (
+            <div className="bg-pink-50 rounded-xl p-4 mb-4">
+              <p className="text-sm text-purple-700 font-bold mb-2">💜 保存你的成績</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="輸入你的名字"
+                  maxLength={10}
+                  className="flex-1 px-3 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-400 outline-none text-sm"
+                />
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={saveToLeaderboard}
+                  disabled={!playerName.trim()}
+                  className="bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-sm disabled:opacity-50"
+                >
+                  保存
+                </motion.button>
+              </div>
+            </div>
+          )}
+          
+          {hasSaved && (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-green-50 text-green-700 rounded-xl p-3 mb-4 text-sm font-bold"
+            >
+              ✅ 已保存到排行榜！
+            </motion.div>
+          )}
           
           <div className="flex gap-2">
             <motion.button
@@ -443,6 +617,13 @@ export default function KurumiMath() {
               className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 rounded-full font-bold text-sm"
             >
               再玩 🔄
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setScreen('leaderboard')}
+              className="flex-1 bg-gradient-to-r from-pink-400 to-purple-400 text-white py-2 rounded-full font-bold text-sm"
+            >
+              🏆 排行榜
             </motion.button>
             <Link href="/trymath" className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-full font-bold flex items-center justify-center text-sm">
               返回

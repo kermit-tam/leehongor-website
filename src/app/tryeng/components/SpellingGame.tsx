@@ -56,8 +56,16 @@ const UNIT5_WORDS: Word[] = [
 ];
 
 type Difficulty = 'easy' | 'medium' | 'hard';
-type Screen = 'menu' | 'learn' | 'difficulty' | 'game' | 'result';
+type Screen = 'menu' | 'learn' | 'difficulty' | 'game' | 'result' | 'leaderboard';
 type Unit = 4 | 5;
+
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+  difficulty: Difficulty;
+  unit: Unit;
+  date: string;
+}
 
 interface GameWord extends Word {
   id: number;
@@ -81,6 +89,54 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
   const [availableLetters, setAvailableLetters] = useState<string[]>([]);
   const [usedIndices, setUsedIndices] = useState<number[]>([]);
   const [learnIndex, setLearnIndex] = useState(0);
+  const [playerName, setPlayerName] = useState('');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [scoreSaved, setScoreSaved] = useState(false);
+
+  // 載入排行榜
+  const loadLeaderboard = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('leaderboard-spelling');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setLeaderboard(parsed);
+        } catch (e) {
+          console.error('Failed to parse leaderboard:', e);
+        }
+      }
+    }
+  }, []);
+
+  // 保存到排行榜
+  const saveToLeaderboard = useCallback(() => {
+    if (!playerName.trim()) return;
+    
+    const newEntry: LeaderboardEntry = {
+      name: playerName.trim(),
+      score,
+      difficulty,
+      unit,
+      date: new Date().toISOString(),
+    };
+    
+    const updated = [...leaderboard, newEntry]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+    
+    setLeaderboard(updated);
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('leaderboard-spelling', JSON.stringify(updated));
+    }
+    
+    setScoreSaved(true);
+  }, [playerName, score, difficulty, unit, leaderboard]);
+
+  // 初始化載入排行榜
+  useEffect(() => {
+    loadLeaderboard();
+  }, [loadLeaderboard]);
 
   // 語音合成
   const speak = (text: string) => {
@@ -134,6 +190,8 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
     setUserAnswer('');
     setLetterStatus({});
     setUsedIndices([]);
+    setPlayerName('');
+    setScoreSaved(false);
     setScreen('game');
     
     // 簡單模式：生成可用字母（包括空格）
@@ -350,6 +408,13 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
               🚌 2A Unit 5 (交通工具)
               <span className="block text-sm font-normal opacity-90">13個單字</span>
             </button>
+            <button
+              onClick={() => setScreen('leaderboard')}
+              className="w-full bg-gradient-to-r from-purple-400 to-indigo-500 text-white py-4 rounded-2xl text-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition-transform"
+            >
+              🏆 排行榜
+              <span className="block text-sm font-normal opacity-90">查看最高紀錄</span>
+            </button>
           </div>
         </motion.div>
       </div>
@@ -494,6 +559,9 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
     if (percentage >= 80) stars = '⭐⭐⭐';
     else if (percentage >= 50) stars = '⭐⭐';
     
+    const difficultyLabel = difficulty === 'easy' ? '簡單' : difficulty === 'medium' ? '中等' : '困難';
+    const unitLabel = unit === 4 ? 'Unit 4' : 'Unit 5';
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center p-4">
         <motion.div 
@@ -505,7 +573,34 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             {percentage >= 80 ? '太棒了！' : percentage >= 50 ? '做得好！' : '繼續努力！'}
           </h1>
-          <p className="text-2xl text-purple-600 font-bold mb-6">{score} / {total} 題答對</p>
+          <p className="text-2xl text-purple-600 font-bold mb-2">{score} / {total} 題答對</p>
+          <p className="text-sm text-gray-500 mb-6">{unitLabel} · {difficultyLabel}</p>
+          
+          {/* 保存到排行榜 */}
+          {!scoreSaved ? (
+            <div className="mb-6 p-4 bg-blue-50 rounded-2xl">
+              <p className="text-blue-700 font-bold mb-3">🏆 保存你的成績</p>
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="輸入你的名字"
+                maxLength={20}
+                className="w-full px-4 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-400 focus:outline-none text-center text-lg mb-3"
+              />
+              <button
+                onClick={saveToLeaderboard}
+                disabled={!playerName.trim()}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-transform"
+              >
+                🏆 儲存到排行榜
+              </button>
+            </div>
+          ) : (
+            <div className="mb-6 p-4 bg-green-50 rounded-2xl">
+              <p className="text-green-700 font-bold">✅ 已保存到排行榜！</p>
+            </div>
+          )}
           
           <div className="space-y-3">
             <button
@@ -513,6 +608,12 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
               className="w-full bg-gradient-to-r from-purple-400 to-pink-400 text-white py-4 rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition-transform"
             >
               再玩一次 🔄
+            </button>
+            <button
+              onClick={() => setScreen('leaderboard')}
+              className="w-full bg-gradient-to-r from-indigo-400 to-blue-400 text-white py-4 rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition-transform"
+            >
+              🏆 查看排行榜
             </button>
             <button
               onClick={() => setScreen('difficulty')}
@@ -526,6 +627,114 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
             >
               {onExit ? '返回' : '返回主頁'}
             </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // 排行榜畫面
+  if (screen === 'leaderboard') {
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    };
+    
+    const getDifficultyEmoji = (diff: Difficulty) => {
+      if (diff === 'easy') return '🌱';
+      if (diff === 'medium') return '🌿';
+      return '🌳';
+    };
+    
+    const getUnitEmoji = (u: Unit) => {
+      return u === 4 ? '🍎' : '🚌';
+    };
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-indigo-400 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
+        >
+          <div className="text-center mb-6">
+            <div className="text-5xl mb-3">🏆</div>
+            <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+              英文串字排行榜
+            </h1>
+            <p className="text-gray-500 text-sm mt-2">Top 10 最高紀錄</p>
+          </div>
+          
+          {leaderboard.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-3">📝</div>
+              <p>暫時冇紀錄</p>
+              <p className="text-sm">快啲玩遊戲創下紀錄啦！</p>
+            </div>
+          ) : (
+            <div className="space-y-2 mb-6 max-h-80 overflow-y-auto">
+              {leaderboard.map((entry, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center gap-3 p-3 rounded-xl ${
+                    index === 0
+                      ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300'
+                      : index === 1
+                      ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-300'
+                      : index === 2
+                      ? 'bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300'
+                      : 'bg-blue-50'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-lg ${
+                    index === 0
+                      ? 'bg-yellow-400 text-white'
+                      : index === 1
+                      ? 'bg-gray-400 text-white'
+                      : index === 2
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-blue-200 text-blue-700'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-800">{entry.name}</div>
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <span>{getUnitEmoji(entry.unit)}</span>
+                      <span>{getDifficultyEmoji(entry.difficulty)}</span>
+                      <span>· {formatDate(entry.date)}</span>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-purple-600">
+                    {entry.score}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => setScreen('menu')}
+              className="w-full bg-gradient-to-r from-purple-400 to-blue-400 text-white py-4 rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition-transform"
+            >
+              返回主頁 🏠
+            </button>
+            {leaderboard.length > 0 && (
+              <button
+                onClick={() => {
+                  if (confirm('確定要清除所有排行榜紀錄嗎？')) {
+                    setLeaderboard([]);
+                    if (typeof window !== 'undefined') {
+                      localStorage.removeItem('leaderboard-spelling');
+                    }
+                  }
+                }}
+                className="w-full bg-red-100 text-red-600 py-3 rounded-2xl font-bold hover:bg-red-200 transition-colors"
+              >
+                🗑️ 清除排行榜
+              </button>
+            )}
           </div>
         </motion.div>
       </div>
