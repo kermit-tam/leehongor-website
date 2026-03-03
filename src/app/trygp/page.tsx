@@ -180,13 +180,15 @@ export default function TryGPPage() {
             ))}
           </div>
           
-          {/* 讀答案按鈕 */}
+          {/* 讀完整句子按鈕 */}
           {answers[q.id] && !Array.isArray(answers[q.id]) && (
             <button
               onClick={() => {
                 const selectedOption = q.options?.find(o => o.label === answers[q.id]);
                 if (selectedOption) {
-                  readAnswer(selectedOption.text);
+                  // 將題目中的 ___ 替換成答案
+                  const fullSentence = q.question.replace(/_{2,}/g, selectedOption.text);
+                  readAnswer(fullSentence);
                 }
               }}
               className="w-full py-3 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
@@ -194,7 +196,7 @@ export default function TryGPPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
               </svg>
-              讀答案：{q.options?.find(o => o.label === answers[q.id])?.text}
+              讀完整句子
             </button>
           )}
         </div>
@@ -219,22 +221,24 @@ export default function TryGPPage() {
           </button>
         ))}
         
-        {/* 讀答案按鈕 */}
-        {answers[q.id] && !Array.isArray(answers[q.id]) && (
+        {/* 讀完整句子按鈕（供詞填充題） */}
+        {answers[q.id] && !Array.isArray(answers[q.id]) && q.type === 'mc-word-bank' && (
           <button
-            onClick={() => {
-              const selectedOption = q.options?.find(o => o.label === answers[q.id]);
-              if (selectedOption) {
-                readAnswer(selectedOption.text);
-              }
-            }}
-            className="w-full py-3 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-            </svg>
-            讀答案：{q.options?.find(o => o.label === answers[q.id])?.text}
-          </button>
+              onClick={() => {
+                const selectedOption = q.options?.find(o => o.label === answers[q.id]);
+                if (selectedOption) {
+                  // 將題目中的 ___ 替換成答案
+                  const fullSentence = q.question.replace(/_{2,}/g, selectedOption.text);
+                  readAnswer(fullSentence);
+                }
+              }}
+              className="w-full py-3 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+              讀完整句子
+            </button>
         )}
       </div>
     );
