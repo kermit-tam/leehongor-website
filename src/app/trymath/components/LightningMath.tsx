@@ -10,25 +10,37 @@ interface Question {
   answer: number;
 }
 
+interface LeaderboardEntry {
+  name: string;
+  time: string;
+  timeMs: number;
+  date: string;
+}
+
 export default function LightningMath() {
   // 遊戲狀態
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQ, setCurrentQ] = useState(0);
-  const [startTime, setStartTime] = useState(0);
   const [timer, setTimer] = useState('00:00.00');
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [combo, setCombo] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showResult, setShowResult] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [screen, setScreen] = useState<'start' | 'game' | 'result'>('start');
+  const [screen, setScreen] = useState<'start' | 'game' | 'result' | 'leaderboard'>('start');
   const [feedback, setFeedback] = useState<{ emoji: string; show: boolean }>({ emoji: '', show: false });
   const [errorMsg, setErrorMsg] = useState(false);
+  
+  // 排行榜相關
+  const [playerName, setPlayerName] = useState('');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [finalTime, setFinalTime] = useState('');
+  const [finalTimeMs, setFinalTimeMs] = useState(0);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const bgmIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(0);
 
   // 初始化音頻
   const initAudio = useCallback(() => {
@@ -83,48 +95,51 @@ export default function LightningMath() {
     osc2.stop(audioCtxRef.current.currentTime + 0.2);
   }, [soundEnabled]);
 
-  // 播放答錯聲（低沉糴糴）
+  // 播放答錯聲（低音嗶）
   const playWrongSound = useCallback(() => {
     if (!soundEnabled || !audioCtxRef.current) return;
     
     const osc = audioCtxRef.current.createOscillator();
     const gain = audioCtxRef.current.createGain();
     
-    osc.frequency.setValueAtTime(150, audioCtxRef.current.currentTime);
-    osc.frequency.linearRampToValueAtTime(80, audioCtxRef.current.currentTime + 0.3);
-    
-    const lfo = audioCtxRef.current.createOscillator();
-    lfo.frequency.value = 20;
-    const lfoGain = audioCtxRef.current.createGain();
-    lfoGain.gain.value = 30;
-    lfo.connect(lfoGain);
-    lfoGain.connect(osc.frequency);
-    lfo.start();
-    lfo.stop(audioCtxRef.current.currentTime + 0.3);
+    osc.frequency.setValueAtTime(200, audioCtxRef.current.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtxRef.current.currentTime + 0.3);
     
     gain.gain.setValueAtTime(0.4, audioCtxRef.current.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtxRef.current.currentTime + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtxRef.current.currentTime + 0.3);
     
     osc.connect(gain);
     gain.connect(audioCtxRef.current.destination);
     
     osc.start();
-    osc.stop(audioCtxRef.current.currentTime + 0.4);
+    osc.stop(audioCtxRef.current.currentTime + 0.3);
   }, [soundEnabled]);
 
-  // 背景節奏循環
+  // 生成題目
+  const generateQuestions = useCallback(() => {
+    const qs: Question[] = [];
+    for (let i = 0; i < 15; i++) {
+      const a = Math.floor(Math.random() * 9) + 1;
+      const b = Math.floor(Math.random() * 9) + 1;
+      qs.push({
+        text: `${a} + ${b} = ?`,
+        a,
+        b,
+        answer: a + b
+      });
+    }
+    return qs;
+  }, []);
+
+  // 開始背景節奏
   const startBGM = useCallback(() => {
-    if (!soundEnabled) return;
-    let count = 0;
+    if (bgmIntervalRef.current) clearInterval(bgmIntervalRef.current);
     bgmIntervalRef.current = setInterval(() => {
       playDadSound();
-      if (count % 2 === 0) {
-        setTimeout(() => playDadSound(), 200);
-      }
-      count++;
-    }, 600);
-  }, [soundEnabled, playDadSound]);
+    }, 500);
+  }, [playDadSound]);
 
+  // 停止背景節奏
   const stopBGM = useCallback(() => {
     if (bgmIntervalRef.current) {
       clearInterval(bgmIntervalRef.current);
@@ -132,36 +147,9 @@ export default function LightningMath() {
     }
   }, []);
 
-  // 產生加法題目（單位數加單位數：1-9 + 1-9）
-  const generateQuestions = useCallback((): Question[] => {
-    const qs: Question[] = [];
-    
-    for (let i = 0; i < 15; i++) {
-      let q = generateAddQuestion();
-      // 避免連續兩題答案相同
-      while (qs.length > 0 && qs[qs.length-1].answer === q.answer) {
-        q = generateAddQuestion();
-      }
-      qs.push(q);
-    }
-    
-    return qs;
-  }, []);
-
-  const generateAddQuestion = (): Question => {
-    // 單位數：1-9
-    const a = Math.floor(Math.random() * 9) + 1;  // 1-9
-    const b = Math.floor(Math.random() * 9) + 1;  // 1-9
-    const answer = a + b;  // 答案範圍：2-18
-    return { text: `${a} + ${b}`, a, b, answer };
-  };
-
   // 開始遊戲
   const startGame = useCallback(() => {
     initAudio();
-    if (audioCtxRef.current?.state === 'suspended') {
-      audioCtxRef.current.resume();
-    }
     
     const qs = generateQuestions();
     setQuestions(qs);
@@ -171,10 +159,13 @@ export default function LightningMath() {
     setIsProcessing(false);
     setCurrentAnswer('');
     setScreen('game');
-    setStartTime(Date.now());
+    setTimer('00:00.00');
+    
+    // 用 ref 儲存開始時間，確保計時準確
+    startTimeRef.current = Date.now();
     
     timerIntervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime || Date.now();
+      const elapsed = Date.now() - startTimeRef.current;
       const mins = Math.floor(elapsed / 60000);
       const secs = Math.floor((elapsed % 60000) / 1000);
       const ms = Math.floor((elapsed % 1000) / 10);
@@ -182,7 +173,7 @@ export default function LightningMath() {
     }, 10);
     
     startBGM();
-  }, [generateQuestions, initAudio, startBGM, startTime]);
+  }, [generateQuestions, initAudio, startBGM]);
 
   // 輸入數字
   const inputNum = (n: number) => {
@@ -203,142 +194,129 @@ export default function LightningMath() {
     }
   };
 
-  const clearAns = () => {
-    if (isProcessing) return;
-    setCurrentAnswer('');
-  };
-
+  // 答對處理
   const handleCorrect = () => {
+    if (isProcessing) return;
     setIsProcessing(true);
+    
     playCorrectSound();
-    
     setCombo(c => c + 1);
-    
-    setFeedback({ emoji: '✅', show: true });
-    setTimeout(() => setFeedback({ emoji: '', show: false }), 600);
+    setFeedback({ emoji: '✨', show: true });
     
     setTimeout(() => {
-      if (currentQ >= 14) {
+      setFeedback({ emoji: '', show: false });
+      
+      if (currentQ + 1 >= questions.length) {
         endGame();
       } else {
-        setCurrentQ(c => c + 1);
+        setCurrentQ(q => q + 1);
         setCurrentAnswer('');
         setIsProcessing(false);
       }
-    }, 400);
+    }, 300);
   };
 
+  // 答錯處理
   const handleWrong = () => {
-    playWrongSound();
-    setWrongCount(w => w + 1);
-    setCombo(0);
+    if (isProcessing) return;
+    setIsProcessing(true);
     
+    playWrongSound();
+    setCombo(0);
+    setWrongCount(w => w + 1);
     setErrorMsg(true);
     setFeedback({ emoji: '❌', show: true });
     
     setTimeout(() => {
       setFeedback({ emoji: '', show: false });
-      setCurrentAnswer('');
       setErrorMsg(false);
-    }, 600);
+      setCurrentAnswer('');
+      setIsProcessing(false);
+    }, 800);
   };
 
+  // 結束遊戲
   const endGame = () => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     stopBGM();
+    
+    const totalTime = Date.now() - startTimeRef.current;
+    const mins = Math.floor(totalTime / 60000);
+    const secs = Math.floor((totalTime % 60000) / 1000);
+    const ms = Math.floor((totalTime % 1000) / 10);
+    const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+    
+    setFinalTime(timeStr);
+    setFinalTimeMs(totalTime);
     setScreen('result');
+    
+    // 從 localStorage 讀取排行榜
+    const saved = localStorage.getItem('lightning-math-leaderboard');
+    if (saved) {
+      setLeaderboard(JSON.parse(saved));
+    }
   };
 
-  // 清理
+  // 儲存到排行榜
+  const saveToLeaderboard = () => {
+    if (!playerName.trim()) return;
+    
+    const newEntry: LeaderboardEntry = {
+      name: playerName.trim(),
+      time: finalTime,
+      timeMs: finalTimeMs,
+      date: new Date().toLocaleDateString('zh-HK')
+    };
+    
+    const updated = [...leaderboard, newEntry]
+      .sort((a, b) => a.timeMs - b.timeMs)
+      .slice(0, 10);
+    
+    setLeaderboard(updated);
+    localStorage.setItem('lightning-math-leaderboard', JSON.stringify(updated));
+    setScreen('leaderboard');
+  };
+
+  // 清除計時器
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-      stopBGM();
+      if (bgmIntervalRef.current) clearInterval(bgmIntervalRef.current);
     };
-  }, [stopBGM]);
+  }, []);
 
   // 開始畫面
   if (screen === 'start') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-        <div className="bg-white/95 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
-          <Link href="/trymath" className="absolute top-4 left-4 text-gray-500 hover:text-gray-700">
-            ← 返回
-          </Link>
-          <h1 className="text-4xl font-black mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            ⚡ 閃電加法王
-          </h1>
-          <p className="text-gray-600 mb-6 text-lg">
-            15題加法挑戰<br/>
-            答案範圍：2 至 19<br/>
-            答錯要答啱先可以過！
-          </p>
-          <button
-            onClick={startGame}
-            className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-12 py-4 rounded-full text-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition-transform"
-          >
-            開始挑戰 🚀
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 結果畫面
-  if (screen === 'result') {
-    const totalTime = Date.now() - startTime;
-    const mins = Math.floor(totalTime / 60000);
-    const secs = Math.floor((totalTime % 60000) / 1000);
-    const accuracy = Math.max(0, Math.round((15 / (15 + wrongCount)) * 100));
-    const avgTime = (totalTime / 15 / 1000).toFixed(1);
-    
-    let rank, title, msg;
-    if (wrongCount === 0 && totalTime < 30000) {
-      rank = '👑'; title = '數學之神！'; msg = '完美！零錯誤！';
-    } else if (wrongCount <= 2 && totalTime < 45000) {
-      rank = '🥇'; title = '金牌選手！'; msg = '非常出色！';
-    } else if (wrongCount <= 5) {
-      rank = '🥈'; title = '銀牌選手！'; msg = '做得很好！';
-    } else {
-      rank = '💪'; title = '繼續努力！'; msg = '加油！愈練愈強！';
-    }
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-        <div className="bg-white/95 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
-          <div className="text-6xl mb-4">{rank}</div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">{title}</h1>
+      <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-orange-400 to-red-400 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md w-full text-center">
+          <div className="text-6xl mb-4">⚡</div>
+          <h1 className="text-3xl font-black text-gray-800 mb-2">閃電加法王</h1>
+          <p className="text-gray-600 mb-6">15題加法挑戰，答錯要答啱先可以過！</p>
           
-          <div className="grid grid-cols-2 gap-4 my-6">
-            <div className="bg-gray-100 rounded-xl p-4">
-              <div className="text-2xl font-bold text-indigo-600">{mins}:{secs.toString().padStart(2, '0')}</div>
-              <div className="text-sm text-gray-500">總時間</div>
-            </div>
-            <div className="bg-gray-100 rounded-xl p-4">
-              <div className="text-2xl font-bold text-purple-600">{avgTime}s</div>
-              <div className="text-sm text-gray-500">平均每題</div>
-            </div>
-            <div className="bg-gray-100 rounded-xl p-4">
-              <div className="text-2xl font-bold text-red-600">{wrongCount}</div>
-              <div className="text-sm text-gray-500">答錯次數</div>
-            </div>
-            <div className="bg-gray-100 rounded-xl p-4">
-              <div className="text-2xl font-bold text-green-600">{accuracy}%</div>
-              <div className="text-sm text-gray-500">準確率</div>
-            </div>
-          </div>
-          
-          <p className="text-gray-600 mb-6">{msg}</p>
-          
-          <div className="flex gap-3">
+          <div className="space-y-3">
             <button
               onClick={startGame}
-              className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
+              className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all"
             >
-              再玩一次 🔄
+              🎮 開始挑戰
             </button>
-            <Link href="/trymath" className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-bold flex items-center justify-center">
-              返回
+            
+            <button
+              onClick={() => {
+                const saved = localStorage.getItem('lightning-math-leaderboard');
+                if (saved) setLeaderboard(JSON.parse(saved));
+                setScreen('leaderboard');
+              }}
+              className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all"
+            >
+              🏆 排行榜
+            </button>
+            
+            <Link href="/trymath">
+              <button className="w-full py-3 text-gray-500 hover:text-gray-700 transition-all">
+                ← 返回
+              </button>
             </Link>
           </div>
         </div>
@@ -347,125 +325,183 @@ export default function LightningMath() {
   }
 
   // 遊戲畫面
-  const q = questions[currentQ];
-  if (!q) return null;
+  if (screen === 'game') {
+    const q = questions[currentQ];
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-orange-400 to-red-400 flex flex-col">
+        {/* 頂部資訊 */}
+        <div className="bg-white/90 backdrop-blur p-4 flex justify-between items-center shadow-lg">
+          <div className="text-2xl font-black text-orange-600">⚡ {timer}</div>
+          <div className="text-lg font-bold text-gray-700">
+            {currentQ + 1} / {questions.length}
+          </div>
+        </div>
 
+        {/* 連擊顯示 */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          {combo > 0 && (
+            <div className="text-4xl font-black text-white mb-4 drop-shadow-lg">
+              🔥 {combo} 連擊！
+            </div>
+          )}
+          
+          {/* 題目 */}
+          <div className="bg-white rounded-3xl p-8 shadow-2xl mb-6 min-w-[200px] text-center">
+            <div className="text-5xl font-black text-gray-800 mb-4">{q?.text}</div>
+            
+            {/* 答案顯示 */}
+            <div className={`text-4xl font-bold h-16 flex items-center justify-center rounded-xl transition-all ${
+              errorMsg ? 'bg-red-100 text-red-600 animate-shake' : 'bg-gray-100 text-gray-800'
+            }`}>
+              {currentAnswer || '?'}
+            </div>
+          </div>
+
+          {/* 反饋動畫 */}
+          {feedback.show && (
+            <div className="text-6xl animate-bounce mb-4">{feedback.emoji}</div>
+          )}
+
+          {/* 數字鍵盤 */}
+          <div className="grid grid-cols-3 gap-3 max-w-[300px]">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+              <button
+                key={n}
+                onClick={() => inputNum(n)}
+                disabled={isProcessing}
+                className="w-20 h-20 bg-white rounded-2xl text-3xl font-bold text-gray-800 shadow-lg hover:bg-orange-50 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {n}
+              </button>
+            ))}
+            <button
+              onClick={() => inputNum(0)}
+              disabled={isProcessing}
+              className="w-20 h-20 bg-white rounded-2xl text-3xl font-bold text-gray-800 shadow-lg hover:bg-orange-50 active:scale-95 transition-all col-start-2 disabled:opacity-50"
+            >
+              0
+            </button>
+          </div>
+
+          {/* 錯誤次數 */}
+          {wrongCount > 0 && (
+            <div className="mt-4 text-white font-bold">
+              錯誤次數: {wrongCount}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // 結束畫面 - 輸入名
+  if (screen === 'result') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-orange-400 to-red-400 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md w-full text-center">
+          <div className="text-6xl mb-4">🎉</div>
+          <h1 className="text-3xl font-black text-gray-800 mb-2">挑戰完成！</h1>
+          
+          <div className="bg-orange-50 rounded-2xl p-6 mb-6">
+            <p className="text-gray-600 mb-2">用時</p>
+            <p className="text-5xl font-black text-orange-600">{finalTime}</p>
+            <p className="text-gray-500 mt-2">錯誤次數: {wrongCount}</p>
+          </div>
+
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="輸入你嘅名"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg focus:border-orange-500 focus:outline-none"
+              maxLength={10}
+            />
+            
+            <button
+              onClick={saveToLeaderboard}
+              disabled={!playerName.trim()}
+              className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              🏆 儲存到排行榜
+            </button>
+            
+            <button
+              onClick={startGame}
+              className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all"
+            >
+              🔄 再玩一次
+            </button>
+            
+            <button
+              onClick={() => setScreen('start')}
+              className="w-full py-3 text-gray-500 hover:text-gray-700 transition-all"
+            >
+              ← 返回主頁
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 排行榜畫面
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-2">
-      <div className="bg-white/95 rounded-3xl w-full max-w-md p-4 shadow-2xl">
-        {/* 聲音開關 */}
-        <button
-          onClick={() => {
-            setSoundEnabled(!soundEnabled);
-            if (soundEnabled) stopBGM();
-            else startBGM();
-          }}
-          className="absolute top-4 left-4 bg-white/90 rounded-full w-10 h-10 text-xl shadow"
-        >
-          {soundEnabled ? '🔊' : '🔇'}
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-orange-400 to-red-400 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md w-full">
+        <h1 className="text-3xl font-black text-gray-800 mb-6 text-center">🏆 排行榜</h1>
         
-        {/* 狀態欄 */}
-        <div className="flex justify-between items-center mb-4 p-3 bg-gray-100 rounded-xl">
-          <div className="text-xl font-bold text-indigo-600 font-mono">{timer}</div>
-          <div className="flex gap-1">
-            {Array.from({ length: 15 }).map((_, i) => (
+        {leaderboard.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">暫時未有記錄</p>
+        ) : (
+          <div className="space-y-3 mb-6">
+            {leaderboard.map((entry, idx) => (
               <div
-                key={i}
-                className={`w-2.5 h-2.5 rounded-full ${
-                  i < currentQ ? 'bg-green-400' : 
-                  i === currentQ ? 'bg-indigo-500 animate-pulse' : 'bg-gray-300'
+                key={idx}
+                className={`flex items-center gap-4 p-4 rounded-xl ${
+                  idx === 0 ? 'bg-yellow-100' :
+                  idx === 1 ? 'bg-gray-100' :
+                  idx === 2 ? 'bg-orange-50' :
+                  'bg-gray-50'
                 }`}
-              />
+              >
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                  idx === 0 ? 'bg-yellow-500 text-white' :
+                  idx === 1 ? 'bg-gray-400 text-white' :
+                  idx === 2 ? 'bg-orange-400 text-white' :
+                  'bg-gray-300 text-gray-700'
+                }`}>
+                  {idx + 1}
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-gray-800">{entry.name}</p>
+                  <p className="text-sm text-gray-500">{entry.date}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-black text-orange-600">{entry.time}</p>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
-        
-        {/* 題目區 */}
-        <div className="text-center py-4 relative min-h-[200px]">
-          {/* 連擊 */}
-          {combo >= 3 && (
-            <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold animate-bounce">
-              🔥 連擊 x{combo}
-            </div>
-          )}
-          
-          <div className="text-gray-500 mb-2">第 {currentQ + 1} 題</div>
-          
-          <div className="text-6xl font-black text-gray-800 my-4 animate-pop">
-            {q.text} =
-          </div>
-          
-          <div className={`text-5xl font-bold min-h-[60px] transition-all ${
-            currentAnswer === '' ? 'text-gray-300' : errorMsg ? 'text-red-500 animate-shake' : 'text-indigo-600'
-          }`}>
-            {currentAnswer || '?'}
-          </div>
-          
-          {/* 反饋 */}
-          {feedback.show && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-7xl animate-feedback">
-              {feedback.emoji}
-            </div>
-          )}
-          
-          {/* 錯誤提示 */}
-          {errorMsg && (
-            <div className="text-red-500 font-bold mt-2 animate-pulse">
-              ❌ 再試一次！
-            </div>
-          )}
-        </div>
-        
-        {/* 鍵盤 */}
-        <div className="grid grid-cols-3 gap-2">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-            <button
-              key={num}
-              onClick={() => inputNum(num)}
-              disabled={isProcessing}
-              className="aspect-square rounded-2xl text-3xl font-bold bg-gradient-to-br from-white to-gray-100 shadow-md active:scale-95 disabled:opacity-50 transition-transform"
-            >
-              {num}
-            </button>
-          ))}
+        )}
+
+        <div className="space-y-3">
           <button
-            onClick={clearAns}
-            disabled={isProcessing}
-            className="col-span-2 aspect-[2/1] rounded-2xl text-xl font-bold bg-gradient-to-br from-red-400 to-red-500 text-white shadow-md active:scale-95 disabled:opacity-50 transition-transform"
+            onClick={startGame}
+            className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold text-lg shadow-lg"
           >
-            清除 ❌
+            🎮 開始挑戰
           </button>
+          
           <button
-            onClick={() => inputNum(0)}
-            disabled={isProcessing}
-            className="aspect-square rounded-2xl text-3xl font-bold bg-gradient-to-br from-white to-gray-100 shadow-md active:scale-95 disabled:opacity-50 transition-transform"
+            onClick={() => setScreen('start')}
+            className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all"
           >
-            0
+            ← 返回主頁
           </button>
         </div>
       </div>
-      
-      <style jsx>{`
-        @keyframes pop {
-          0% { transform: scale(0.8); opacity: 0; }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes feedback {
-          0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-          50% { transform: translate(-50%, -50%) scale(1.5); }
-          100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-10px); }
-          75% { transform: translateX(10px); }
-        }
-        .animate-pop { animation: pop 0.3s ease-out; }
-        .animate-feedback { animation: feedback 0.6s ease-out; }
-        .animate-shake { animation: shake 0.5s ease-in-out; }
-      `}</style>
     </div>
   );
 }
