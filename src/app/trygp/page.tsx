@@ -54,6 +54,12 @@ export default function TryGPPage() {
 
   const checkAnswer = (q: Question, userAnswer: string | string[] | undefined): boolean => {
     if (!userAnswer) return false;
+    
+    // 簡答題：用戶自己判斷對錯，'correct' 代表答對
+    if (q.type === 'short-answer') {
+      return userAnswer === 'correct';
+    }
+    
     if (Array.isArray(q.answer)) {
       if (!Array.isArray(userAnswer)) return false;
       // 配對題和看圖判斷題
