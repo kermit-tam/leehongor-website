@@ -212,38 +212,45 @@ export default function KurumiMath() {
     loadLeaderboard();
   }, []);
 
-  const loadLeaderboard = () => {
+  const loadLeaderboard = async () => {
     try {
-      const saved = localStorage.getItem('leaderboard-kurumi');
-      if (saved) {
-        setLeaderboard(JSON.parse(saved));
+      const response = await fetch('/api/leaderboard?game=kurumimath');
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
       }
-    } catch (e) {
-      console.error('Failed to load leaderboard:', e);
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      setLeaderboard([]);
     }
   };
 
-  const saveToLeaderboard = () => {
+  const saveToLeaderboard = async () => {
     if (!playerName.trim() || hasSaved) return;
     
     const totalTime = Date.now() - startTime;
-    const newEntry: LeaderboardEntry = {
-      name: playerName.trim(),
-      wrongCount,
-      time: totalTime,
-      date: new Date().toLocaleDateString('zh-HK'),
-    };
     
-    const updated = [...leaderboard, newEntry]
-      .sort((a, b) => {
-        if (a.wrongCount !== b.wrongCount) return a.wrongCount - b.wrongCount;
-        return a.time - b.time;
-      })
-      .slice(0, 20);
-    
-    setLeaderboard(updated);
-    localStorage.setItem('leaderboard-kurumi', JSON.stringify(updated));
-    setHasSaved(true);
+    try {
+      const response = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game: 'kurumimath',
+          name: playerName.trim(),
+          score: 10 - wrongCount,
+          difficulty: `${wrongCount} 錯`,
+          time: `${Math.floor(totalTime / 1000)}秒`,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
+        setHasSaved(true);
+      }
+    } catch (error) {
+      console.error('Failed to save leaderboard:', error);
+    }
   };
 
   const initAudio = useCallback(() => {

@@ -249,32 +249,47 @@ export default function LightningMath() {
     setFinalTime(timeStr);
     setFinalTimeMs(totalTime);
     setScreen('result');
-    
-    // 從 localStorage 讀取排行榜
-    const saved = localStorage.getItem('lightning-math-leaderboard');
-    if (saved) {
-      setLeaderboard(JSON.parse(saved));
-    }
   };
 
-  // 儲存到排行榜
-  const saveToLeaderboard = () => {
+  // 從伺服器載入排行榜
+  const loadLeaderboard = useCallback(async () => {
+    try {
+      const response = await fetch('/api/leaderboard?game=lightningmath');
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
+      }
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      setLeaderboard([]);
+    }
+    setScreen('leaderboard');
+  }, []);
+
+  // 儲存到伺服器排行榜
+  const saveToLeaderboard = async () => {
     if (!playerName.trim()) return;
     
-    const newEntry: LeaderboardEntry = {
-      name: playerName.trim(),
-      time: finalTime,
-      timeMs: finalTimeMs,
-      date: new Date().toLocaleDateString('zh-HK')
-    };
-    
-    const updated = [...leaderboard, newEntry]
-      .sort((a, b) => a.timeMs - b.timeMs)
-      .slice(0, 10);
-    
-    setLeaderboard(updated);
-    localStorage.setItem('lightning-math-leaderboard', JSON.stringify(updated));
-    setScreen('leaderboard');
+    try {
+      const response = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game: 'lightningmath',
+          name: playerName.trim(),
+          score: finalTimeMs,
+          time: finalTime,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
+        setScreen('leaderboard');
+      }
+    } catch (error) {
+      console.error('Failed to save leaderboard:', error);
+    }
   };
 
   // 清除計時器
@@ -303,11 +318,7 @@ export default function LightningMath() {
             </button>
             
             <button
-              onClick={() => {
-                const saved = localStorage.getItem('lightning-math-leaderboard');
-                if (saved) setLeaderboard(JSON.parse(saved));
-                setScreen('leaderboard');
-              }}
+              onClick={loadLeaderboard}
               className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all"
             >
               🏆 排行榜

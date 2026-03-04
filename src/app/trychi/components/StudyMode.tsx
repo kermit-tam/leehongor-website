@@ -16,11 +16,12 @@ interface StudyModeProps {
   emoji: string;
   words: WordItem[];
   onExit: () => void;
+  onGoToQuiz?: () => void; // 新增：去測驗的 callback
 }
 
 type Speed = 0.5 | 0.8 | 1;
 
-export default function StudyMode({ title, emoji, words, onExit }: StudyModeProps) {
+export default function StudyMode({ title, emoji, words, onExit, onGoToQuiz }: StudyModeProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [learnedWords, setLearnedWords] = useState<Set<number>>(new Set());
   const [showExamples, setShowExamples] = useState(false);
@@ -83,6 +84,7 @@ export default function StudyMode({ title, emoji, words, onExit }: StudyModeProp
 
   const progress = ((currentIndex + 1) / words.length) * 100;
   const learnedProgress = (learnedWords.size / words.length) * 100;
+  const isLastWord = currentIndex === words.length - 1;
 
   if (!currentWord) return null;
 
@@ -208,9 +210,21 @@ export default function StudyMode({ title, emoji, words, onExit }: StudyModeProp
                 : 'bg-green-500 text-white hover:bg-green-600'
             }`}
           >
-            ✓ 記得了（自動下一個）
+            ✓ 記得了{isLastWord ? '' : '（自動下一個）'}
           </button>
         </div>
+
+        {/* 最後一題：去測驗按鈕 */}
+        {isLastWord && onGoToQuiz && (
+          <div className="mb-4">
+            <button
+              onClick={onGoToQuiz}
+              className="w-full bg-gradient-to-r from-orange-400 to-red-500 text-white py-4 rounded-xl text-lg font-bold shadow-lg hover:shadow-xl active:scale-95 transition-transform"
+            >
+              📝 去測驗！
+            </button>
+          </div>
+        )}
 
         {/* 導航按鈕 */}
         <div className="flex gap-2">

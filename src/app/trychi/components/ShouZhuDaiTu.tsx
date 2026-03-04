@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import StudyMode from './StudyMode';
@@ -152,11 +152,27 @@ export default function ShouZhuDaiTu() {
   const [score, setScore] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [questions] = useState<Question[]>(QUESTIONS);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [playerName, setPlayerName] = useState('');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
+  // 隨機打亂數組
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
   const startGame = () => {
+    // 隨機排序題目，並且每題選項都隨機排序
+    const shuffledQuestions = shuffleArray(QUESTIONS).map(q => ({
+      ...q,
+      options: shuffleArray(q.options)
+    }));
+    setQuestions(shuffledQuestions);
     setCurrentIndex(0);
     setScore(0);
     setShowFeedback(false);
@@ -172,23 +188,77 @@ export default function ShouZhuDaiTu() {
     
     if (correct) {
       setScore(s => s + 1);
-    }
-    
-    setTimeout(() => {
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(c => c + 1);
+      // 答對：1.5秒後去下一題
+      setTimeout(() => {
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex(c => c + 1);
+          setShowFeedback(false);
+        } else {
+          setScreen('result');
+        }
+      }, 1500);
+    } else {
+      // 答錯：顯示正確答案2.5秒後重置（唔去下一題）
+      setTimeout(() => {
         setShowFeedback(false);
-      } else {
-        setScreen('result');
-      }
-    }, 1500);
+      }, 2500);
+    }
   };
 
-  // 讀取排行榜
-  const loadLeaderboard = () => {
-    const saved = localStorage.getItem('leaderboard-shouzhudaitu');
-    if (saved) setLeaderboard(JSON.parse(saved));
+  // 從伺服器讀取排行榜
+  const loadLeaderboard = useCallback(async () => {
+    try {
+      const response = await fetch('/api/leaderboard?game=shouzhudaitu');
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
+      }
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      setLeaderboard([]);
+    }
     setScreen('leaderboard');
+  }, []);
+
+  // 儲存分數到伺服器排行榜
+  const saveToLeaderboard = async () => {
+    if (!playerName.trim()) return;
+    
+    try {
+      const response = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game: 'shouzhudaitu',
+          name: playerName.trim(),
+          score,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
+        setScreen('leaderboard');
+      }
+    } catch (error) {
+      console.error('Failed to save leaderboard:', error);
+    }
+  };
+
+  // 語音朗讀
+  const speak = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-HK';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // 從溫習模式去測驗
+  const goToQuizFromStudy = () => {
+    startGame();
   };
 
   // 溫習模式
@@ -199,6 +269,7 @@ export default function ShouZhuDaiTu() {
         emoji="🐰" 
         words={shouZhuWords} 
         onExit={() => setScreen('menu')} 
+        onGoToQuiz={goToQuizFromStudy}
       />
     );
   }
@@ -254,27 +325,6 @@ export default function ShouZhuDaiTu() {
       </div>
     );
   }
-
-  // 儲存分數到排行榜
-  const saveToLeaderboard = () => {
-    if (!playerName.trim()) return;
-    
-    const newEntry: LeaderboardEntry = {
-      name: playerName.trim(),
-      score,
-      date: new Date().toLocaleDateString('zh-HK')
-    };
-    
-    const saved = localStorage.getItem('leaderboard-shouzhudaitu');
-    const current = saved ? JSON.parse(saved) : [];
-    const updated = [...current, newEntry]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
-    
-    localStorage.setItem('leaderboard-shouzhudaitu', JSON.stringify(updated));
-    setLeaderboard(updated);
-    setScreen('leaderboard');
-  };
 
   // 結果畫面
   if (screen === 'result') {
@@ -422,9 +472,15 @@ export default function ShouZhuDaiTu() {
         {/* 題目 */}
         <div className="mb-6">
           <div className="bg-purple-50 rounded-2xl p-4 mb-3 border-2 border-purple-200">
-            <p className="text-xl font-bold text-gray-800 leading-relaxed">
+            <p className="text-xl font-bold text-gray-800 leading-relaxed mb-3">
               {currentQ?.sentence}
             </p>
+            <button
+              onClick={() => speak(currentQ?.sentence || '')}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-600 rounded-full text-sm font-bold hover:bg-blue-200 transition-colors"
+            >
+              🔊 讀題目
+            </button>
           </div>
         </div>
 
@@ -452,6 +508,21 @@ export default function ShouZhuDaiTu() {
             <div className={`text-2xl font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
               {isCorrect ? '正確' : `正確答案：${currentQ?.answer}`}
             </div>
+            {/* 讀完整句子按鈕 */}
+            {isCorrect && currentQ && (
+              <button
+                onClick={() => {
+                  const fullSentence = currentQ.sentence.replace('____', currentQ.answer);
+                  speak(fullSentence);
+                }}
+                className="mt-4 flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-full text-lg font-bold hover:bg-green-600 transition-colors mx-auto"
+              >
+                🔊 讀完整句子
+              </button>
+            )}
+            {!isCorrect && (
+              <p className="text-gray-500 mt-2 text-sm">2.5秒後重置...</p>
+            )}
           </motion.div>
         )}
       </div>

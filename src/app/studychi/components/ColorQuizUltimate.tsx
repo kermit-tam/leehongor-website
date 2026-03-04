@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { allPlatformThemes } from '../data/platform-themes';
+import { allPlatformThemes, getWallStyle } from '../data/platform-themes';
 import { Leaderboard } from './Leaderboard';
 
 interface ColorQuizUltimateProps {
@@ -146,7 +146,7 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
             {answers.map((ans, idx) => (
               <div key={idx} className={`flex items-center gap-3 p-2 rounded-lg ${ans.correct ? 'bg-green-50' : 'bg-red-50'}`}>
                 <span className="text-lg">{ans.correct ? '✅' : '❌'}</span>
-                <div className="w-6 h-6 rounded border-2 border-gray-300" style={{ backgroundColor: questions[idx].theme.wallColor }} />
+                <div className="w-6 h-6 rounded border-2 border-gray-300" style={{ background: getWallStyle(questions[idx].theme) }} />
                 <span className="flex-1 text-sm font-medium">{ans.station}</span>
                 <span className="text-xs text-gray-500">第{ans.q}題</span>
               </div>
@@ -216,23 +216,38 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
         
         {/* 大色塊 */}
         <div 
-          className="w-full aspect-square rounded-2xl shadow-inner mb-6 flex items-center justify-center"
+          className="w-full aspect-square rounded-2xl shadow-inner mb-6 flex items-center justify-center overflow-hidden"
           style={{ 
-            backgroundColor: currentQuestion.theme.wallColor,
+            background: getWallStyle(currentQuestion.theme),
             boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.2)',
           }}
         >
-          {/* 馬賽克紋理 */}
-          <div 
-            className="w-full h-full rounded-2xl opacity-20"
-            style={{
-              backgroundImage: `
-                linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)
-              `,
-              backgroundSize: '30px 30px',
-            }}
-          />
+          {/* 馬賽克紋理（淨係純色站先顯示） */}
+          {!currentQuestion.theme.wallStyle && (
+            <div 
+              className="w-full h-full rounded-2xl opacity-20"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)
+                `,
+                backgroundSize: '30px 30px',
+              }}
+            />
+          )}
+          {/* 格子效果（柴灣站） */}
+          {currentQuestion.theme.wallType === 'grid' && (
+            <div 
+              className="w-full h-full opacity-30"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(255,255,255,0.5) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(255,255,255,0.5) 1px, transparent 1px)
+                `,
+                backgroundSize: '20px 20px',
+              }}
+            />
+          )}
         </div>
 
         {/* 選項 */}
@@ -271,7 +286,7 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
                   <div 
                     className="w-full h-2 rounded-full mt-1"
                     style={{ 
-                      backgroundColor: option.wallColor,
+                      background: getWallStyle(option),
                       border: '1px solid rgba(0,0,0,0.2)'
                     }}
                   />

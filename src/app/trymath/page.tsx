@@ -7,8 +7,11 @@ import { CEMNavbar } from '@/components/cem-navbar';
 import LightningMath from './components/LightningMath';
 import FruitCounting from './components/FruitCounting';
 import KurumiMath from './components/KurumiMath';
+import DogMultiplication from './components/DogMultiplication';
+import LightningSubtraction from './components/LightningSubtraction';
+import BabySubtraction from './components/BabySubtraction';
 
-type GameMode = 'menu' | 'lightning' | 'fruit' | 'kurumi';
+type GameMode = 'menu' | 'lightning' | 'fruit' | 'kurumi' | 'dogmultiply' | 'lightningsubtract' | 'babysubtract';
 
 export default function TryMathPage() {
   const [gameMode, setGameMode] = useState<GameMode>('menu');
@@ -113,6 +116,72 @@ export default function TryMathPage() {
                 </div>
               </motion.button>
 
+              {/* 🐕 狗狗乘數表 */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setGameMode('dogmultiply')}
+                className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-5xl">
+                    🐕
+                  </div>
+                  <div className="flex-1 text-white text-left">
+                    <h2 className="text-2xl font-bold mb-1">狗狗乘數表</h2>
+                    <p className="text-white/80">15題乘數挑戰，2至9乘法！</p>
+                    <div className="flex gap-2 mt-2">
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm">✖️ 乘法</span>
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm">🐕 小學</span>
+                    </div>
+                  </div>
+                  <span className="text-white text-3xl">→</span>
+                </div>
+              </motion.button>
+
+              {/* ⚡ 閃電減法王 */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setGameMode('lightningsubtract')}
+                className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-5xl">
+                    ⚡
+                  </div>
+                  <div className="flex-1 text-white text-left">
+                    <h2 className="text-2xl font-bold mb-1">閃電減法王</h2>
+                    <p className="text-white/80">15題減法大挑戰，2-18減1-9！</p>
+                    <div className="flex gap-2 mt-2">
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm">➖ 減法</span>
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm">⏱️ 計時</span>
+                    </div>
+                  </div>
+                  <span className="text-white text-3xl">→</span>
+                </div>
+              </motion.button>
+
+              {/* 👶 減法BB仔 */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setGameMode('babysubtract')}
+                className="w-full bg-gradient-to-r from-pink-400 via-rose-400 to-purple-400 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-5xl">
+                    👶
+                  </div>
+                  <div className="flex-1 text-white text-left">
+                    <h2 className="text-2xl font-bold mb-1">減法BB仔</h2>
+                    <p className="text-white/80">簡單減法入門，2-10減1-9！</p>
+                    <div className="flex gap-2 mt-2">
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm">➖ 減法</span>
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm">👶 幼稚園</span>
+                    </div>
+                  </div>
+                  <span className="text-white text-3xl">→</span>
+                </div>
+              </motion.button>
+
               {/* 說明 */}
               <div className="bg-purple-50 rounded-2xl p-6">
                 <h3 className="font-bold text-purple-800 mb-3">🎮 點玩？</h3>
@@ -135,6 +204,18 @@ export default function TryMathPage() {
 
           {gameMode === 'kurumi' && (
             <KurumiMath />
+          )}
+
+          {gameMode === 'dogmultiply' && (
+            <DogMultiplication />
+          )}
+
+          {gameMode === 'lightningsubtract' && (
+            <LightningSubtraction />
+          )}
+
+          {gameMode === 'babysubtract' && (
+            <BabySubtraction />
           )}
         </AnimatePresence>
       </main>

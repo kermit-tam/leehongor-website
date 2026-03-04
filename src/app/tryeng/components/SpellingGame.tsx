@@ -93,45 +93,46 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [scoreSaved, setScoreSaved] = useState(false);
 
-  // 載入排行榜
-  const loadLeaderboard = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('leaderboard-spelling');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          setLeaderboard(parsed);
-        } catch (e) {
-          console.error('Failed to parse leaderboard:', e);
-        }
+  // 從伺服器載入排行榜
+  const loadLeaderboard = useCallback(async () => {
+    try {
+      const response = await fetch('/api/leaderboard?game=spelling');
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
       }
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      setLeaderboard([]);
     }
   }, []);
 
-  // 保存到排行榜
-  const saveToLeaderboard = useCallback(() => {
+  // 保存到伺服器排行榜
+  const saveToLeaderboard = useCallback(async () => {
     if (!playerName.trim()) return;
     
-    const newEntry: LeaderboardEntry = {
-      name: playerName.trim(),
-      score,
-      difficulty,
-      unit,
-      date: new Date().toISOString(),
-    };
-    
-    const updated = [...leaderboard, newEntry]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
-    
-    setLeaderboard(updated);
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('leaderboard-spelling', JSON.stringify(updated));
+    try {
+      const response = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game: 'spelling',
+          name: playerName.trim(),
+          score,
+          difficulty,
+          unit: unit.toString(),
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
+        setScoreSaved(true);
+      }
+    } catch (error) {
+      console.error('Failed to save leaderboard:', error);
     }
-    
-    setScoreSaved(true);
-  }, [playerName, score, difficulty, unit, leaderboard]);
+  }, [playerName, score, difficulty, unit]);
 
   // 初始化載入排行榜
   useEffect(() => {
@@ -720,21 +721,6 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
             >
               返回主頁 🏠
             </button>
-            {leaderboard.length > 0 && (
-              <button
-                onClick={() => {
-                  if (confirm('確定要清除所有排行榜紀錄嗎？')) {
-                    setLeaderboard([]);
-                    if (typeof window !== 'undefined') {
-                      localStorage.removeItem('leaderboard-spelling');
-                    }
-                  }
-                }}
-                className="w-full bg-red-100 text-red-600 py-3 rounded-2xl font-bold hover:bg-red-200 transition-colors"
-              >
-                🗑️ 清除排行榜
-              </button>
-            )}
           </div>
         </motion.div>
       </div>

@@ -16,6 +16,7 @@ interface LeaderboardEntry {
   name: string;
   score: number;
   difficulty: Difficulty;
+  time: number;
   date: string;
 }
 
@@ -51,6 +52,11 @@ export default function FruitCounting() {
   const [playerName, setPlayerName] = useState('');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [hasSaved, setHasSaved] = useState(false);
+  
+  // 計時功能
+  const [startTime, setStartTime] = useState<number>(0);
+  const [totalTime, setTotalTime] = useState<number>(0);
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
 
   // 生成題目
   const generateQuestions = useCallback((diff: Difficulty): Question[] => {
@@ -69,39 +75,66 @@ export default function FruitCounting() {
     return qs;
   }, []);
 
-  const loadLeaderboard = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('leaderboard-fruit');
-      if (saved) {
-        try {
-          setLeaderboard(JSON.parse(saved));
-        } catch {
-          setLeaderboard([]);
-        }
+  // 從伺服器載入排行榜
+  const loadLeaderboard = useCallback(async () => {
+    try {
+      const response = await fetch('/api/leaderboard?game=fruitcounting');
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
       }
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      setLeaderboard([]);
     }
   }, []);
 
-  const saveToLeaderboard = () => {
+  // 儲存到伺服器排行榜
+  const saveToLeaderboard = async () => {
     if (!playerName.trim()) return;
     
     const newEntry: LeaderboardEntry = {
       name: playerName.trim(),
       score,
       difficulty,
+      time: totalTime,
       date: new Date().toISOString(),
     };
     
-    const updated = [...leaderboard, newEntry].sort((a, b) => b.score - a.score).slice(0, 10);
-    setLeaderboard(updated);
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('leaderboard-fruit', JSON.stringify(updated));
+    try {
+      const response = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game: 'fruitcounting',
+          name: newEntry.name,
+          score: newEntry.score,
+          difficulty: newEntry.difficulty,
+          time: newEntry.time,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.entries || []);
+        setHasSaved(true);
+        setTimeout(() => setScreen('leaderboard'), 500);
+      }
+    } catch (error) {
+      console.error('Failed to save leaderboard:', error);
     }
-    
-    setHasSaved(true);
-    setTimeout(() => setScreen('leaderboard'), 500);
   };
+
+  // 遊戲進行中的計時器
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (screen === 'game' && startTime > 0) {
+      interval = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [screen, startTime]);
 
   useEffect(() => {
     loadLeaderboard();
@@ -114,6 +147,9 @@ export default function FruitCounting() {
     setScore(0);
     setHasSaved(false);
     setPlayerName('');
+    setTotalTime(0);
+    setElapsedTime(0);
+    setStartTime(Date.now());
     setScreen('game');
     setShowFruits(true);
   };
@@ -130,20 +166,32 @@ export default function FruitCounting() {
     
     if (correctAnswer) {
       setScore(s => s + 1);
-    }
-    
-    // 延遲後下一題
-    setTimeout(() => {
-      if (currentQ < questions.length - 1) {
-        setCurrentQ(c => c + 1);
+      // 答對：1.5秒後去下一題
+      setTimeout(() => {
+        if (currentQ < questions.length - 1) {
+          setCurrentQ(c => c + 1);
+          setSelectedAnswer(null);
+          setShowFeedback(false);
+          setShowFruits(false);
+          setTimeout(() => setShowFruits(true), 100);
+        } else {
+          // 完成，記錄總時間
+          const endTime = Date.now();
+          const totalSeconds = Math.floor((endTime - startTime) / 1000);
+          setTotalTime(totalSeconds);
+          setScreen('result');
+        }
+      }, 1500);
+    } else {
+      // 答錯：顯示正確答案2.5秒後重置（唔去下一題）
+      setTimeout(() => {
         setSelectedAnswer(null);
         setShowFeedback(false);
+        // 重新顯示生果動畫
         setShowFruits(false);
         setTimeout(() => setShowFruits(true), 100);
-      } else {
-        setScreen('result');
-      }
-    }, 1500);
+      }, 2500);
+    }
   };
 
   const getOptions = (correct: number): number[] => {
@@ -161,6 +209,13 @@ export default function FruitCounting() {
     return Array.from(options).sort((a, b) => a - b);
   };
 
+  // 格式化時間顯示
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}分${secs}秒`;
+  };
+
   // 排行榜畫面
   if (screen === 'leaderboard') {
     return (
@@ -168,7 +223,7 @@ export default function FruitCounting() {
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl"
+          className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl relative"
         >
           <Link href="/trymath" className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 text-2xl">
             ←
@@ -200,7 +255,7 @@ export default function FruitCounting() {
                   </div>
                   <div className="text-right">
                     <div className="font-bold text-green-600">{entry.score}/10</div>
-                    <div className="text-xs text-gray-500">{DIFFICULTY_LABELS[entry.difficulty]}</div>
+                    <div className="text-xs text-gray-500">{DIFFICULTY_LABELS[entry.difficulty]} · {entry.time ? formatTime(entry.time) : ''}</div>
                   </div>
                 </div>
               ))
@@ -240,7 +295,8 @@ export default function FruitCounting() {
         >
           <div className="text-6xl mb-4">{stars}</div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">{message}</h1>
-          <p className="text-2xl text-green-600 font-bold mb-6">{score} / 10 題答對</p>
+          <p className="text-2xl text-green-600 font-bold mb-2">{score} / 10 題答對</p>
+          <p className="text-gray-500 mb-6">⏱️ 用時：{formatTime(totalTime)}</p>
           
           {!hasSaved && score > 0 && (
             <div className="mb-6 space-y-3">
@@ -359,6 +415,11 @@ export default function FruitCounting() {
           />
         </div>
         
+        {/* 計時器 */}
+        <div className="text-center mb-4">
+          <span className="text-gray-500 text-sm">⏱️ {Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}</span>
+        </div>
+        
         {/* 生果區 */}
         <div className="text-center mb-6 min-h-[200px] flex flex-col items-center justify-center">
           <p className="text-gray-500 mb-4 text-lg">數一數有幾多個{FRUIT_NAMES[q.fruit]}？</p>
@@ -406,6 +467,9 @@ export default function FruitCounting() {
             <div className={`text-2xl font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
               {isCorrect ? '答對了！' : `正確答案是 ${q.count}`}
             </div>
+            {!isCorrect && (
+              <p className="text-gray-500 mt-2 text-sm">2.5秒後自動重置...</p>
+            )}
           </motion.div>
         )}
       </div>

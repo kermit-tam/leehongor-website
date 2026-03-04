@@ -13,6 +13,8 @@ import { useSearchParams } from 'next/navigation';
 import ShouZhuDaiTu from './components/ShouZhuDaiTu';
 import WangYangBuLao from './components/WangYangBuLao';
 import BaiNian from './components/BaiNian';
+import SentenceReorder from './components/SentenceReorder';
+import SentenceReorderAdvanced from './components/SentenceReorderAdvanced';
 
 interface TryChiConfig {
   mtrTitle: string;
@@ -63,7 +65,7 @@ const BabyChineseIcon = () => (
 function TryChiContent() {
   const searchParams = useSearchParams();
   const [config, setConfig] = useState<TryChiConfig>(defaultConfig);
-  const [activeGame, setActiveGame] = useState<'menu' | 'shouzhudaitu' | 'wangyangbulao' | 'bainian'>('menu');
+  const [activeGame, setActiveGame] = useState<'menu' | 'shouzhudaitu' | 'wangyangbulao' | 'bainian' | 'sentencereorder' | 'sentencereorderadvanced'>('menu');
 
   // 檢查 URL 參數，自動跳轉到對應課程
   useEffect(() => {
@@ -75,6 +77,10 @@ function TryChiContent() {
         setActiveGame('wangyangbulao');
       } else if (lesson === 'bainian') {
         setActiveGame('bainian');
+      } else if (lesson === 'sentencereorder') {
+        setActiveGame('sentencereorder');
+      } else if (lesson === 'sentencereorderadvanced') {
+        setActiveGame('sentencereorderadvanced');
       }
     }
   }, [searchParams]);
@@ -106,6 +112,14 @@ function TryChiContent() {
   
   if (activeGame === 'bainian') {
     return <BaiNian />;
+  }
+  
+  if (activeGame === 'sentencereorder') {
+    return <SentenceReorder />;
+  }
+  
+  if (activeGame === 'sentencereorderadvanced') {
+    return <SentenceReorderAdvanced />;
   }
 
   return (
@@ -201,6 +215,41 @@ function TryChiContent() {
               <div className="flex-1">
                 <h2 className="text-2xl font-extrabold text-white mb-1">到外婆家拜年</h2>
                 <p className="text-white/90 font-medium">二年班中文練習，20條選擇題</p>
+              </div>
+              <span className="text-3xl text-white">→</span>
+            </div>
+          </button>
+
+          {/* 重組句子 - 新增 */}
+          <button 
+            onClick={() => setActiveGame('sentencereorder')}
+            className="w-full bg-[#1ABC9C] rounded-3xl p-6 shadow-[0_8px_0_#16A085] hover:shadow-[0_4px_0_#16A085] hover:translate-y-1 transition-all active:scale-95 text-left"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg text-4xl">
+                🧩📝
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-extrabold text-white mb-1">重組句子</h2>
+                <p className="text-white/90 font-medium">把句子排返正確次序，10組四素句</p>
+              </div>
+              <span className="text-3xl text-white">→</span>
+            </div>
+          </button>
+
+          {/* 重組句子進階版 - 新增 */}
+          <button 
+            onClick={() => setActiveGame('sentencereorderadvanced')}
+            className="w-full bg-[#9B59B6] rounded-3xl p-6 shadow-[0_8px_0_#8E44AD] hover:shadow-[0_4px_0_#8E44AD] hover:translate-y-1 transition-all active:scale-95 text-left"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg text-4xl">
+                🧩⭐
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-extrabold text-white mb-1">重組句子</h2>
+                <span className="inline-block bg-white/20 text-white px-2 py-0.5 rounded text-xs font-bold mb-1">進階版</span>
+                <p className="text-white/90 font-medium">理解因果關係，10組難題</p>
               </div>
               <span className="text-3xl text-white">→</span>
             </div>

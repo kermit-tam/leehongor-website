@@ -11,8 +11,9 @@ import VerbPractice from './components/VerbPractice';
 import SentenceBuilder from './components/SentenceBuilder';
 import PresentTenseQuiz from './components/PresentTenseQuiz';
 import AAnQuiz from './components/AAnQuiz';
+import SpellingKing from './components/SpellingKing';
 
-type GameMode = 'menu' | 'vocab' | 'spelling' | 'listening' | 'verb' | 'sentence' | 'present' | 'aan';
+type GameMode = 'menu' | 'vocab' | 'spelling' | 'listening' | 'verb' | 'sentence' | 'present' | 'aan' | 'spellingking';
 
 export default function P2Page() {
   const [gameMode, setGameMode] = useState<GameMode>('menu');
@@ -60,6 +61,18 @@ export default function P2Page() {
               <div className="text-left">
                 <h2 className="text-xl font-bold text-gray-800">拼字遊戲</h2>
                 <p className="text-gray-500 text-sm">串字練習（考試必考！）</p>
+              </div>
+            </button>
+
+            {/* 串字王 */}
+            <button
+              onClick={() => setGameMode('spellingking')}
+              className="w-full bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4 border-2 border-purple-100"
+            >
+              <span className="text-4xl">👑</span>
+              <div className="text-left">
+                <h2 className="text-xl font-bold text-purple-700">串字王</h2>
+                <p className="text-purple-500 text-sm">Unit 4 & 5 挑戰（31個生字）</p>
               </div>
             </button>
 
@@ -147,6 +160,10 @@ export default function P2Page() {
                   <p className="text-2xl font-bold text-orange-500">20</p>
                   <p className="text-gray-500 text-sm">A / An</p>
                 </div>
+                <div className="bg-white rounded-xl p-3">
+                  <p className="text-2xl font-bold text-purple-500">31</p>
+                  <p className="text-gray-500 text-sm">串字王</p>
+                </div>
               </div>
             </div>
           </div>
@@ -215,6 +232,14 @@ export default function P2Page() {
           />
         );
 
+      case 'spellingking':
+        return (
+          <SpellingKing
+            onComplete={(s, t, w) => console.log('SpellingKing:', s, t, w)}
+            onExit={() => setGameMode('menu')}
+          />
+        );
+
       default:
         return null;
     }
@@ -246,6 +271,7 @@ export default function P2Page() {
               { id: 'menu', label: '🏠 目錄' },
               { id: 'vocab', label: '📚 生字' },
               { id: 'spelling', label: '🧩 拼字' },
+              { id: 'spellingking', label: '👑 串字王' },
               { id: 'listening', label: '🎧 聽寫' },
               { id: 'verb', label: '📝 動詞' },
               { id: 'sentence', label: '🧩 句子' },
