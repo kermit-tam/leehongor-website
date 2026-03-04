@@ -212,6 +212,17 @@ export default function StudyChiPage() {
               </div>
             </button>
 
+            <a
+              href="/studychi/study-colors"
+              className="w-full bg-gradient-to-r from-green-400 to-teal-500 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4 text-white"
+            >
+              <span className="text-4xl">📚</span>
+              <div className="text-left">
+                <h2 className="text-xl font-bold">溫習站顏色</h2>
+                <p className="text-white/80 text-sm">睇晒98個站嘅顏色，溫好書先挑戰！</p>
+              </div>
+            </a>
+
             <button
               onClick={() => setMode('ultimate')}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-4 text-white"
@@ -219,7 +230,7 @@ export default function StudyChiPage() {
               <span className="text-4xl">🏆</span>
               <div className="text-left">
                 <h2 className="text-xl font-bold">終極顏色測試</h2>
-                <p className="text-white/80 text-sm">10條題目考晒98個站！</p>
+                <p className="text-white/80 text-sm">15條題目考晒98個站！</p>
               </div>
             </button>
           </div>

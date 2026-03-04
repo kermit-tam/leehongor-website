@@ -72,7 +72,7 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
     if (selected) {
       const timer = setTimeout(() => {
         nextQuestion();
-      }, 1500); // 1.5秒後自動下一題
+      }, 3000); // 3秒後自動下一題
       return () => clearTimeout(timer);
     }
   }, [selected]);
@@ -308,10 +308,10 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
             </div>
             {/* 自動跳題倒計時顯示 */}
             <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-purple-500 animate-[shrink_1.5s_linear]" />
+              <div className="h-full bg-purple-500 animate-shrink-3s" />
             </div>
             <p className="text-center text-gray-400 text-xs">
-              {currentQ < 14 ? '1.5秒後自動下一題...' : '1.5秒後顯示成績...'}
+              {currentQ < 14 ? '3秒後自動下一題...' : '3秒後顯示成績...'}
             </p>
           </div>
         )}

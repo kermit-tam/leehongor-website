@@ -56,6 +56,7 @@ const config: Config = {
         'shake': 'shake 0.5s ease-in-out',
         'bounce': 'bounce 1s infinite',
         'shrink': 'shrink 1.5s linear',
+        'shrink-3s': 'shrink 3s linear',
       },
       keyframes: {
         fadeIn: {
