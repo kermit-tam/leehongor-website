@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SpellingWord, scrambleWord, unit4Words, unit5Words } from '../data/spelling-words';
+import { SpellingWord, unit4Words, unit5Words } from '../data/spelling-words';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Unit = 4 | 5 | 'all';
@@ -33,8 +33,11 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
   const [startTime, setStartTime] = useState<number>(0);
   const [elapsedTime, setElapsedTime] = useState(0);
 
+  // 使用 ref 來儲存 nextQuestion 函數，避免循環依賴
+  const nextQuestionRef = useRef<() => void>();
+
   // 生成遊戲單詞列表
-  const generateWords = (selectedUnit: Unit): GameWord[] => {
+  const generateWords = useCallback((selectedUnit: Unit): GameWord[] => {
     let list: SpellingWord[] = [];
     
     if (selectedUnit === 4) {
@@ -53,10 +56,10 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
     
     // 取10題
     return list.slice(0, 10).map((w, i) => ({ ...w, id: i }));
-  };
+  }, []);
 
   // 語音合成
-  const speak = (text: string) => {
+  const speak = useCallback((text: string) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -64,10 +67,39 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
       utterance.rate = 0.8;
       window.speechSynthesis.speak(utterance);
     }
-  };
+  }, []);
+
+  // 下一題函數
+  const nextQuestion = useCallback(() => {
+    if (currentIndex < words.length - 1) {
+      const nextIdx = currentIndex + 1;
+      setCurrentIndex(nextIdx);
+      setUserAnswer('');
+      setLetterStatus({});
+      setUsedIndices([]);
+      setShowFeedback(false);
+      
+      if (difficulty === 'easy') {
+        const letters = words[nextIdx].en.toUpperCase().split('').filter(l => l !== ' ' && l !== '-');
+        for (let i = letters.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [letters[i], letters[j]] = [letters[j], letters[i]];
+        }
+        setAvailableLetters(letters);
+      }
+    } else {
+      setScreen('result');
+      onComplete?.(score + 1, words.length, wrongCount);
+    }
+  }, [currentIndex, words, difficulty, score, wrongCount, onComplete]);
+
+  // 更新 ref
+  useEffect(() => {
+    nextQuestionRef.current = nextQuestion;
+  }, [nextQuestion]);
 
   // 開始遊戲
-  const startGame = (selectedUnit: Unit, diff: Difficulty) => {
+  const startGame = useCallback((selectedUnit: Unit, diff: Difficulty) => {
     setUnit(selectedUnit);
     setDifficulty(diff);
     const wordList = generateWords(selectedUnit);
@@ -91,7 +123,7 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
       }
       setAvailableLetters(letters);
     }
-  };
+  }, [generateWords]);
 
   // 計時器
   useEffect(() => {
@@ -104,8 +136,41 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
     return () => clearInterval(interval);
   }, [screen, startTime]);
 
+  // 處理正確答案
+  const handleCorrect = useCallback(() => {
+    setIsCorrect(true);
+    setShowFeedback(true);
+    setScore(s => s + 1);
+    
+    setTimeout(() => {
+      nextQuestionRef.current?.();
+    }, 1500);
+  }, []);
+
+  // 處理錯誤答案
+  const handleWrong = useCallback(() => {
+    setIsCorrect(false);
+    setShowFeedback(true);
+    setWrongCount(w => w + 1);
+    
+    setTimeout(() => {
+      setUserAnswer('');
+      setLetterStatus({});
+      setUsedIndices([]);
+      if (difficulty === 'easy') {
+        const letters = words[currentIndex].en.toUpperCase().split('').filter(l => l !== ' ' && l !== '-');
+        for (let i = letters.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [letters[i], letters[j]] = [letters[j], letters[i]];
+        }
+        setAvailableLetters(letters);
+      }
+      setShowFeedback(false);
+    }, 2500);
+  }, [difficulty, words, currentIndex]);
+
   // 處理字母輸入（中等/困難模式）
-  const handleLetterInput = (letter: string) => {
+  const handleLetterInput = useCallback((letter: string) => {
     if (showFeedback) return;
     
     const currentWord = words[currentIndex];
@@ -140,10 +205,10 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
         }
       }
     }
-  };
+  }, [difficulty, userAnswer, words, currentIndex, showFeedback, handleCorrect, handleWrong]);
 
   // 簡單模式：點擊可用字母
-  const handleEasyLetter = (letter: string, index: number) => {
+  const handleEasyLetter = useCallback((letter: string, index: number) => {
     if (showFeedback || usedIndices.includes(index)) return;
     
     const currentWord = words[currentIndex];
@@ -160,63 +225,9 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
         handleWrong();
       }
     }
-  };
+  }, [userAnswer, words, currentIndex, showFeedback, usedIndices, handleCorrect, handleWrong]);
 
-  const handleCorrect = () => {
-    setIsCorrect(true);
-    setShowFeedback(true);
-    setScore(s => s + 1);
-    
-    setTimeout(() => {
-      nextQuestion();
-    }, 1500);
-  };
-
-  const handleWrong = () => {
-    setIsCorrect(false);
-    setShowFeedback(true);
-    setWrongCount(w => w + 1);
-    
-    setTimeout(() => {
-      setUserAnswer('');
-      setLetterStatus({});
-      setUsedIndices([]);
-      if (difficulty === 'easy') {
-        const letters = words[currentIndex].en.toUpperCase().split('').filter(l => l !== ' ' && l !== '-');
-        for (let i = letters.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [letters[i], letters[j]] = [letters[j], letters[i]];
-        }
-        setAvailableLetters(letters);
-      }
-      setShowFeedback(false);
-    }, 2500);
-  };
-
-  const nextQuestion = () => {
-    if (currentIndex < words.length - 1) {
-      const nextIdx = currentIndex + 1;
-      setCurrentIndex(nextIdx);
-      setUserAnswer('');
-      setLetterStatus({});
-      setUsedIndices([]);
-      setShowFeedback(false);
-      
-      if (difficulty === 'easy') {
-        const letters = words[nextIdx].en.toUpperCase().split('').filter(l => l !== ' ' && l !== '-');
-        for (let i = letters.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [letters[i], letters[j]] = [letters[j], letters[i]];
-        }
-        setAvailableLetters(letters);
-      }
-    } else {
-      setScreen('result');
-      onComplete?.(score + 1, words.length, wrongCount);
-    }
-  };
-
-  const handleBackspace = () => {
+  const handleBackspace = useCallback(() => {
     if (showFeedback) return;
     if (userAnswer.length === 0) return;
     
@@ -232,9 +243,9 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
         return newStatus;
       });
     }
-  };
+  }, [difficulty, userAnswer.length, showFeedback]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     if (showFeedback) return;
     setUserAnswer('');
     setLetterStatus({});
@@ -248,13 +259,13 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
       }
       setAvailableLetters(letters);
     }
-  };
+  }, [difficulty, words, currentIndex, showFeedback]);
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
   // 選單畫面
   if (screen === 'menu') {

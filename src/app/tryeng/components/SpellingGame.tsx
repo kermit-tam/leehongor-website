@@ -136,8 +136,20 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
 
   // 初始化載入排行榜
   useEffect(() => {
-    loadLeaderboard();
-  }, [loadLeaderboard]);
+    // 直接在此處載入排行榜，避免在 useCallback 中調用 setState 導致的級聯渲染
+    const fetchLeaderboard = async () => {
+      try {
+        const response = await fetch('/api/leaderboard?game=spelling');
+        if (response.ok) {
+          const data = await response.json();
+          setLeaderboard(data.entries || []);
+        }
+      } catch {
+        setLeaderboard([]);
+      }
+    };
+    fetchLeaderboard();
+  }, []);
 
   // 語音合成
   const speak = (text: string) => {
@@ -302,7 +314,7 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
     }, 1500);
   };
 
-  const nextQuestion = () => {
+  const nextQuestion = useCallback(() => {
     if (currentIndex < words.length - 1) {
       const nextIdx = currentIndex + 1;
       setCurrentIndex(nextIdx);
@@ -312,17 +324,20 @@ export default function SpellingGame({ onExit }: SpellingGameProps) {
       setShowFeedback(false);
       
       if (difficulty === 'easy') {
-        const letters = words[nextIdx].en.toUpperCase().split('');
-        for (let i = letters.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [letters[i], letters[j]] = [letters[j], letters[i]];
-        }
-        setAvailableLetters(letters);
+        // 使用 setTimeout 將 Math.random 移到下一個 tick，避免在 render 期間調用
+        setTimeout(() => {
+          const letters = words[nextIdx].en.toUpperCase().split('');
+          for (let i = letters.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [letters[i], letters[j]] = [letters[j], letters[i]];
+          }
+          setAvailableLetters(letters);
+        }, 0);
       }
     } else {
       setScreen('result');
     }
-  };
+  }, [currentIndex, words, difficulty]);
 
   const handleBackspace = () => {
     if (showFeedback) return;

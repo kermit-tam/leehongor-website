@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MTRLine, MTRStation } from '../data/mtr-stations';
 
@@ -17,8 +17,18 @@ interface ListeningQuizProps {
 }
 
 export function ListeningQuiz({ line, onBack, onScore, speak }: ListeningQuizProps) {
-  const [currentStation, setCurrentStation] = useState<MTRStation | null>(null);
-  const [options, setOptions] = useState<MTRStation[]>([]);
+  // 所有狀態必須先聲明
+  const [currentStation, setCurrentStation] = useState<MTRStation | null>(() => {
+    const target = line.stations[Math.floor(Math.random() * line.stations.length)];
+    return target || null;
+  });
+  const [options, setOptions] = useState<MTRStation[]>(() => {
+    const target = line.stations[Math.floor(Math.random() * line.stations.length)];
+    const allStations = [...line.stations];
+    const otherStations = allStations.filter(s => s.id !== target.id);
+    const shuffled = [...otherStations].sort(() => Math.random() - 0.5).slice(0, 3);
+    return [...shuffled, target].sort(() => Math.random() - 0.5);
+  });
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
@@ -27,15 +37,11 @@ export function ListeningQuiz({ line, onBack, onScore, speak }: ListeningQuizPro
   const [showResult, setShowResult] = useState(false);
   const maxRounds = 10;
 
-  // 初始化題目
-  useEffect(() => {
-    generateQuestion();
-  }, []);
-
-  const generateQuestion = () => {
+  // 生成題目函數 - 在狀態聲明之後定義
+  const generateQuestion = useCallback(() => {
     // 隨機選一個站作為目標
-    const target = line.stations[Math.floor(Math.random() * line.stations.length)];
-    setCurrentStation(target);
+    const targetIndex = Math.floor(Math.random() * line.stations.length);
+    const target = line.stations[targetIndex];
     
     // 隨機選3個其他站作為選項（從所有路線選，增加難度）
     const allStations = [...line.stations];
@@ -44,12 +50,14 @@ export function ListeningQuiz({ line, onBack, onScore, speak }: ListeningQuizPro
     
     // 加入正確答案並重新排序
     const allOptions = [...shuffled, target].sort(() => Math.random() - 0.5);
-    setOptions(allOptions);
     
+    // 批次更新所有狀態
+    setCurrentStation(target);
+    setOptions(allOptions);
     setSelectedAnswer(null);
     setIsCorrect(null);
     setIsPlaying(false);
-  };
+  }, [line.stations]);
 
   const playQuestion = () => {
     if (!currentStation || isPlaying) return;
@@ -81,9 +89,9 @@ export function ListeningQuiz({ line, onBack, onScore, speak }: ListeningQuizPro
     }, 2000);
   };
 
-  const getOptionStyle = (option: MTRStation) => {
+  const getOptionStyle = (option: MTRStation): React.CSSProperties => {
     // 根據選項所屬路線顯示顏色邊框
-    const baseStyle = {
+    const baseStyle: React.CSSProperties = {
       borderWidth: '4px',
       borderColor: option.lineColorCode,
       backgroundColor: `${option.lineColorCode}15`, // 15 = 約10% 透明度

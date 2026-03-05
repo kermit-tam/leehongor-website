@@ -7,8 +7,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExamSectionData, ExamQuestion, listeningQuestionData } from '../exam-data';
-import { Button } from '@/components/ui/button';
+import { ExamSectionData, listeningQuestionData } from '../exam-data';
+
 import { AudioPlayer, DialoguePlayer } from './audio-player';
 
 interface ExamSectionProps {

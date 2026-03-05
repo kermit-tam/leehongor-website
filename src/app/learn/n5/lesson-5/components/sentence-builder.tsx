@@ -144,12 +144,17 @@ export function SentenceBuilder({ maxUnitId, savedSentences, onSaveSentence, les
 
   // 初始化可用語塊（閘門系統）
   useEffect(() => {
-    const blocks = getBlocks();
-    // 按類型順序排序語塊
-    const sortedBlocks = [...blocks].sort((a, b) => {
-      return (typeOrderWeight[a.type] || 99) - (typeOrderWeight[b.type] || 99);
-    });
-    setAvailableBlocks(sortedBlocks);
+    // 使用 setTimeout 避免同步調用 setState
+    const initTimer = setTimeout(() => {
+      const blocks = getBlocks();
+      // 按類型順序排序語塊
+      const sortedBlocks = [...blocks].sort((a: BlockItem, b: BlockItem) => {
+        return (typeOrderWeight[a.type] || 99) - (typeOrderWeight[b.type] || 99);
+      });
+      setAvailableBlocks(sortedBlocks);
+    }, 0);
+
+    return () => clearTimeout(initTimer);
   }, [maxUnitId, getBlocks]);
 
   // 計算推薦的下一個類型

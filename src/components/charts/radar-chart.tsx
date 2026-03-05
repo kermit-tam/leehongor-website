@@ -48,7 +48,6 @@ interface RadarChartProps {
 export function AbilityRadarChart({
   abilityScores,
   size = 300,
-  showLabels = true,
   animate = true,
 }: RadarChartProps) {
   // 轉換數據格式給 recharts

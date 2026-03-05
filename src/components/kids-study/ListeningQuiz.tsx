@@ -16,15 +16,13 @@ export function ListeningQuiz({ cards, onComplete, onBack }: ListeningQuizProps)
   const [quizState, setQuizState] = useState<QuizState>('intro');
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [score, setScore] = useState(0);
-  const [shuffledCards, setShuffledCards] = useState<StudyCard[]>([]);
+  const [shuffledCards, setShuffledCards] = useState<StudyCard[]>(() => {
+    return [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length));
+  });
   const [options, setOptions] = useState<StudyCard[]>([]);
   const [language, setLanguage] = useState<'cantonese' | 'mandarin'>('cantonese');
 
-  // 準備題目
-  useEffect(() => {
-    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length));
-    setShuffledCards(shuffled);
-  }, [cards]);
+  // cards 變化時由於已經使用函數式初始化，不需要在這裡再次設置
 
   // 生成選項（3個錯誤選項 + 1個正確答案）
   useEffect(() => {
@@ -34,7 +32,9 @@ export function ListeningQuiz({ cards, onComplete, onBack }: ListeningQuizProps)
     const otherCards = cards.filter(c => c.id !== currentCard.id);
     const wrongOptions = otherCards.sort(() => Math.random() - 0.5).slice(0, 3);
     const allOptions = [currentCard, ...wrongOptions].sort(() => Math.random() - 0.5);
-    setOptions(allOptions);
+    // 使用 setTimeout 避免同步 setState
+    const timer = setTimeout(() => setOptions(allOptions), 0);
+    return () => clearTimeout(timer);
   }, [shuffledCards, currentIndex, cards]);
 
   // 播放讀音
@@ -97,8 +97,7 @@ export function ListeningQuiz({ cards, onComplete, onBack }: ListeningQuizProps)
     setScore(0);
     setSelectedAnswer(null);
     setQuizState('intro');
-    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length));
-    setShuffledCards(shuffled);
+    setShuffledCards(() => [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length)));
   };
 
   if (shuffledCards.length === 0) {
@@ -198,7 +197,6 @@ export function ListeningQuiz({ cards, onComplete, onBack }: ListeningQuizProps)
   }
 
   const currentCard = shuffledCards[currentIndex];
-  const isCorrect = selectedAnswer === currentCard.id;
 
   return (
     <div className="max-w-md mx-auto px-4 py-6">

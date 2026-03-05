@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -193,7 +194,7 @@ function CommentSection({ postId }: { postId: string }) {
       const fetchedComments = await CommentService.getComments(postId);
       setComments(fetchedComments);
     } catch (err) {
-      console.error('Error loading comments:', err);
+      // Error loading comments
     } finally {
       setIsLoading(false);
     }
@@ -216,7 +217,6 @@ function CommentSection({ postId }: { postId: string }) {
       setNewComment('');
       await loadComments();
     } catch (err) {
-      console.error('Error posting comment:', err);
       alert('發送失敗，請重試');
     } finally {
       setIsSubmitting(false);
@@ -257,7 +257,9 @@ function CommentSection({ postId }: { postId: string }) {
                 {/* 頭像 */}
                 <div className="w-10 h-10 rounded-full bg-[#E0D5C7] flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {comment.userAvatar ? (
-                    <img src={comment.userAvatar} alt={comment.userName} className="w-full h-full object-cover" />
+                    <div className="relative w-full h-full">
+                      <Image src={comment.userAvatar} alt={comment.userName} fill className="object-cover" unoptimized />
+                    </div>
                   ) : (
                     <span className="text-[#8C8C8C] text-lg">👤</span>
                   )}
@@ -379,7 +381,6 @@ export default function PostDetailPage() {
           setError('文章不存在');
         }
       } catch (err) {
-        console.error('Error loading post:', err);
         setError('無法加載文章');
       } finally {
         setIsLoading(false);
@@ -425,10 +426,12 @@ export default function PostDetailPage() {
         {/* 封面圖 */}
         {post.imageUrl && (
           <div className="relative aspect-[21/9] bg-[#F0F0F0]">
-            <img
+            <Image
               src={post.imageUrl}
               alt={post.title}
-              className="w-full h-full object-cover grayscale-[20%]"
+              fill
+              className="object-cover grayscale-[20%]"
+              unoptimized
             />
           </div>
         )}

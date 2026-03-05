@@ -15,11 +15,13 @@ export function SpeakingQuiz({ cards, onComplete, onBack }: SpeakingQuizProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizState, setQuizState] = useState<QuizState>('intro');
   const [score, setScore] = useState(0);
-  const [shuffledCards, setShuffledCards] = useState<StudyCard[]>([]);
+  const [shuffledCards, setShuffledCards] = useState<StudyCard[]>(() => {
+    return [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(5, cards.length));
+  });
   const [currentExampleIndex, setCurrentExampleIndex] = useState(0);
   
   // 錄音相關
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -27,29 +29,25 @@ export function SpeakingQuiz({ cards, onComplete, onBack }: SpeakingQuizProps) {
   // 語音識別相關
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   
   // 評判結果
   const [parentJudgment, setParentJudgment] = useState<'correct' | 'incorrect' | null>(null);
   const [results, setResults] = useState<{correct: number, total: number}>({ correct: 0, total: 0 });
 
-  // 準備題目
-  useEffect(() => {
-    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(5, cards.length));
-    setShuffledCards(shuffled);
-  }, [cards]);
+  // cards 變化時由於已經使用函數式初始化，不需要在這裡再次設置
 
   // 初始化語音識別
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = (window as unknown as { SpeechRecognition: typeof SpeechRecognition; webkitSpeechRecognition: typeof SpeechRecognition }).SpeechRecognition || (window as unknown as { SpeechRecognition: typeof SpeechRecognition; webkitSpeechRecognition: typeof SpeechRecognition }).webkitSpeechRecognition;
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.lang = 'zh-HK'; // 粵語
         recognitionRef.current.continuous = true;
         recognitionRef.current.interimResults = true;
         
-        recognitionRef.current.onresult = (event: any) => {
+        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
           let finalTranscript = '';
           for (let i = event.resultIndex; i < event.results.length; i++) {
             if (event.results[i].isFinal) {
@@ -114,7 +112,7 @@ export function SpeakingQuiz({ cards, onComplete, onBack }: SpeakingQuizProps) {
         setIsListening(true);
         recognitionRef.current.start();
       }
-    } catch (err) {
+    } catch {
       alert('無法開始錄音，請確認已允許麥克風權限');
     }
   };
@@ -191,8 +189,7 @@ export function SpeakingQuiz({ cards, onComplete, onBack }: SpeakingQuizProps) {
     setTranscript('');
     setParentJudgment(null);
     setQuizState('intro');
-    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(5, cards.length));
-    setShuffledCards(shuffled);
+    setShuffledCards(() => [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(5, cards.length)));
   };
 
   if (shuffledCards.length === 0) {

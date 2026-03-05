@@ -127,7 +127,7 @@ export default function FruitCounting() {
 
   // 遊戲進行中的計時器
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (screen === 'game' && startTime > 0) {
       interval = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
@@ -199,6 +199,7 @@ export default function FruitCounting() {
     options.add(correct);
     
     while (options.size < 4) {
+      // eslint-disable-next-line react-hooks/purity
       let offset = Math.floor(Math.random() * 5) - 2; // -2 到 +2
       if (offset === 0) offset = 3;
       let opt = correct + offset;
@@ -415,16 +416,16 @@ export default function FruitCounting() {
           />
         </div>
         
-        {/* 計時器 */}
+        {/* 計時器 - 固定寬度避免跳動 */}
         <div className="text-center mb-4">
-          <span className="text-gray-500 text-sm">⏱️ {Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}</span>
+          <span className="text-gray-500 text-sm font-mono tabular-nums inline-block w-16">⏱️ {Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}</span>
         </div>
         
-        {/* 生果區 */}
-        <div className="text-center mb-6 min-h-[200px] flex flex-col items-center justify-center">
+        {/* 生果區 - 固定高度避免推擠答案區 */}
+        <div className="text-center mb-6 h-[200px] flex flex-col items-center justify-center">
           <p className="text-gray-500 mb-4 text-lg">數一數有幾多個{FRUIT_NAMES[q.fruit]}？</p>
           
-          <div className="flex flex-wrap justify-center gap-2 max-w-[300px]">
+          <div className="flex flex-wrap justify-center gap-2 max-w-[300px] h-[120px] content-center">
             <AnimatePresence mode="popLayout">
               {showFruits && Array.from({ length: q.count }).map((_, i) => (
                 <motion.div
@@ -432,7 +433,7 @@ export default function FruitCounting() {
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   exit={{ scale: 0 }}
-                  transition={{ delay: i * 0.1, type: 'spring' }}
+                  transition={{ delay: i * 0.03, type: 'spring', stiffness: 300 }}
                   className="text-4xl sm:text-5xl"
                 >
                   {q.fruit}
@@ -442,36 +443,38 @@ export default function FruitCounting() {
           </div>
         </div>
         
-        {/* 答案選項 */}
-        {!showFeedback ? (
-          <div className="grid grid-cols-2 gap-4">
-            {options.map((opt) => (
-              <motion.button
-                key={opt}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleAnswer(opt)}
-                className="bg-gradient-to-br from-yellow-300 to-orange-300 text-gray-800 py-6 rounded-2xl text-3xl font-bold shadow-lg"
-              >
-                {opt}
-              </motion.button>
-            ))}
-          </div>
-        ) : (
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className={`text-center py-8 rounded-2xl ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}
-          >
-            <div className="text-6xl mb-2">{isCorrect ? '✅' : '❌'}</div>
-            <div className={`text-2xl font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-              {isCorrect ? '答對了！' : `正確答案是 ${q.count}`}
+        {/* 答案選項 - 固定位置 */}
+        <div className="h-[140px]">
+          {!showFeedback ? (
+            <div className="grid grid-cols-2 gap-4">
+              {options.map((opt) => (
+                <motion.button
+                  key={opt}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleAnswer(opt)}
+                  className="bg-gradient-to-br from-yellow-300 to-orange-300 text-gray-800 py-6 rounded-2xl text-3xl font-bold shadow-lg"
+                >
+                  {opt}
+                </motion.button>
+              ))}
             </div>
-            {!isCorrect && (
-              <p className="text-gray-500 mt-2 text-sm">2.5秒後自動重置...</p>
-            )}
-          </motion.div>
-        )}
+          ) : (
+            <motion.div 
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className={`text-center py-6 rounded-2xl h-full flex flex-col justify-center ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}
+            >
+              <div className="text-6xl mb-2">{isCorrect ? '✅' : '❌'}</div>
+              <div className={`text-2xl font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                {isCorrect ? '答對了！' : `正確答案是 ${q.count}`}
+              </div>
+              {!isCorrect && (
+                <p className="text-gray-500 mt-2 text-sm">2.5秒後自動重置...</p>
+              )}
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRequireAdmin } from '@/lib/auth-context';
-import { PostService, LessonService, UserService, LeaderboardService } from '@/lib/firestore';
+
 import { StatCard } from '@/components/ui/card';
 
 export default function AdminDashboard() {

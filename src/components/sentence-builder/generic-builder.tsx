@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { useAuth } from '@/lib/auth-context';
@@ -78,8 +79,19 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
   
+  interface Recording {
+    id: number;
+    userId: string;
+    lessonNum: number;
+    sentence: string;
+    hiragana: string;
+    meaning: string;
+    audioData: string;
+    timestamp: string;
+  }
+
   const [showMyRecordings, setShowMyRecordings] = useState(false);
-  const [savedRecordings, setSavedRecordings] = useState<any[]>([]);
+  const [savedRecordings, setSavedRecordings] = useState<Recording[]>([]);
 
   const currentSentence = combineSentence(selected, categoryOrder);
 
@@ -225,7 +237,7 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
         
         // iOS Safari 需要設置這些屬性
         audio.preload = 'auto';
-        (audio as any).playsInline = true; // iOS 視頻屬性，對音頻也有幫助
+        (audio as HTMLAudioElement & { playsInline?: boolean }).playsInline = true; // iOS 視頻屬性，對音頻也有幫助
         audio.muted = false;
         
         // 等待音頻加載
@@ -244,7 +256,7 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
         };
         
         // 確保音頻上下文已恢復（針對 iOS）
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioContext = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         if (AudioContext) {
           const audioContext = new AudioContext();
           if (audioContext.state === 'suspended') {
@@ -278,7 +290,7 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
         width: 1080, height: 1920, scale: 1, backgroundColor: null, useCORS: true,
       });
       setShareImageUrl(canvas.toDataURL('image/png'));
-    } catch (err) {
+    } catch {
       alert('生成圖片失敗，請重試。');
     } finally {
       setIsGeneratingImage(false);
@@ -296,15 +308,15 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
   const loadMyRecordings = () => {
     if (!user?.uid) return;
     const all = JSON.parse(localStorage.getItem('user-recordings') || '[]');
-    setSavedRecordings(all.filter((r: any) => r.userId === user.uid && r.lessonNum === lessonNum));
+    setSavedRecordings(all.filter((r: Recording) => r.userId === user.uid && r.lessonNum === lessonNum));
     setShowMyRecordings(true);
   };
 
   const deleteRecording = (id: number) => {
     const all = JSON.parse(localStorage.getItem('user-recordings') || '[]');
-    const updated = all.filter((r: any) => r.id !== id);
+    const updated = all.filter((r: Recording) => r.id !== id);
     localStorage.setItem('user-recordings', JSON.stringify(updated));
-    setSavedRecordings(updated.filter((r: any) => r.userId === user?.uid && r.lessonNum === lessonNum));
+    setSavedRecordings(updated.filter((r: Recording) => r.userId === user?.uid && r.lessonNum === lessonNum));
   };
 
   const saveRecording = async () => {
@@ -326,7 +338,7 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
         alert('錄音已保存！');
       };
       reader.readAsDataURL(blob);
-    } catch (err) {
+    } catch {
       alert('保存失敗，請重試。');
     }
   };
@@ -449,9 +461,9 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
                           try {
                             const a = new Audio(r.audioData);
                             a.preload = 'auto';
-                            (a as any).playsInline = true;
+                            (a as HTMLAudioElement & { playsInline?: boolean }).playsInline = true;
                             await a.play();
-                          } catch (e) {
+                          } catch {
                             alert('播放失敗，請重試');
                           }
                         }} className="flex-1 py-1.5 bg-[#E3F2FD] text-[#1976D2] rounded-full text-xs">▶️ 播放</button>
@@ -484,7 +496,7 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
                 <div className="text-white/70 text-2xl">#利康哥日本語</div>
               </div>
               <div className="bg-[#F5F5F0] rounded-xl p-4 mb-4">
-                {isGeneratingImage ? <div className="aspect-[9/16] flex items-center justify-center">生成中...</div> : shareImageUrl ? <img src={shareImageUrl} className="w-full rounded-lg" /> : null}
+                {isGeneratingImage ? <div className="aspect-[9/16] flex items-center justify-center">生成中...</div> : shareImageUrl ? <Image src={shareImageUrl} alt="分享圖片" width={540} height={960} className="w-full rounded-lg" unoptimized /> : null}
               </div>
               <div className="space-y-2">
                 <button onClick={downloadImage} disabled={!shareImageUrl} className="w-full py-3 bg-[#6B5B95] text-white rounded-xl text-sm disabled:opacity-50">⬇️ 下載</button>

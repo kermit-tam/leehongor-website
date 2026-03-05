@@ -28,7 +28,15 @@ export function ReadingComprehension({
   const [answered, setAnswered] = useState(false);
   const [answers, setAnswers] = useState<ReadingResult['answers']>([]);
   const [showResult, setShowResult] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState<number>(0);
+  
+  // 使用 useEffect 設置開始時間，避免在 render 中調用 Date.now()
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStartTime(Date.now());
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const currentQuestion = passage.questions[currentIndex];
   const isLastQuestion = currentIndex === passage.questions.length - 1;

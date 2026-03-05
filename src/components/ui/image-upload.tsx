@@ -36,8 +36,7 @@ export function ImageUpload({
       const response = await fetch('/api/upload');
       const data = await response.json();
       setIsConfigured(data.configured);
-    } catch (error) {
-      console.error('Config check error:', error);
+    } catch {
       setIsConfigured(false);
     }
   };
@@ -83,9 +82,8 @@ export function ImageUpload({
       onChange(data.url);
       setPreview(data.url);
       alert('圖片上傳成功！');
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('上傳失敗：' + (error instanceof Error ? error.message : '未知錯誤'));
+    } catch {
+      alert('上傳失敗');
       setPreview(value); // 恢復原值
     } finally {
       setIsUploading(false);
@@ -260,9 +258,8 @@ export function SimpleImageUpload({ onUpload, folder = 'leehongor' }: SimpleImag
       }
 
       onUpload(data.url);
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('上傳失敗：' + (error instanceof Error ? error.message : '未知錯誤'));
+    } catch {
+      alert('上傳失敗');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {

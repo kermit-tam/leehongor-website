@@ -26,9 +26,12 @@ export function TrueFalseGame({ question, onComplete }: TrueFalseGameProps) {
     if (isAnswered) return;
     
     if (timeLeft <= 0) {
-      setIsAnswered(true);
-      onComplete(false, 0);
-      return;
+      // 使用 setTimeout 避免同步調用 setState
+      const timeoutId = setTimeout(() => {
+        setIsAnswered(true);
+        onComplete(false, 0);
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
 
     const timer = setInterval(() => {

@@ -32,25 +32,10 @@ export function SentencePuzzleGame({ question, onAnswer, answered }: SentencePuz
     
     const block = selectedBlocks[index];
     setSelectedBlocks(prev => prev.filter((_, i) => i !== index));
-    setAvailableBlocks(prev => [...prev, { text: block.text, type: block.type as any, id: block.originalId }]);
+    setAvailableBlocks(prev => [...prev, { text: block.text, type: block.type as 'particle' | 'noun' | 'verb' | 'time' | 'place', id: block.originalId }]);
   }, [answered, selectedBlocks]);
 
-  // 檢查答案
-  useEffect(() => {
-    if (selectedBlocks.length === question.blocks.length) {
-      // 檢查順序是否正確：selectedBlocks 的 originalId 應該與 correctOrder 對應
-      const isCorrect = question.correctOrder.every((correctOriginalIdx, i) => 
-        selectedBlocks[i].originalId === correctOriginalIdx
-      );
-      onAnswer(isCorrect);
-      
-      // 如果正確，播放整句
-      if (isCorrect && !isPlaying) {
-        playFullSentence();
-      }
-    }
-  }, [selectedBlocks, question.blocks, question.correctOrder, onAnswer, isPlaying]);
-
+  // 播放整句 - 提前定義以避免在 useEffect 中訪問時出現問題
   const playFullSentence = useCallback(() => {
     if (!('speechSynthesis' in window)) return;
     
@@ -67,6 +52,24 @@ export function SentencePuzzleGame({ question, onAnswer, answered }: SentencePuz
     
     window.speechSynthesis.speak(utterance);
   }, [selectedBlocks]);
+
+  // 檢查答案
+  useEffect(() => {
+    if (selectedBlocks.length === question.blocks.length) {
+      // 檢查順序是否正確：selectedBlocks 的 originalId 應該與 correctOrder 對應
+      const isCorrect = question.correctOrder.every((correctOriginalIdx, i) => 
+        selectedBlocks[i].originalId === correctOriginalIdx
+      );
+      onAnswer(isCorrect);
+      
+      // 如果正確，使用 setTimeout 延遲播放整句以避免同步調用 setState
+      if (isCorrect && !isPlaying) {
+        setTimeout(() => {
+          playFullSentence();
+        }, 0);
+      }
+    }
+  }, [selectedBlocks, question.blocks, question.correctOrder, onAnswer, isPlaying, playFullSentence]);
 
   const getBlockColor = (type: string) => {
     const colors: Record<string, string> = {

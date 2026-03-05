@@ -20,18 +20,6 @@ export default function ListeningSpelling({ words, onComplete, onExit }: Listeni
 
   const currentWord = words[currentIndex];
 
-  // 重置狀態
-  useEffect(() => {
-    setUserAnswer('');
-    setIsCorrect(null);
-    setHasPlayed(false);
-    // 自動播放
-    const timer = setTimeout(() => {
-      playWord();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [currentWord]);
-
   // 發音
   const playWord = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -44,6 +32,24 @@ export default function ListeningSpelling({ words, onComplete, onExit }: Listeni
     utterance.onend = () => setHasPlayed(true);
     window.speechSynthesis.speak(utterance);
   }, [currentWord.word]);
+
+  // 重置狀態 - 使用 setTimeout 避免在 effect 中直接 setState
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setUserAnswer('');
+      setIsCorrect(null);
+      setHasPlayed(false);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [currentWord]);
+
+  // 自動播放
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      playWord();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [currentWord, playWord]);
 
   // 檢查答案
   const checkAnswer = () => {

@@ -8,7 +8,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MTRLine, MTRStation } from '../data/mtr-stations';
 
 interface SpeakingQuizProps {
@@ -17,22 +17,26 @@ interface SpeakingQuizProps {
   onScore: (points: number) => void;
 }
 
+// 隨機選擇車站的輔助函數
+const getRandomStation = (stations: MTRStation[]): MTRStation | null => {
+  const randomIndex = Math.floor(Math.random() * stations.length);
+  return stations[randomIndex] || null;
+};
+
 export function SpeakingQuiz({ line, onBack, onScore }: SpeakingQuizProps) {
-  const [currentStation, setCurrentStation] = useState<MTRStation | null>(null);
+  // 使用函數式初始化隨機選站
+  const [currentStation, setCurrentStation] = useState<MTRStation | null>(() => 
+    getRandomStation(line.stations)
+  );
   const [isRevealed, setIsRevealed] = useState(false);
   const [score, setScore] = useState(0);
   const [round, setRound] = useState(1);
   const maxRounds = 10;
 
-  // 初始化題目
-  useEffect(() => {
-    generateQuestion();
-  }, []);
-
+  // 生成新題目
   const generateQuestion = () => {
-    // 隨機選一個站
-    const target = line.stations[Math.floor(Math.random() * line.stations.length)];
-    setCurrentStation(target);
+    const newStation = getRandomStation(line.stations);
+    setCurrentStation(newStation);
     setIsRevealed(false);
   };
 

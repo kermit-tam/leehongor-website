@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import type { CVCWord } from '../data/cvc-lessons';
 
 interface MatchingGameProps {
@@ -25,34 +25,37 @@ export default function MatchingGame({ words, onComplete }: MatchingGameProps) {
   const [moves, setMoves] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
 
-  // 初始化卡片
+  // 初始化 - 使用 setTimeout 避免在 effect 中直接 setState
   useEffect(() => {
-    const gameWords = words.slice(0, 6); // 取6個單字，共12張卡
-    const newCards: Card[] = [];
-    
-    gameWords.forEach((word, index) => {
-      // 單字卡
-      newCards.push({
-        id: `word-${index}`,
-        type: 'word',
-        content: word.word,
-        wordId: word.id,
-        isFlipped: false,
-        isMatched: false,
+    const timer = setTimeout(() => {
+      const gameWords = words.slice(0, 6); // 取6個單字，共12張卡
+      const newCards: Card[] = [];
+      
+      gameWords.forEach((word, index) => {
+        // 單字卡
+        newCards.push({
+          id: `word-${index}`,
+          type: 'word',
+          content: word.word,
+          wordId: word.id,
+          isFlipped: false,
+          isMatched: false,
+        });
+        
+        // 圖片卡（emoji）
+        newCards.push({
+          id: `emoji-${index}`,
+          type: 'emoji',
+          content: word.emoji,
+          wordId: word.id,
+          isFlipped: false,
+          isMatched: false,
+        });
       });
       
-      // 圖片卡（emoji）
-      newCards.push({
-        id: `emoji-${index}`,
-        type: 'emoji',
-        content: word.emoji,
-        wordId: word.id,
-        isFlipped: false,
-        isMatched: false,
-      });
-    });
-    
-    setCards(newCards.sort(() => Math.random() - 0.5));
+      setCards(newCards.sort(() => Math.random() - 0.5));
+    }, 0);
+    return () => clearTimeout(timer);
   }, [words]);
 
   const handleCardClick = (card: Card) => {
@@ -109,8 +112,12 @@ export default function MatchingGame({ words, onComplete }: MatchingGameProps) {
   // 檢查遊戲完成
   useEffect(() => {
     if (matchedPairs === 6 && !isComplete) {
-      setIsComplete(true);
-      onComplete?.(matchedPairs, 6);
+      // 使用 setTimeout 避免在 render 期間調用 setState
+      const timer = setTimeout(() => {
+        setIsComplete(true);
+        onComplete?.(matchedPairs, 6);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [matchedPairs, isComplete, onComplete]);
 

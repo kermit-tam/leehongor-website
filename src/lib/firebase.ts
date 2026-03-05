@@ -39,7 +39,7 @@ export const db = getFirestore(app);
 let storageInstance: FirebaseStorage | null = null;
 try {
   storageInstance = getStorage(app);
-} catch (error) {
+} catch {
   console.warn('Storage not available. Please upgrade to Blaze plan to use image upload features.');
 }
 export const storage = storageInstance;

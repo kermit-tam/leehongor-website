@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import StudyMode from './StudyMode';
@@ -152,7 +152,25 @@ export default function WangYangBuLao() {
   const [score, setScore] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  
+  // 使用函數式初始化，避免在 useEffect 中 setState
+  const [questions, setQuestions] = useState<Question[]>(() => {
+    // 隨機排序題目，並且每題選項都隨機排序
+    const shuffleArray = <T,>(array: T[]): T[] => {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    };
+    
+    return shuffleArray(QUESTIONS).map(q => ({
+      ...q,
+      options: shuffleArray(q.options)
+    }));
+  });
+  
   const [playerName, setPlayerName] = useState('');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
@@ -167,7 +185,7 @@ export default function WangYangBuLao() {
   };
 
   const startGame = () => {
-    // 隨機排序題目，並且每題選項都隨機排序
+    // 重新生成隨機題目
     const shuffledQuestions = shuffleArray(QUESTIONS).map(q => ({
       ...q,
       options: shuffleArray(q.options)

@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     leaderboards.set(game, updated);
     
     return Response.json({ success: true, entries: updated });
-  } catch (error) {
+  } catch {
     return Response.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

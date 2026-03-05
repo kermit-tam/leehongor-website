@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Question {
@@ -71,10 +72,12 @@ const UserKuromi = ({ imageUrl, mood }: { imageUrl: string; mood: 'normal' | 'ha
       animate={animations[mood]}
       transition={{ duration: 0.5, repeat: mood === 'cheer' ? Infinity : 0 }}
     >
-      <img 
+      <Image 
         src={imageUrl} 
         alt="Kuromi" 
-        className="w-full h-full object-cover"
+        fill
+        className="object-cover"
+        unoptimized
       />
     </motion.div>
   );
@@ -153,7 +156,9 @@ const ImageUpload = ({ onImageSelect, currentImage }: { onImageSelect: (url: str
         />
         {currentImage ? (
           <div className="flex items-center gap-3">
-            <img src={currentImage} alt="Kuromi" className="w-16 h-16 rounded-full object-cover" />
+            <div className="relative w-16 h-16 rounded-full overflow-hidden">
+              <Image src={currentImage} alt="Kuromi" fill className="object-cover" unoptimized />
+            </div>
             <div className="text-left">
               <p className="text-sm font-bold text-gray-700">已上傳自訂 Kuromi</p>
               <p className="text-xs text-gray-500">點擊或拖曳更換圖片</p>
@@ -203,16 +208,9 @@ export default function KurumiMath() {
   const [hasSaved, setHasSaved] = useState(false);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // 加載已保存的自訂圖片和排行榜
-  useEffect(() => {
-    const saved = localStorage.getItem('kuromi-custom-image');
-    if (saved) setCustomImage(saved);
-    loadLeaderboard();
-  }, []);
-
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = useCallback(async () => {
     try {
       const response = await fetch('/api/leaderboard?game=kurumimath');
       if (response.ok) {
@@ -223,7 +221,14 @@ export default function KurumiMath() {
       console.error('Failed to load leaderboard:', error);
       setLeaderboard([]);
     }
-  };
+  }, []);
+
+  // 加載已保存的自訂圖片和排行榜
+  useEffect(() => {
+    const saved = localStorage.getItem('kuromi-custom-image');
+    if (saved) setCustomImage(saved);
+    loadLeaderboard();
+  }, [loadLeaderboard]);
 
   const saveToLeaderboard = async () => {
     if (!playerName.trim() || hasSaved) return;
@@ -255,7 +260,7 @@ export default function KurumiMath() {
 
   const initAudio = useCallback(() => {
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioCtxRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
     }
   }, []);
 
@@ -538,6 +543,7 @@ export default function KurumiMath() {
 
   // 結果畫面
   if (screen === 'result') {
+    // eslint-disable-next-line react-hooks/purity
     const totalTime = Date.now() - startTime;
     const mins = Math.floor(totalTime / 60000);
     const secs = Math.floor((totalTime % 60000) / 1000);

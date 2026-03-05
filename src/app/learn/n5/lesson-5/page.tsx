@@ -57,32 +57,44 @@ export default function Lesson5Page() {
 
   // 初始化本地存儲
   useEffect(() => {
-    const savedProgress = localStorage.getItem('lesson5-progress');
-    if (savedProgress) {
-      setUnitProgress(JSON.parse(savedProgress));
-    } else {
-      // 初始化進度
-      setUnitProgress(lesson5Units.map(u => ({
-        unitId: u.id,
-        completed: false,
-        studyCompleted: false,
-        quizCompleted: false,
-        bestScore: 0,
-      })));
-    }
+    // 使用 setTimeout 避免同步調用 setState
+    const initTimer = setTimeout(() => {
+      const savedProgress = localStorage.getItem('lesson5-progress');
+      if (savedProgress) {
+        setUnitProgress(JSON.parse(savedProgress));
+      } else {
+        // 初始化進度
+        setUnitProgress(lesson5Units.map(u => ({
+          unitId: u.id,
+          completed: false,
+          studyCompleted: false,
+          quizCompleted: false,
+          bestScore: 0,
+        })));
+      }
 
-    const saved = localStorage.getItem('lesson5-sentences');
-    if (saved) {
-      setSavedSentences(JSON.parse(saved).map((s: any) => ({
-        ...s,
-        createdAt: new Date(s.createdAt),
-      })));
-    }
+      const saved = localStorage.getItem('lesson5-sentences');
+      if (saved) {
+        interface SavedSentenceData {
+          id: string;
+          blocks: string[];
+          fullText: string;
+          meaning: string;
+          createdAt: string;
+        }
+        setSavedSentences(JSON.parse(saved).map((s: SavedSentenceData) => ({
+          ...s,
+          createdAt: new Date(s.createdAt),
+        })));
+      }
 
-    const exp = localStorage.getItem('lesson5-exp');
-    if (exp) {
-      setTotalExp(parseInt(exp));
-    }
+      const exp = localStorage.getItem('lesson5-exp');
+      if (exp) {
+        setTotalExp(parseInt(exp));
+      }
+    }, 0);
+
+    return () => clearTimeout(initTimer);
   }, []);
 
   // 保存進度

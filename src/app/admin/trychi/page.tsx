@@ -43,16 +43,21 @@ const emojiOptions = ['🚇', '🚉', '🚊', '🚋', '✍️', '✏️', '📝'
 
 export default function TryChiAdminPage() {
   const { isLoading } = useRequireAdmin('/');
-  const [config, setConfig] = useState<TryChiConfig>(defaultConfig);
-  const [saved, setSaved] = useState(false);
-
-  // 加載設定
-  useEffect(() => {
-    const saved = localStorage.getItem('trychi-config');
-    if (saved) {
-      setConfig({ ...defaultConfig, ...JSON.parse(saved) });
+  const [config, setConfig] = useState<TryChiConfig>(() => {
+    // 初始化時從 localStorage 讀取，避免 useEffect 中的 setState
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('trychi-config');
+      if (saved) {
+        try {
+          return { ...defaultConfig, ...JSON.parse(saved) };
+        } catch {
+          return defaultConfig;
+        }
+      }
     }
-  }, []);
+    return defaultConfig;
+  });
+  const [saved, setSaved] = useState(false);
 
   // 儲存設定
   const saveConfig = () => {

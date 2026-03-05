@@ -14,7 +14,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { TrainJourney } from './components/TrainJourney';
 import { ColorMatch } from './components/ColorMatch';
 import { LandmarkMatch } from './components/LandmarkMatch';

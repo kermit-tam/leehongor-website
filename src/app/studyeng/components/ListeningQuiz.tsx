@@ -23,10 +23,13 @@ export default function ListeningQuiz({
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [options, setOptions] = useState<string[]>([]);
 
-  // 初始化題目
+  // 初始化題目 - 使用 setTimeout 避免在 effect 中直接 setState
   useEffect(() => {
-    const shuffled = [...words].sort(() => Math.random() - 0.5);
-    setQuestions(shuffled.slice(0, Math.min(questionCount, shuffled.length)));
+    const timer = setTimeout(() => {
+      const shuffled = [...words].sort(() => Math.random() - 0.5);
+      setQuestions(shuffled.slice(0, Math.min(questionCount, shuffled.length)));
+    }, 0);
+    return () => clearTimeout(timer);
   }, [words, questionCount]);
 
   // 生成選項
@@ -41,7 +44,12 @@ export default function ListeningQuiz({
       .map(w => w.word);
     
     const allOptions = [current.word, ...wrongOptions].sort(() => Math.random() - 0.5);
-    setOptions(allOptions);
+    
+    // 使用 setTimeout 避免在 render 期間調用 setState
+    const timer = setTimeout(() => {
+      setOptions(allOptions);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [questions, currentIndex, words]);
 
   const speakWord = useCallback((word: string) => {

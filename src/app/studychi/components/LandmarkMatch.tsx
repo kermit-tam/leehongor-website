@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MTRLine, MTRStation } from '../data/mtr-stations';
 
 interface LandmarkMatchProps {
@@ -15,33 +15,45 @@ interface LandmarkMatchProps {
   speak: (text: string, lang?: string, rate?: number) => void;
 }
 
+// 隨機打亂數組的輔助函數
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
+// 生成隨機題目的輔助函數
+const generateRandomQuestion = (line: MTRLine): { target: MTRStation; options: MTRStation[] } => {
+  const target = line.stations[Math.floor(Math.random() * line.stations.length)];
+  const otherStations = line.stations.filter(s => s.id !== target.id);
+  const shuffled = shuffleArray(otherStations).slice(0, 3);
+  const allOptions = shuffleArray([...shuffled, target]);
+  return { target, options: allOptions };
+};
+
 export function LandmarkMatch({ line, onBack, onScore, speak }: LandmarkMatchProps) {
-  const [currentStation, setCurrentStation] = useState<MTRStation | null>(null);
-  const [options, setOptions] = useState<MTRStation[]>([]);
+  // 使用函數式初始化
+  const [currentStation, setCurrentStation] = useState<MTRStation | null>(() => {
+    const { target } = generateRandomQuestion(line);
+    return target;
+  });
+  const [options, setOptions] = useState<MTRStation[]>(() => {
+    const { options } = generateRandomQuestion(line);
+    return options;
+  });
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
   const [round, setRound] = useState(1);
   const maxRounds = 10;
 
-  // 初始化題目
-  useEffect(() => {
-    generateQuestion();
-  }, []);
-
   const generateQuestion = () => {
-    // 隨機選一個站作為目標
-    const target = line.stations[Math.floor(Math.random() * line.stations.length)];
+    const { target, options: newOptions } = generateRandomQuestion(line);
     setCurrentStation(target);
-    
-    // 隨機選3個其他站作為選項
-    const otherStations = line.stations.filter(s => s.id !== target.id);
-    const shuffled = [...otherStations].sort(() => Math.random() - 0.5).slice(0, 3);
-    
-    // 加入正確答案並重新排序
-    const allOptions = [...shuffled, target].sort(() => Math.random() - 0.5);
-    setOptions(allOptions);
-    
+    setOptions(newOptions);
     setSelectedAnswer(null);
     setIsCorrect(null);
   };

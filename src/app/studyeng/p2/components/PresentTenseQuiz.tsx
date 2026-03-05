@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { presentTenseQuestions, presentTenseRules, shuffleQuestions } from '../data/present-tense';
+import { presentTenseRules, shuffleQuestions } from '../data/present-tense';
 
 interface PresentTenseQuizProps {
   onComplete?: (score: number, total: number) => void;

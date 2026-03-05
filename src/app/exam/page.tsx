@@ -8,13 +8,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
+
 import { useAuth, useRequireAuth } from '@/lib/auth-context';
 import { n5LessonsList } from '@/data/n5-lessons';
-import { Button } from '@/components/ui/button';
-import { Exam, ExamResult, ExamSection, getAvailableExams, generateExam, calculateExamScore } from './exam-data';
+
+import { Exam, ExamResult, getAvailableExams, calculateExamScore } from './exam-data';
 import { ExamSectionComponent } from './components/exam-section';
 import { ExamResultComponent } from './components/exam-result';
 import { AbilityRadarChart } from '@/components/charts/radar-chart';
@@ -26,7 +26,7 @@ export default function ExamPage() {
   useRequireAuth('/');
   
   const [mode, setMode] = useState<ExamMode>('menu');
-  const [exams, setExams] = useState<Exam[]>([]);
+  const [exams, setExams] = useState<Exam[]>(() => getAvailableExams(n5LessonsList));
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [sectionOrder, setSectionOrder] = useState<number[]>([]);
   const [currentSection, setCurrentSection] = useState<number>(0);
@@ -34,12 +34,7 @@ export default function ExamPage() {
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   
-  // 加載可用考試
-  useEffect(() => {
-    const availableExams = getAvailableExams(n5LessonsList);
-    setExams(availableExams);
-  }, []);
-  
+
   // 選擇考試，進入部分選擇界面
   const selectExam = (exam: Exam) => {
     setSelectedExam(exam);

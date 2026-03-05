@@ -184,7 +184,7 @@ export default function P2Page() {
         return (
           <SpellingGame
             words={p2Vocabulary}
-            onComplete={(s, t) => console.log('Spelling:', s, t)}
+            onComplete={() => {}}
             onExit={() => setGameMode('menu')}
           />
         );
@@ -193,7 +193,7 @@ export default function P2Page() {
         return (
           <ListeningSpelling
             words={p2Vocabulary}
-            onComplete={(s, t) => console.log('Listening:', s, t)}
+            onComplete={() => {}}
             onExit={() => setGameMode('menu')}
           />
         );
@@ -202,7 +202,7 @@ export default function P2Page() {
         return (
           <VerbPractice
             verbs={p2Verbs}
-            onComplete={(s, t) => console.log('Verbs:', s, t)}
+            onComplete={() => {}}
             onExit={() => setGameMode('menu')}
           />
         );
@@ -211,7 +211,7 @@ export default function P2Page() {
         return (
           <SentenceBuilder
             sentences={p2Sentences}
-            onComplete={(s, t) => console.log('Sentences:', s, t)}
+            onComplete={() => {}}
             onExit={() => setGameMode('menu')}
           />
         );
@@ -219,7 +219,7 @@ export default function P2Page() {
       case 'present':
         return (
           <PresentTenseQuiz
-            onComplete={(s, t) => console.log('Present Tense:', s, t)}
+            onComplete={() => {}}
             onExit={() => setGameMode('menu')}
           />
         );
@@ -227,7 +227,7 @@ export default function P2Page() {
       case 'aan':
         return (
           <AAnQuiz
-            onComplete={(s, t) => console.log('A/An:', s, t)}
+            onComplete={() => {}}
             onExit={() => setGameMode('menu')}
           />
         );
@@ -235,7 +235,7 @@ export default function P2Page() {
       case 'spellingking':
         return (
           <SpellingKing
-            onComplete={(s, t, w) => console.log('SpellingKing:', s, t, w)}
+            onComplete={() => {}}
             onExit={() => setGameMode('menu')}
           />
         );

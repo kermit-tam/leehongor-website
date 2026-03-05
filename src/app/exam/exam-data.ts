@@ -6,7 +6,7 @@
  * 每課考試包含該課及之前所有課的內容
  */
 
-import { N5Lesson, N5Unit, N5Vocab } from '@/data/n5-lessons';
+import { N5Lesson, N5Vocab } from '@/data/n5-lessons';
 import { lesson1Reading } from '@/app/learn/n5/lesson-1/reading-data';
 import { lesson2Reading } from '@/app/learn/n5/lesson-2/reading-data';
 import { lesson3Reading } from '@/app/learn/n5/lesson-3/reading-data';
@@ -22,7 +22,7 @@ import { lesson12Reading } from '@/app/learn/n5/lesson-12/reading-data';
 import { lesson13Reading } from '@/app/learn/n5/lesson-13/reading-data';
 import { lesson14Reading } from '@/app/learn/n5/lesson-14/reading-data';
 import { lesson15Reading } from '@/app/learn/n5/lesson-15/reading-data';
-import { getListeningDialogues, ListeningDialogue } from './listening-dialogues';
+import { getListeningDialogues } from './listening-dialogues';
 
 // ==================== 考試類型 ====================
 
@@ -119,7 +119,7 @@ function generateReadingQuestions(lessons: N5Lesson[], upToLesson: number): Exam
   
   let questionCount = 0;
   
-  shuffledPassages.forEach((passage, passageIndex) => {
+  shuffledPassages.forEach((passage) => {
     passage.questions.forEach((q, qIndex) => {
       if (questionCount >= 10) return;
       
@@ -469,7 +469,7 @@ function generateListeningQuestions(lessons: N5Lesson[], upToLesson: number): Ex
     .sort(() => Math.random() - 0.5)
     .slice(0, 8);
   
-  shuffled.forEach((d, index) => {
+  shuffled.forEach((d) => {
     const questionId = `listen-dialogue-${d.id}`;
     
     // 存儲對話數據供組件使用

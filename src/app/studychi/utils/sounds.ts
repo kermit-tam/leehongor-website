@@ -6,7 +6,7 @@
 // 創建 audio context
 const getAudioContext = () => {
   if (typeof window === 'undefined') return null;
-  return new (window.AudioContext || (window as any).webkitAudioContext)();
+  return new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
 };
 
 /**

@@ -7,8 +7,8 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Exam, ExamResult, ExamQuestion } from '../exam-data';
-import { Button } from '@/components/ui/button';
+import { Exam, ExamResult } from '../exam-data';
+
 
 interface ExamResultProps {
   result: ExamResult;

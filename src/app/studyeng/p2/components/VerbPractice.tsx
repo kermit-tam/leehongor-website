@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { P2Verb } from '../data/p2-lesson';
 
 interface VerbPracticeProps {
@@ -18,16 +18,6 @@ export default function VerbPractice({ verbs, onComplete, onExit }: VerbPractice
 
   const currentVerb = verbs[currentIndex];
 
-  // 發音
-  const speakVerb = (word: string) => {
-    if (typeof window === 'undefined') return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(word);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.7;
-    window.speechSynthesis.speak(utterance);
-  };
-
   // 規則說明
   const getRuleText = (rule: P2Verb['rule']) => {
     switch (rule) {
@@ -40,6 +30,16 @@ export default function VerbPractice({ verbs, onComplete, onExit }: VerbPractice
       case 'irregular':
         return '不規則變化';
     }
+  };
+
+  // 發音
+  const speakVerb = (word: string) => {
+    if (typeof window === 'undefined') return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.7;
+    window.speechSynthesis.speak(utterance);
   };
 
   const handleNext = () => {

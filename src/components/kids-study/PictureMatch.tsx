@@ -7,7 +7,8 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { StudyCard } from '../data/types';
 import { getImageMappings } from '../data/image-service';
 
@@ -56,45 +57,51 @@ const getImageContent = (card: StudyCard, dynamicMappings: Record<string, string
 };
 
 export function PictureMatch({ cards, lessonId, onComplete, onBack }: PictureMatchProps) {
-  const [gameCards, setGameCards] = useState<StudyCard[]>([]);
+  const [gameCards, setGameCards] = useState<StudyCard[]>(() => {
+    const picturableCards = cards.filter(c => c.isPicturable !== false);
+    return [...picturableCards].sort(() => Math.random() - 0.5).slice(0, 6);
+  });
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [matches, setMatches] = useState<Record<string, string>>({}); // cardId -> icon
   const [showComplete, setShowComplete] = useState(false);
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [wrongAttempt, setWrongAttempt] = useState<string | null>(null);
-  const [imageMappings, setImageMappings] = useState<Record<string, string>>({});
+  const [imageMappings] = useState<Record<string, string>>(() => getImageMappings());
+  const [imageItems, setImageItems] = useState<Array<{ cardId: string; type: 'image' | 'emoji'; content: string }>>([]);
 
-  // 載入圖片映射
+  // 當 cards 變化時重新初始化遊戲
   useEffect(() => {
-    const mappings = getImageMappings();
-    setImageMappings(mappings);
-  }, []);
-
-  // 初始化遊戲
-  useEffect(() => {
-    // 過濾適合圖畫配對的字
-    const picturableCards = cards.filter(c => c.isPicturable !== false);
-    // 隨機選 6 個字（或者全部）
-    const shuffled = [...picturableCards].sort(() => Math.random() - 0.5).slice(0, 6);
-    setGameCards(shuffled);
+    const timer = setTimeout(() => {
+      setGameCards(() => {
+        const picturableCards = cards.filter(c => c.isPicturable !== false);
+        return [...picturableCards].sort(() => Math.random() - 0.5).slice(0, 6);
+      });
+    }, 0);
+    return () => clearTimeout(timer);
   }, [cards]);
 
-  // 計算進度
-  const progress = (Object.keys(matches).length / gameCards.length) * 100;
+  // 生成隨機圖片項目（在 useEffect 中處理 Math.random）
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const items = gameCards.map(card => ({ 
+        cardId: card.id, 
+        ...getImageContent(card, imageMappings) 
+      })).sort(() => Math.random() - 0.5);
+      setImageItems(items);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [gameCards, imageMappings]);
 
-  // 處理圖片選擇
-  const handleImageClick = (cardId: string) => {
-    if (matches[cardId]) return; // 已配對
-    setSelectedEmoji(cardId);
-    setWrongAttempt(null);
-  };
+  // 計算進度
+  const progress = gameCards.length > 0 ? (Object.keys(matches).length / gameCards.length) * 100 : 0;
 
   // 重置遊戲
   const resetGame = () => {
-    const picturableCards = cards.filter(c => c.isPicturable !== false);
-    const shuffled = [...picturableCards].sort(() => Math.random() - 0.5).slice(0, 6);
-    setGameCards(shuffled);
+    setGameCards(() => {
+      const picturableCards = cards.filter(c => c.isPicturable !== false);
+      return [...picturableCards].sort(() => Math.random() - 0.5).slice(0, 6);
+    });
     setMatches({});
     setSelectedEmoji(null);
     setShowComplete(false);
@@ -144,12 +151,6 @@ export function PictureMatch({ cards, lessonId, onComplete, onBack }: PictureMat
       </div>
     );
   }
-
-  // 獲取所有需要的圖片/emoji（隨機排列）
-  const imageItems = gameCards.map(card => ({ 
-    cardId: card.id, 
-    ...getImageContent(card, imageMappings) 
-  })).sort(() => Math.random() - 0.5);
 
   return (
     <div className="max-w-md mx-auto px-4 py-6">
@@ -206,23 +207,27 @@ export function PictureMatch({ cards, lessonId, onComplete, onBack }: PictureMat
                 `}
               >
                 {item.type === 'image' ? (
-                  <img 
-                    src={item.content} 
-                    alt="配對圖片"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // 圖片載入失敗，顯示 emoji 後備
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      const parent = target.parentElement;
-                      if (parent) {
-                        const fallback = document.createElement('span');
-                        fallback.className = 'text-5xl';
-                        fallback.textContent = getEmojiForCard(gameCards.find(c => c.id === item.cardId)!);
-                        parent.appendChild(fallback);
-                      }
-                    }}
-                  />
+                  <div className="relative w-full h-full">
+                    <Image 
+                      src={item.content} 
+                      alt="配對圖片"
+                      fill
+                      className="object-cover"
+                      unoptimized
+                      onError={(e) => {
+                        // 圖片載入失敗，顯示 emoji 後備
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('span');
+                          fallback.className = 'text-5xl';
+                          fallback.textContent = getEmojiForCard(gameCards.find(c => c.id === item.cardId)!);
+                          parent.appendChild(fallback);
+                        }
+                      }}
+                    />
+                  </div>
                 ) : (
                   <span className="text-5xl">{item.content}</span>
                 )}

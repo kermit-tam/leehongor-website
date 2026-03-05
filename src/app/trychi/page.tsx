@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { CEMNavbar } from '@/components/cem-navbar';
 import { useSearchParams } from 'next/navigation';
@@ -63,33 +63,30 @@ const BabyChineseIcon = () => (
 
 // 內部組件使用 useSearchParams
 function TryChiContent() {
-  const searchParams = useSearchParams();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _searchParams = useSearchParams();
   const [config, setConfig] = useState<TryChiConfig>(defaultConfig);
-  const [activeGame, setActiveGame] = useState<'menu' | 'shouzhudaitu' | 'wangyangbulao' | 'bainian' | 'sentencereorder' | 'sentencereorderadvanced'>('menu');
-
-  // 檢查 URL 參數，自動跳轉到對應課程
-  useEffect(() => {
-    const lesson = searchParams.get('lesson');
-    if (lesson) {
-      if (lesson === 'shouzhudaitu') {
-        setActiveGame('shouzhudaitu');
-      } else if (lesson === 'wangyangbulao') {
-        setActiveGame('wangyangbulao');
-      } else if (lesson === 'bainian') {
-        setActiveGame('bainian');
-      } else if (lesson === 'sentencereorder') {
-        setActiveGame('sentencereorder');
-      } else if (lesson === 'sentencereorderadvanced') {
-        setActiveGame('sentencereorderadvanced');
-      }
+  
+  // 使用函數式初始化來處理 URL 參數
+  const [activeGame, setActiveGame] = useState<'menu' | 'shouzhudaitu' | 'wangyangbulao' | 'bainian' | 'sentencereorder' | 'sentencereorderadvanced'>(() => {
+    // 在初始化時檢查 URL 參數
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const lesson = params.get('lesson');
+      if (lesson === 'shouzhudaitu') return 'shouzhudaitu';
+      if (lesson === 'wangyangbulao') return 'wangyangbulao';
+      if (lesson === 'bainian') return 'bainian';
+      if (lesson === 'sentencereorder') return 'sentencereorder';
+      if (lesson === 'sentencereorderadvanced') return 'sentencereorderadvanced';
     }
-  }, [searchParams]);
+    return 'menu';
+  });
 
-  // 加載後台設定
-  useEffect(() => {
+  // 加載後台設定 - 使用 useCallback 包裝
+  const loadConfig = useCallback(() => {
     const saved = localStorage.getItem('trychi-config');
     if (saved) {
-      const fullConfig = JSON.parse(saved);
+      const fullConfig: TryChiConfig = JSON.parse(saved);
       setConfig({
         mtrTitle: fullConfig.mtrTitle || defaultConfig.mtrTitle,
         mtrSubtitle: fullConfig.mtrSubtitle || defaultConfig.mtrSubtitle,
@@ -100,6 +97,12 @@ function TryChiContent() {
       });
     }
   }, []);
+
+  useEffect(() => {
+    // 使用 setTimeout 推遲到下一個事件循環
+    const timer = setTimeout(loadConfig, 0);
+    return () => clearTimeout(timer);
+  }, [loadConfig]);
 
   // 如果正在玩遊戲，顯示遊戲組件
   if (activeGame === 'shouzhudaitu') {

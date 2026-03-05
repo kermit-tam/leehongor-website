@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+
 
 export interface LeaderboardEntry {
   name: string;
@@ -43,7 +43,8 @@ export function CEMLeaderboard({
   useEffect(() => {
     const saved = localStorage.getItem(`leaderboard-${gameKey}`);
     if (saved) {
-      setLeaderboard(JSON.parse(saved));
+      // Schedule state update to avoid synchronous setState in effect
+      queueMicrotask(() => setLeaderboard(JSON.parse(saved)));
     }
   }, [gameKey]);
 

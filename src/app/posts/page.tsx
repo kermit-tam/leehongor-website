@@ -7,7 +7,8 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { PostService } from '@/lib/firestore';
 import { PostCard } from '@/components/ui/card';
 import type { Post, PostCategory } from '@/types';
@@ -101,26 +102,26 @@ export default function PostsPage() {
 
       {/* 積木造句機入口 */}
       <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-        <a href="/learn/n5/lesson-1/builder" className="bg-gradient-to-r from-[#6B5B95] to-[#8B7BB5] text-white p-4 rounded-xl hover:shadow-lg transition-all">
+        <Link href="/learn/n5/lesson-1/builder" className="bg-gradient-to-r from-[#6B5B95] to-[#8B7BB5] text-white p-4 rounded-xl hover:shadow-lg transition-all">
           <div className="text-xl mb-1">🧱</div>
           <div className="font-medium text-sm">第1課造句</div>
           <div className="text-xs text-white/70">初次見面</div>
-        </a>
-        <a href="/learn/n5/lesson-2/builder" className="bg-gradient-to-r from-[#5B7B95] to-[#7B9BB5] text-white p-4 rounded-xl hover:shadow-lg transition-all">
+        </Link>
+        <Link href="/learn/n5/lesson-2/builder" className="bg-gradient-to-r from-[#5B7B95] to-[#7B9BB5] text-white p-4 rounded-xl hover:shadow-lg transition-all">
           <div className="text-xl mb-1">🧱</div>
           <div className="font-medium text-sm">第2課造句</div>
           <div className="text-xs text-white/70">這是什麼</div>
-        </a>
-        <a href="/learn/n5/lesson-3/builder" className="bg-gradient-to-r from-[#5B957B] to-[#7BB59B] text-white p-4 rounded-xl hover:shadow-lg transition-all">
+        </Link>
+        <Link href="/learn/n5/lesson-3/builder" className="bg-gradient-to-r from-[#5B957B] to-[#7BB59B] text-white p-4 rounded-xl hover:shadow-lg transition-all">
           <div className="text-xl mb-1">🧱</div>
           <div className="font-medium text-sm">第3課造句</div>
           <div className="text-xs text-white/70">這裡是哪裡</div>
-        </a>
-        <a href="/learn/n5/lesson-4/builder" className="bg-gradient-to-r from-[#957B5B] to-[#B59B7B] text-white p-4 rounded-xl hover:shadow-lg transition-all">
+        </Link>
+        <Link href="/learn/n5/lesson-4/builder" className="bg-gradient-to-r from-[#957B5B] to-[#B59B7B] text-white p-4 rounded-xl hover:shadow-lg transition-all">
           <div className="text-xl mb-1">🧱</div>
           <div className="font-medium text-sm">第4課造句</div>
           <div className="text-xs text-white/70">現在幾點</div>
-        </a>
+        </Link>
       </div>
 
       {/* 搜尋欄 */}

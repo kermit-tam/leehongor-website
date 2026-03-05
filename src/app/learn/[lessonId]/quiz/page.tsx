@@ -70,7 +70,6 @@ export default function QuizPage() {
           }
         }
       } catch (err) {
-        console.error('Error loading quiz:', err);
         setError('無法加載測驗');
       } finally {
         setIsLoading(false);
@@ -117,7 +116,6 @@ export default function QuizPage() {
       
       setQuizCompleted(true);
     } catch (err) {
-      console.error('Error submitting quiz:', err);
       alert('提交測驗時出錯，請重試');
     } finally {
       setIsSubmitting(false);

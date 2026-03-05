@@ -12,9 +12,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Image from 'next/image';
 import { useRequireAuth } from '@/lib/auth-context';
 import Link from 'next/link';
-import { SimpleImageUpload } from '@/components/ui/image-upload';
+
 import { ImageCropper } from '@/components/ui/image-cropper';
 import { PresetImagePicker } from '@/components/ui/preset-image-picker';
 import { 
@@ -373,11 +374,15 @@ export default function StudyImagesAdminPage() {
                   <div className="aspect-square bg-[#FAF9F7] relative">
                     {imageUrl ? (
                       <>
-                        <img 
-                          src={imageUrl} 
-                          alt={card.character}
-                          className="w-full h-full object-cover"
-                        />
+                        <div className="relative w-full h-full">
+                          <Image 
+                            src={imageUrl} 
+                            alt={card.character}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
                         <button
                           onClick={() => handleRemoveImage(card.id)}
                           className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center"

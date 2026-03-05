@@ -25,8 +25,52 @@ interface QuizQuestion {
   questionSubtext?: string;
 }
 
+function generateQuestions(cards: StudyCard[], subject: 'chinese' | 'english'): QuizQuestion[] {
+  const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length));
+  
+  return shuffled.map(card => {
+    const otherCards = cards.filter(c => c.id !== card.id);
+    
+    if (subject === 'chinese') {
+      // 中文測驗：顯示生字 → 揀中文意思
+      const wrongOptions = otherCards
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3)
+        .map(c => c.meaning); // 中文意思
+      
+      const correctAnswer = card.meaning; // 正確中文意思
+      const options = [...wrongOptions, correctAnswer].sort(() => Math.random() - 0.5);
+      
+      return {
+        card,
+        options,
+        correctIndex: options.indexOf(correctAnswer),
+        questionText: card.character!,
+        questionSubtext: `${card.pinyin} (${card.jyutping})`,
+      };
+    } else {
+      // 英文測驗：顯示意思 → 揀英文單詞
+      const wrongOptions = otherCards
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3)
+        .map(c => c.word!);
+      
+      const correctAnswer = card.word!;
+      const options = [...wrongOptions, correctAnswer].sort(() => Math.random() - 0.5);
+      
+      return {
+        card,
+        options,
+        correctIndex: options.indexOf(correctAnswer),
+        questionText: card.meaning, // 顯示中文意思
+        questionSubtext: '選擇正確的英文單詞',
+      };
+    }
+  });
+}
+
 export function QuizSection({ cards, subject, onComplete, onBack }: QuizSectionProps) {
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(() => generateQuestions(cards, subject));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -34,51 +78,20 @@ export function QuizSection({ cards, subject, onComplete, onBack }: QuizSectionP
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [quizComplete, setQuizComplete] = useState(false);
 
-  // 生成測驗題目（修復版）
+  // 當 cards 或 subject 變化時重新生成題目
   useEffect(() => {
-    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length));
-    
-    const qs: QuizQuestion[] = shuffled.map(card => {
-      const otherCards = cards.filter(c => c.id !== card.id);
-      
-      if (subject === 'chinese') {
-        // 中文測驗：顯示生字 → 揀中文意思
-        const wrongOptions = otherCards
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 3)
-          .map(c => c.meaning); // 中文意思
-        
-        const correctAnswer = card.meaning; // 正確中文意思
-        const options = [...wrongOptions, correctAnswer].sort(() => Math.random() - 0.5);
-        
-        return {
-          card,
-          options,
-          correctIndex: options.indexOf(correctAnswer),
-          questionText: card.character!,
-          questionSubtext: `${card.pinyin} (${card.jyutping})`,
-        };
-      } else {
-        // 英文測驗：顯示意思 → 揀英文單詞
-        const wrongOptions = otherCards
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 3)
-          .map(c => c.word!);
-        
-        const correctAnswer = card.word!;
-        const options = [...wrongOptions, correctAnswer].sort(() => Math.random() - 0.5);
-        
-        return {
-          card,
-          options,
-          correctIndex: options.indexOf(correctAnswer),
-          questionText: card.meaning, // 顯示中文意思
-          questionSubtext: '選擇正確的英文單詞',
-        };
-      }
-    });
-    
-    setQuestions(qs);
+    // 使用 setTimeout 避免同步 setState
+    const timer = setTimeout(() => {
+      setQuestions(generateQuestions(cards, subject));
+      // 重置測驗狀態
+      setCurrentIndex(0);
+      setSelectedAnswer(null);
+      setShowResult(false);
+      setScore(0);
+      setAnswers([]);
+      setQuizComplete(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [cards, subject]);
 
   const handleSelect = (index: number) => {
@@ -304,7 +317,7 @@ export function QuizSection({ cards, subject, onComplete, onBack }: QuizSectionP
               {subject === 'chinese' ? (
                 <p className="text-sm">「{currentQ.card.character}」的意思是「{currentQ.card.meaning}」</p>
               ) : (
-                <p className="text-sm">「{currentQ.card.meaning}」的英文是 "{currentQ.card.word}"</p>
+                <p className="text-sm">「{currentQ.card.meaning}」的英文是 &quot;{currentQ.card.word}&quot;</p>
               )}
             </>
           )}

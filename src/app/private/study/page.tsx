@@ -1,6 +1,6 @@
 /**
- * 仔仔溫書頁面
- * Kids Study Page
+ * 仔仔溫書頁面 - 私人版本（需登入）
+ * Kids Study Page (Private - requires login)
  * 
  * 課程結構：
  * - 中文：基礎十字主題，分第一課、第二課
@@ -12,16 +12,20 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRequireAuth } from '@/lib/auth-context';
-import { StudyCard, Lesson, chineseTopics, englishLessons, getAllLessons } from './data';
-import { chineseLesson01Cards } from './data/chinese-lesson-01';
-import { chineseLesson02Cards } from './data/chinese-lesson-02';
-import { chineseLesson03Cards } from './data/chinese-lesson-03';
-import { englishCards } from './data';
-import { FlashCard } from './components/FlashCard';
-import { ListeningQuiz } from './components/ListeningQuiz';
-import { SpeakingQuiz } from './components/SpeakingQuiz';
-import { PictureMatch } from './components/PictureMatch';
-import { ProgressBar } from './components/ProgressBar';
+import {
+  StudyCard,
+  englishLessons,
+  getAllLessons,
+  chineseLesson01Cards,
+  chineseLesson02Cards,
+  chineseLesson03Cards,
+  englishCards,
+  FlashCard,
+  ListeningQuiz,
+  SpeakingQuiz,
+  PictureMatch,
+  ProgressBar,
+} from '@/components/kids-study';
 import Link from 'next/link';
 
 type StudyMode = 'menu' | 'flashcard' | 'listening-quiz' | 'speaking-quiz' | 'picture-match';
@@ -54,10 +58,10 @@ function KidsStudyContent() {
   // 從 URL 參數讀取課程
   useEffect(() => {
     const lessonId = searchParams.get('lesson');
-    const sub = searchParams.get('subject') as Subject | null;
     
     if (lessonId) {
-      setSelectedLesson(lessonId);
+      // Schedule state update to avoid synchronous setState in effect
+      queueMicrotask(() => setSelectedLesson(lessonId));
     }
   }, [searchParams]);
   
@@ -66,7 +70,8 @@ function KidsStudyContent() {
   useEffect(() => {
     const saved = localStorage.getItem('kids-study-progress-v2');
     if (saved) {
-      setProgress(JSON.parse(saved));
+      // Schedule state update to avoid synchronous setState in effect
+      queueMicrotask(() => setProgress(JSON.parse(saved)));
     }
   }, []);
 

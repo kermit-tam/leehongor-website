@@ -5,7 +5,7 @@
  * 處理 N5 課程測驗完成後的能力分數更新
  */
 
-import { doc, getDoc, updateDoc, writeBatch, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { AbilityScores, QuizDimension } from '@/types';
 

@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MTRLine, MTRStation } from '../data/mtr-stations';
 
@@ -23,8 +23,78 @@ interface Question {
   options: MTRStation[];
 }
 
+// 隨機打亂數組的輔助函數
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
+// 生成題目的輔助函數
+const generateRandomQuestion = (line: MTRLine): Question | null => {
+  // 只選有前後站的（排除第一個和最後一個）
+  const validStations = line.stations.filter((_, index) => 
+    index > 0 && index < line.stations.length - 1
+  );
+  
+  if (validStations.length === 0) return null;
+
+  // 隨機選一個目標站
+  const target = validStations[Math.floor(Math.random() * validStations.length)];
+  const targetIndex = line.stations.findIndex(s => s.id === target.id);
+  
+  const prevStation = line.stations[targetIndex - 1];
+  const nextStation = line.stations[targetIndex + 1];
+
+  // 生成選項（包含正確答案和5個「附近站」作為干擾項）
+  // 從目標站前後各3個站內選干擾項，增加難度
+  const nearbyStations: MTRStation[] = [];
+  
+  // 向前取最多3個站
+  for (let i = targetIndex - 3; i < targetIndex; i++) {
+    if (i >= 0 && line.stations[i].id !== target.id) {
+      nearbyStations.push(line.stations[i]);
+    }
+  }
+  
+  // 向後取最多3個站
+  for (let i = targetIndex + 3; i > targetIndex; i--) {
+    if (i < line.stations.length && line.stations[i].id !== target.id) {
+      nearbyStations.push(line.stations[i]);
+    }
+  }
+  
+  // 如果附近站不夠5個，從其他站補充
+  const otherStations = line.stations.filter(s => 
+    s.id !== target.id && !nearbyStations.find(ns => ns.id === s.id)
+  );
+  
+  // 隨機排序附近站，取最多5個
+  const selectedNearby = shuffleArray(nearbyStations).slice(0, 5);
+  
+  // 如果不夠5個，從其他站補充
+  const neededCount = 5 - selectedNearby.length;
+  const extraDistractors = neededCount > 0 
+    ? shuffleArray(otherStations).slice(0, neededCount)
+    : [];
+  
+  // 最終選項：正確答案 + 5個干擾項 = 6個選項
+  const options = shuffleArray([...selectedNearby, ...extraDistractors, target]);
+
+  return {
+    prevStation,
+    targetStation: target,
+    nextStation,
+    options
+  };
+};
+
 export function NeighborQuiz({ line, onBack, onScore, speak }: NeighborQuizProps) {
-  const [question, setQuestion] = useState<Question | null>(null);
+  // 使用函數式初始化
+  const [question, setQuestion] = useState<Question | null>(() => generateRandomQuestion(line));
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
@@ -32,77 +102,6 @@ export function NeighborQuiz({ line, onBack, onScore, speak }: NeighborQuizProps
   const [showResult, setShowResult] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const maxRounds = 10;
-
-  // 生成題目
-  const generateQuestion = () => {
-    // 只選有前後站的（排除第一個和最後一個）
-    const validStations = line.stations.filter((_, index) => 
-      index > 0 && index < line.stations.length - 1
-    );
-    
-    if (validStations.length === 0) return;
-
-    // 隨機選一個目標站
-    const target = validStations[Math.floor(Math.random() * validStations.length)];
-    const targetIndex = line.stations.findIndex(s => s.id === target.id);
-    
-    const prevStation = line.stations[targetIndex - 1];
-    const nextStation = line.stations[targetIndex + 1];
-
-    // 生成選項（包含正確答案和5個「附近站」作為干擾項）
-    // 從目標站前後各3個站內選干擾項，增加難度
-    const nearbyStations: MTRStation[] = [];
-    
-    // 向前取最多3個站
-    for (let i = targetIndex - 3; i < targetIndex; i++) {
-      if (i >= 0 && line.stations[i].id !== target.id) {
-        nearbyStations.push(line.stations[i]);
-      }
-    }
-    
-    // 向後取最多3個站
-    for (let i = targetIndex + 3; i > targetIndex; i--) {
-      if (i < line.stations.length && line.stations[i].id !== target.id) {
-        nearbyStations.push(line.stations[i]);
-      }
-    }
-    
-    // 如果附近站不夠5個，從其他站補充
-    const otherStations = line.stations.filter(s => 
-      s.id !== target.id && !nearbyStations.find(ns => ns.id === s.id)
-    );
-    
-    // 隨機排序附近站，取最多5個
-    const selectedNearby = [...nearbyStations]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 5);
-    
-    // 如果不夠5個，從其他站補充
-    const neededCount = 5 - selectedNearby.length;
-    const extraDistractors = neededCount > 0 
-      ? [...otherStations].sort(() => Math.random() - 0.5).slice(0, neededCount)
-      : [];
-    
-    // 最終選項：正確答案 + 5個干擾項 = 6個選項
-    const options = [...selectedNearby, ...extraDistractors, target]
-      .sort(() => Math.random() - 0.5);
-
-    setQuestion({
-      prevStation,
-      targetStation: target,
-      nextStation,
-      options
-    });
-
-    setSelectedAnswer(null);
-    setIsCorrect(null);
-    setShowHint(false);
-  };
-
-  // 初始化
-  useEffect(() => {
-    generateQuestion();
-  }, []);
 
   // 讀出題目
   const speakQuestion = () => {
@@ -127,16 +126,22 @@ export function NeighborQuiz({ line, onBack, onScore, speak }: NeighborQuizProps
     setTimeout(() => {
       if (round < maxRounds) {
         setRound(r => r + 1);
-        generateQuestion();
+        const newQuestion = generateRandomQuestion(line);
+        if (newQuestion) {
+          setQuestion(newQuestion);
+          setSelectedAnswer(null);
+          setIsCorrect(null);
+          setShowHint(false);
+        }
       } else {
         setShowResult(true);
       }
     }, 2500);
   };
 
-  const getOptionStyle = (option: MTRStation) => {
+  const getOptionStyle = (option: MTRStation): React.CSSProperties => {
     // 根據選項所屬路線顯示顏色邊框
-    const baseStyle = {
+    const baseStyle: React.CSSProperties = {
       borderWidth: '4px',
       borderColor: option.lineColorCode,
       backgroundColor: `${option.lineColorCode}15`,

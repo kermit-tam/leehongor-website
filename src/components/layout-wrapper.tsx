@@ -16,7 +16,8 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     // 檢查 hostname
     const hostname = window.location.hostname;
     const isCEMSite = hostname.startsWith('study.') || hostname.startsWith('kids.');
-    setIsJapaneseSite(!isCEMSite);
+    // Schedule state update to avoid synchronous setState in effect
+    queueMicrotask(() => setIsJapaneseSite(!isCEMSite));
   }, []);
   
   return (

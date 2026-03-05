@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { useRequireAdmin } from '@/lib/auth-context';
 import { LessonService } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
-import { SimpleImageUpload } from '@/components/ui/image-upload';
+
 import type { Lesson, LessonCategory, QuizDimension, ContentBlock } from '@/types';
 
 const CATEGORIES: LessonCategory[] = ['五十音', '基礎文法', '進階文法', '會話', '聽力'];
@@ -72,8 +72,7 @@ export default function AdminLessonsPage() {
       setIsLoading(true);
       const fetchedLessons = await LessonService.getLessons();
       setLessons(fetchedLessons);
-    } catch (err) {
-      console.error('Error loading lessons:', err);
+    } catch {
       alert('無法加載課程');
     } finally {
       setIsLoading(false);
@@ -124,8 +123,7 @@ export default function AdminLessonsPage() {
       await LessonService.deleteLesson(lessonId);
       await loadLessons();
       alert('課程已刪除');
-    } catch (err) {
-      console.error('Error deleting lesson:', err);
+    } catch {
       alert('刪除失敗');
     }
   };
@@ -201,8 +199,7 @@ export default function AdminLessonsPage() {
       resetForm();
       setShowForm(false);
       await loadLessons();
-    } catch (err) {
-      console.error('Error saving lesson:', err);
+    } catch {
       alert('保存失敗');
     }
   };

@@ -5,9 +5,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRequireAdmin } from '@/lib/auth-context';
-import { lesson1Data, N5Vocab, n5LessonsList } from '@/data/n5-lessons';
+import { N5Vocab, n5LessonsList } from '@/data/n5-lessons';
 
 interface EditableVocab extends N5Vocab {
   lessonId: string;
@@ -23,14 +23,20 @@ export default function N5PhoneticsAdminPage() {
   const [editingVocab, setEditingVocab] = useState<EditableVocab | null>(null);
   const [editedCantonese, setEditedCantonese] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
-  const [localChanges, setLocalChanges] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const saved = localStorage.getItem('n5-phonetics-custom');
-    if (saved) {
-      setLocalChanges(JSON.parse(saved));
+  const [localChanges, setLocalChanges] = useState<Record<string, string>>(() => {
+    // 初始化時從 localStorage 讀取，避免 useEffect 中的 setState
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('n5-phonetics-custom');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return {};
+        }
+      }
     }
-  }, []);
+    return {};
+  });
 
   const allVocab: EditableVocab[] = n5LessonsList.flatMap(lesson =>
     lesson.units.flatMap(unit =>

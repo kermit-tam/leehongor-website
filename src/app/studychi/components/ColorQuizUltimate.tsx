@@ -5,9 +5,9 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { allPlatformThemes, getWallStyle } from '../data/platform-themes';
-import { Leaderboard } from './Leaderboard';
+import { useState, useMemo } from 'react';
+import { allPlatformThemes, getWallStyle, PlatformTheme } from '../data/platform-themes';
+
 
 interface ColorQuizUltimateProps {
   onBack: () => void;
@@ -15,11 +15,23 @@ interface ColorQuizUltimateProps {
   showLeaderboard?: boolean;
 }
 
-interface Question {
-  id: number;
-  theme: typeof allPlatformThemes[0];
-  options: typeof allPlatformThemes[0][];
+
+
+interface AnswerRecord {
+  q: number;
+  correct: boolean;
+  station: string;
 }
+
+// 隨機打亂數組的輔助函數
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
 
 export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: ColorQuizUltimateProps) {
   const [currentQ, setCurrentQ] = useState(0);
@@ -27,15 +39,15 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
   const [showResult, setShowResult] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [correct, setCorrect] = useState<boolean | null>(null);
-  const [answers, setAnswers] = useState<{q: number, correct: boolean, station: string}[]>([]);
-  const [showLeaderboardView, setShowLeaderboardView] = useState(showLeaderboard);
+  const [answers, setAnswers] = useState<AnswerRecord[]>([]);
+  const [, setShowLeaderboardView] = useState(showLeaderboard);
 
-  // 生成15條隨機題目
+  // 生成15條隨機題目 - 使用 useMemo 避免每次 render 重新生成
   const questions = useMemo(() => {
-    const shuffled = [...allPlatformThemes].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 15);
+    const shuffled = shuffleArray(allPlatformThemes);
+    const selectedThemes = shuffled.slice(0, 15);
     
-    return selected.map((theme, idx) => {
+    return selectedThemes.map((theme, idx) => {
       // 生成3個錯誤選項（排除同色同名的站）
       const otherStations = allPlatformThemes.filter(t => 
         t.stationId !== theme.stationId && 
@@ -43,10 +55,10 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
       );
       
       // 隨機揀5個唔同嘅站（6選1）
-      const wrongOptions: typeof allPlatformThemes[0][] = [];
+      const wrongOptions: PlatformTheme[] = [];
       const usedIds = new Set<string>();
       
-      for (const station of otherStations.sort(() => Math.random() - 0.5)) {
+      for (const station of shuffleArray(otherStations)) {
         if (wrongOptions.length >= 5) break;
         if (!usedIds.has(station.stationId)) {
           wrongOptions.push(station);
@@ -55,7 +67,7 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
       }
       
       // 混合正確答案同錯誤選項，確保無重複
-      const options = [theme, ...wrongOptions].sort(() => Math.random() - 0.5);
+      const options = shuffleArray([theme, ...wrongOptions]);
       
       return {
         id: idx,
@@ -66,16 +78,6 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
   }, []);
 
   const currentQuestion = questions[currentQ];
-
-  // 自動下一題
-  useEffect(() => {
-    if (selected) {
-      const timer = setTimeout(() => {
-        nextQuestion();
-      }, 3000); // 3秒後自動下一題
-      return () => clearTimeout(timer);
-    }
-  }, [selected]);
 
   const handleAnswer = (optionId: string) => {
     if (selected) return; // 已經答咗
@@ -94,16 +96,17 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
       correct: isCorrect,
       station: currentQuestion.theme.stationName
     }]);
-  };
 
-  const nextQuestion = () => {
-    if (currentQ < 14) { // 15題：0-14
-      setCurrentQ(c => c + 1);
-      setSelected(null);
-      setCorrect(null);
-    } else {
-      setShowResult(true);
-    }
+    // 使用 setTimeout 代替 useEffect 自動下一題
+    setTimeout(() => {
+      if (currentQ < 14) { // 15題：0-14
+        setCurrentQ(c => c + 1);
+        setSelected(null);
+        setCorrect(null);
+      } else {
+        setShowResult(true);
+      }
+    }, 3000);
   };
 
   const getRating = (score: number) => {
@@ -254,7 +257,7 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
         <div className="grid grid-cols-3 gap-3">
           {currentQuestion.options.map((option) => {
             const isSelected = selected === option.stationId;
-            const isCorrect = option.stationId === currentQuestion.theme.stationId;
+            const isCorrectAnswer = option.stationId === currentQuestion.theme.stationId;
             const isAnswered = selected !== null;
             
             let buttonClass = 'p-3 rounded-xl font-bold text-center text-sm transition-all active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis flex flex-col items-center gap-1 ';
@@ -262,10 +265,10 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
             if (!isAnswered) {
               // 未答：白色背景
               buttonClass += 'bg-gray-100 text-gray-800 hover:bg-gray-200';
-            } else if (isCorrect) {
+            } else if (isCorrectAnswer) {
               // 正確答案：綠色
               buttonClass += 'bg-green-500 text-white';
-            } else if (isSelected && !isCorrect) {
+            } else if (isSelected && !isCorrectAnswer) {
               // 錯誤選擇：紅色
               buttonClass += 'bg-red-500 text-white';
             } else {
@@ -291,8 +294,8 @@ export function ColorQuizUltimate({ onBack, onScore, showLeaderboard = false }: 
                     }}
                   />
                 )}
-                {isSelected && isCorrect && <span className="text-lg">✓</span>}
-                {isSelected && !isCorrect && <span className="text-lg">✗</span>}
+                {isSelected && isCorrectAnswer && <span className="text-lg">✓</span>}
+                {isSelected && !isCorrectAnswer && <span className="text-lg">✗</span>}
               </button>
             );
           })}

@@ -45,7 +45,7 @@ export default function LightningMath() {
   // 初始化音頻
   const initAudio = useCallback(() => {
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioCtxRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
     }
   }, []);
 
@@ -240,6 +240,7 @@ export default function LightningMath() {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     stopBGM();
     
+    // eslint-disable-next-line react-hooks/purity
     const totalTime = Date.now() - startTimeRef.current;
     const mins = Math.floor(totalTime / 60000);
     const secs = Math.floor((totalTime % 60000) / 1000);

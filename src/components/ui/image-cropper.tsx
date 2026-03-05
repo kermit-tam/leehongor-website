@@ -34,6 +34,7 @@ export function ImageCropper({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   
   // 計算裁剪區域尺寸
   const cropSize = 280; // 裁剪框大小
@@ -188,16 +189,20 @@ export function ImageCropper({
             alt="待裁剪"
             className={`absolute cursor-move select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             style={{
-              width: imageLoaded ? `${imageRef.current!.naturalWidth * scale * (280 / Math.max(imageRef.current!.naturalWidth, imageRef.current!.naturalHeight))}px` : 'auto',
+              width: imageLoaded ? `${imageSize.width * scale * (280 / Math.max(imageSize.width, imageSize.height))}px` : 'auto',
               height: 'auto',
               maxWidth: 'none',
               transform: `translate(${position.x}px, ${position.y}px)`,
               left: '50%',
               top: '50%',
-              marginLeft: imageLoaded ? `${-imageRef.current!.naturalWidth * scale * (280 / Math.max(imageRef.current!.naturalWidth, imageRef.current!.naturalHeight)) / 2}px` : 0,
-              marginTop: imageLoaded ? `${-imageRef.current!.naturalHeight * scale * (280 / Math.max(imageRef.current!.naturalWidth, imageRef.current!.naturalHeight)) / 2}px` : 0,
+              marginLeft: imageLoaded ? `${-imageSize.width * scale * (280 / Math.max(imageSize.width, imageSize.height)) / 2}px` : 0,
+              marginTop: imageLoaded ? `${-imageSize.height * scale * (280 / Math.max(imageSize.width, imageSize.height)) / 2}px` : 0,
             }}
-            onLoad={() => setImageLoaded(true)}
+            onLoad={(e) => {
+              const img = e.currentTarget;
+              setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+              setImageLoaded(true);
+            }}
             onMouseDown={handleMouseDown}
             onTouchStart={handleMouseDown}
             draggable={false}

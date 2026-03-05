@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { useAuth, useRequireAuth } from '@/lib/auth-context';
 import { UserService } from '@/lib/firestore';
 import { getCheckinStats, CheckinData } from '@/lib/daily-checkin';
-import { LevelCard, StatCard } from '@/components/ui/card';
+import { StatCard } from '@/components/ui/card';
 import { AbilityRadarChart, AbilityScoresGrid } from '@/components/charts/radar-chart';
 import { Button } from '@/components/ui/button';
 import type { User } from '@/types';

@@ -5,6 +5,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/lib/auth-context';
@@ -17,7 +18,7 @@ interface LeaderboardEntry {
   score: number;
   correctCount: number;
   title: string;
-  createdAt: any;
+  createdAt: Date | string;
 }
 
 interface LeaderboardProps {
@@ -159,7 +160,9 @@ export function Leaderboard({ onBack, myScore, myCorrectCount, myTitle }: Leader
                 {/* 頭像 */}
                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                   {entry.userPhoto ? (
-                    <img src={entry.userPhoto} alt="" className="w-full h-full object-cover" />
+                    <div className="relative w-full h-full">
+                      <Image src={entry.userPhoto} alt="" fill className="object-cover" unoptimized />
+                    </div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xl">👤</div>
                   )}

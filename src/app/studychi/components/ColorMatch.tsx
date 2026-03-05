@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { mtrLines } from '../data/mtr-stations';
 
 interface ColorMatchProps {
@@ -13,41 +13,50 @@ interface ColorMatchProps {
   onScore: (points: number) => void;
 }
 
+interface MTRColor {
+  name: string;
+  color: string;
+  code: string;
+  icon: string;
+}
+
 // 港鐵各路線顏色
-const mtrColors = mtrLines.map(line => ({
+const mtrColors: MTRColor[] = mtrLines.map(line => ({
   name: line.name,
   color: line.color,
   code: line.colorCode,
   icon: '🚇'
 }));
 
+// 生成隨機題目的輔助函數
+const getRandomColor = (): MTRColor => {
+  return mtrColors[Math.floor(Math.random() * mtrColors.length)];
+};
+
+const getRandomOptions = (targetName: string): MTRColor[] => {
+  const otherColors = mtrColors.filter(c => c.name !== targetName);
+  const shuffled = [...otherColors].sort(() => Math.random() - 0.5).slice(0, 3);
+  const target = mtrColors.find(c => c.name === targetName);
+  const allOptions = target ? [...shuffled, target] : shuffled;
+  return allOptions.sort(() => Math.random() - 0.5);
+};
+
 export function ColorMatch({ onBack, onScore }: ColorMatchProps) {
-  const [targetColor, setTargetColor] = useState(mtrColors[0]);
-  const [options, setOptions] = useState<typeof mtrColors>([]);
+  const [targetColor, setTargetColor] = useState<MTRColor>(() => getRandomColor());
+  const [options, setOptions] = useState<MTRColor[]>(() => {
+    const initialTarget = getRandomColor();
+    return getRandomOptions(initialTarget.name);
+  });
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
   const [round, setRound] = useState(1);
   const maxRounds = 10;
 
-  // 初始化題目
-  useEffect(() => {
-    generateQuestion();
-  }, []);
-
   const generateQuestion = () => {
-    // 隨機選一個顏色作為目標
-    const target = mtrColors[Math.floor(Math.random() * mtrColors.length)];
+    const target = getRandomColor();
     setTargetColor(target);
-    
-    // 隨機選3個其他顏色作為選項
-    const otherColors = mtrColors.filter(c => c.name !== target.name);
-    const shuffled = [...otherColors].sort(() => Math.random() - 0.5).slice(0, 3);
-    
-    // 加入正確答案並重新排序
-    const allOptions = [...shuffled, target].sort(() => Math.random() - 0.5);
-    setOptions(allOptions);
-    
+    setOptions(getRandomOptions(target.name));
     setSelectedAnswer(null);
     setIsCorrect(null);
   };

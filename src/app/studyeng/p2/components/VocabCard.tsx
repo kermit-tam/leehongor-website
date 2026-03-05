@@ -38,7 +38,7 @@ export default function VocabCard({ vocab, onNext, onPrev, currentIndex, totalCo
   }, [vocab.id, speakWord]);
 
   // 滑動處理
-  const handleDragEnd = (event: any, info: PanInfo) => {
+  const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 80;
     if (info.offset.x > threshold && onPrev) {
       setDirection(-1);
@@ -47,7 +47,7 @@ export default function VocabCard({ vocab, onNext, onPrev, currentIndex, totalCo
       setDirection(1);
       onNext();
     }
-  };
+  }, [onNext, onPrev]);
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-md mx-auto">

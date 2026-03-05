@@ -72,8 +72,7 @@ export default function AdminPostsPage() {
       setIsLoading(true);
       const { posts: fetchedPosts } = await PostService.getPosts({ limit: 100 });
       setPosts(fetchedPosts);
-    } catch (err) {
-      console.error('Error loading posts:', err);
+    } catch {
       alert('無法加載文章');
     } finally {
       setIsLoading(false);
@@ -128,8 +127,7 @@ export default function AdminPostsPage() {
       await PostService.deletePost(postId);
       await loadPosts();
       alert('文章已刪除');
-    } catch (err) {
-      console.error('Error deleting post:', err);
+    } catch {
       alert('刪除失敗');
     }
   };
@@ -221,8 +219,7 @@ export default function AdminPostsPage() {
       resetForm();
       setShowForm(false);
       await loadPosts();
-    } catch (err) {
-      console.error('Error saving post:', err);
+    } catch {
       alert('保存失敗');
     }
   };

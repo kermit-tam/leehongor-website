@@ -22,15 +22,6 @@ export default function SpellingGame({ words, onComplete, onExit }: SpellingGame
 
   const currentWord = words[currentIndex];
 
-  // 生成打亂的字母
-  useEffect(() => {
-    const scrambled = scrambleWord(currentWord.word);
-    setScrambled(scrambled);
-    setUserAnswer('');
-    setIsCorrect(null);
-    setShowHint(false);
-  }, [currentWord]);
-
   // 發音
   const speakWord = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -40,6 +31,18 @@ export default function SpellingGame({ words, onComplete, onExit }: SpellingGame
     utterance.rate = 0.7;
     window.speechSynthesis.speak(utterance);
   }, [currentWord.word]);
+
+  // 生成打亂的字母 - 使用 setTimeout 避免在 effect 中直接 setState
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const scrambledLetters = scrambleWord(currentWord.word);
+      setScrambled(scrambledLetters);
+      setUserAnswer('');
+      setIsCorrect(null);
+      setShowHint(false);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [currentWord]);
 
   // 檢查答案
   const checkAnswer = () => {
@@ -69,11 +72,6 @@ export default function SpellingGame({ words, onComplete, onExit }: SpellingGame
         onComplete?.(score + (correct ? 1 : 0), words.length);
       }
     }, 1500);
-  };
-
-  // 從打亂字母填充
-  const fillFromScrambled = () => {
-    setUserAnswer(scrambled);
   };
 
   if (showResult) {

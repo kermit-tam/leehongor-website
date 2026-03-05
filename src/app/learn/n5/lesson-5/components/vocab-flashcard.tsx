@@ -71,7 +71,7 @@ export function VocabFlashcard({ vocab, showCantonese, onComplete }: VocabFlashc
   }, [currentIndex]);
 
   // Swipe 結束處理
-  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+  const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 80;
     
     if (info.offset.x > threshold) {

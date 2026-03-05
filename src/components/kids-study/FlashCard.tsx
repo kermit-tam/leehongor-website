@@ -74,9 +74,11 @@ export function FlashCard({ cards, subject, onComplete, onBack }: FlashCardProps
   // 當切換生字時，自動播放
   useEffect(() => {
     autoPlayCantonese();
-    setCurrentExampleIndex(0);
+    // 使用 setTimeout 將 setState 移到下一個 tick，避免同步調用
+    const timer = setTimeout(() => setCurrentExampleIndex(0), 0);
     
     return () => {
+      clearTimeout(timer);
       if (autoPlayRef.current) clearTimeout(autoPlayRef.current);
     };
   }, [currentIndex, autoPlayCantonese]);

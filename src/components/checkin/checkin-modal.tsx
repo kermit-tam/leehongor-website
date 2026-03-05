@@ -10,12 +10,13 @@ import { useAuth } from '@/lib/auth-context';
 import { useEffect, useState } from 'react';
 
 export function CheckinModal() {
-  const { checkinResult, clearCheckinResult, user } = useAuth();
-  const [isVisible, setIsVisible] = useState(false);
+  const { checkinResult, clearCheckinResult } = useAuth();
+  const [isVisible, setIsVisible] = useState(() => checkinResult?.success ?? false);
   
   useEffect(() => {
     if (checkinResult?.success) {
-      setIsVisible(true);
+      // Schedule state update to avoid synchronous setState in effect
+      queueMicrotask(() => setIsVisible(true));
     }
   }, [checkinResult]);
   

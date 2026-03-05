@@ -16,6 +16,21 @@ export default function FlashCard({ word, onNext, onPrev, currentIndex, totalCou
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [direction, setDirection] = useState(0);
 
+  // 滑動處理
+  const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const threshold = 80; // 滑動距離閾值
+    
+    if (info.offset.x > threshold && onPrev) {
+      // 向右滑 -> 上一個
+      setDirection(-1);
+      onPrev();
+    } else if (info.offset.x < -threshold && onNext) {
+      // 向左滑 -> 下一個
+      setDirection(1);
+      onNext();
+    }
+  }, [onNext, onPrev]);
+
   // 發音功能 - 用音節方式讀 CVC 單字
   const speakWord = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -50,21 +65,6 @@ export default function FlashCard({ word, onNext, onPrev, currentIndex, totalCou
   // 點擊卡片發音
   const handleCardClick = () => {
     speakWord();
-  };
-
-  // 滑動處理
-  const handleDragEnd = (event: any, info: PanInfo) => {
-    const threshold = 80; // 滑動距離閾值
-    
-    if (info.offset.x > threshold && onPrev) {
-      // 向右滑 -> 上一個
-      setDirection(-1);
-      onPrev();
-    } else if (info.offset.x < -threshold && onNext) {
-      // 向左滑 -> 下一個
-      setDirection(1);
-      onNext();
-    }
   };
 
   return (

@@ -235,7 +235,6 @@ export default function LearnPage() {
             ]);
             
             if (!fetchedUser) {
-              console.error('User data not found');
               return;
             }
             
@@ -248,11 +247,15 @@ export default function LearnPage() {
             const lesson4Progress = JSON.parse(localStorage.getItem('lesson4-progress') || '[]');
             
             // 計算完成的微單元數
+            interface ProgressItem {
+              completed?: boolean;
+              bestScore?: number;
+            }
             const completedUnitCount = [
-              ...lesson1Progress.filter((p: any) => p.completed),
-              ...lesson2Progress.filter((p: any) => p.completed),
-              ...lesson3Progress.filter((p: any) => p.completed),
-              ...lesson4Progress.filter((p: any) => p.completed),
+              ...lesson1Progress.filter((p: ProgressItem) => p.completed),
+              ...lesson2Progress.filter((p: ProgressItem) => p.completed),
+              ...lesson3Progress.filter((p: ProgressItem) => p.completed),
+              ...lesson4Progress.filter((p: ProgressItem) => p.completed),
             ].length;
             
             // 總微單元數（第1-4課）
@@ -288,10 +291,10 @@ export default function LearnPage() {
             
             // 收集所有微單元分數（使用已讀取嘅進度）
             const allUnitScores: number[] = [
-              ...lesson1Progress.filter((p: any) => p.bestScore > 0).map((p: any) => p.bestScore),
-              ...lesson2Progress.filter((p: any) => p.bestScore > 0).map((p: any) => p.bestScore),
-              ...lesson3Progress.filter((p: any) => p.bestScore > 0).map((p: any) => p.bestScore),
-              ...lesson4Progress.filter((p: any) => p.bestScore > 0).map((p: any) => p.bestScore),
+              ...lesson1Progress.filter((p: ProgressItem) => p.bestScore && p.bestScore > 0).map((p: ProgressItem) => p.bestScore || 0),
+              ...lesson2Progress.filter((p: ProgressItem) => p.bestScore && p.bestScore > 0).map((p: ProgressItem) => p.bestScore || 0),
+              ...lesson3Progress.filter((p: ProgressItem) => p.bestScore && p.bestScore > 0).map((p: ProgressItem) => p.bestScore || 0),
+              ...lesson4Progress.filter((p: ProgressItem) => p.bestScore && p.bestScore > 0).map((p: ProgressItem) => p.bestScore || 0),
             ];
             const hasUnitScores = allUnitScores.length > 0;
             
@@ -392,7 +395,7 @@ export default function LearnPage() {
               setQuizAvg(0);
             }
           } catch (err) {
-            console.error('Error loading user data:', err);
+            // Error loading user data
           }
         } else {
           // 未登入用戶使用本地數據
@@ -412,7 +415,7 @@ export default function LearnPage() {
           setStudyMinutes(0);
         }
       } catch (err) {
-        console.error('Error loading learn page:', err);
+        // Error loading learn page
       } finally {
         setIsLoading(false);
       }

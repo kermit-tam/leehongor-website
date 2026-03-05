@@ -29,7 +29,9 @@ interface QuizEngineProps {
   onComplete: (result: QuizResult) => void;
   onExit: () => void;
   // 可選：外部數據傳入（用於第6-10課）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   lessonVocab?: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getVocabByUnit?: (unitId: number) => any[];
 }
 
@@ -55,12 +57,17 @@ export function QuizEngine({ unitId, onComplete, onExit, lessonVocab, getVocabBy
 
   // 初始化題目
   useEffect(() => {
-    // 設置課程數據（如果提供了外部數據）
-    if (lessonVocab && getVocabByUnit) {
-      setLessonData(lessonVocab, getVocabByUnit);
-    }
-    const qs = generateQuestionsForUnit(unitId, 10);
-    setQuestions(qs);
+    // 使用 setTimeout 避免同步調用 setState
+    const initTimer = setTimeout(() => {
+      // 設置課程數據（如果提供了外部數據）
+      if (lessonVocab && getVocabByUnit) {
+        setLessonData(lessonVocab, getVocabByUnit);
+      }
+      const qs = generateQuestionsForUnit(unitId, 10);
+      setQuestions(qs);
+    }, 0);
+
+    return () => clearTimeout(initTimer);
   }, [unitId, lessonVocab, getVocabByUnit]);
 
   const currentQuestion = questions[currentIndex];

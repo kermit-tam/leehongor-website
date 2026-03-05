@@ -6,8 +6,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { MTRLine, MTRStation } from '../data/mtr-stations';
+import React, { useState, useEffect, useCallback } from 'react';
+import { MTRLine } from '../data/mtr-stations';
 import { playDoorCloseBeep, playArrivalBeep, playDoorOpenBeep } from '../utils/sounds';
 import { getPlatformTheme } from '../data/platform-themes';
 import { PlatformBackground } from './PlatformBackground';
@@ -34,16 +34,39 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
   // 獲取當前站嘅月台主題
   const platformTheme = getPlatformTheme(currentStation?.id || '');
 
+  // 手動讀站名（更慢）
+  const readStationName = useCallback(() => {
+    if (currentStation) {
+      speak(currentStation.name, 'zh-HK', 0.5); // 更慢
+    }
+  }, [currentStation, speak]);
+
+  // 使用 ref 追蹤是否已經處理過當前站點
+  const processedIndexRef = React.useRef<number>(-1);
+  const doorTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  
   // 自動讀站名（慢速）
   useEffect(() => {
-    if (currentStation && showInfo) {
+    if (currentStation && showInfo && processedIndexRef.current !== currentIndex) {
+      processedIndexRef.current = currentIndex;
       // 播放廣播：列車即將到達
-      setAnnouncement(`列車即將到達 ${currentStation.name} 站`);
-      speak(`列車即將到達，${currentStation.name}站`, 'zh-HK', 0.7);
+      const newAnnouncement = `列車即將到達 ${currentStation.name} 站`;
+      // 使用 setTimeout 避免同步 setState
+      const announceTimer = setTimeout(() => {
+        setAnnouncement(newAnnouncement);
+        speak(`列車即將到達，${currentStation.name}站`, 'zh-HK', 0.7);
+        
+        // 開門動畫 - 在 setTimeout 回調中執行
+        setDoorStatus('opening');
+        doorTimerRef.current = setTimeout(() => setDoorStatus('open'), 500);
+      }, 0);
       
-      // 開門動畫
-      setDoorStatus('opening');
-      setTimeout(() => setDoorStatus('open'), 500);
+      return () => {
+        clearTimeout(announceTimer);
+        if (doorTimerRef.current) {
+          clearTimeout(doorTimerRef.current);
+        }
+      };
     }
   }, [currentIndex, showInfo, speak, currentStation]);
 
@@ -109,13 +132,6 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
     setCurrentIndex(index);
     setShowInfo(true);
     setDoorStatus('open');
-  };
-
-  // 手動讀站名（更慢）
-  const readStationName = () => {
-    if (currentStation) {
-      speak(currentStation.name, 'zh-HK', 0.5); // 更慢
-    }
   };
 
   return (
@@ -321,7 +337,7 @@ export function TrainJourney({ line, onBack, onScore, speak }: TrainJourneyProps
         ) : null}
       </div>
 
-      {/* 控制按 */}
+      {/* 控制按鈕 */}
       <div className="flex gap-4">
         <button
           onClick={goToPrevStation}

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { aAnQuestions, aAnRules, vowels, shuffleAAnQuestions } from '../data/a-an-lesson';
+import { shuffleAAnQuestions, vowels } from '../data/a-an-lesson';
 
 interface AAnQuizProps {
   onComplete?: (score: number, total: number) => void;
@@ -18,10 +18,7 @@ export default function AAnQuiz({ onComplete, onExit }: AAnQuizProps) {
   const [showResult, setShowResult] = useState(false);
   const [showRules, setShowRules] = useState(true); // 預設顯示規則
 
-  const currentQuestion = questions[currentIndex];
-  const isVowel = vowels.includes(currentQuestion.word[0].toUpperCase());
-
-  // 發音
+  // 所有 Hook 必須在任何條件判斷之前調用
   const speak = useCallback((text: string) => {
     if (typeof window === 'undefined') return;
     window.speechSynthesis.cancel();
@@ -31,6 +28,15 @@ export default function AAnQuiz({ onComplete, onExit }: AAnQuizProps) {
     utterance.pitch = 1.2;
     window.speechSynthesis.speak(utterance);
   }, []);
+
+  // 安全檢查：確保 currentQuestion 存在
+  const currentQuestion = questions[currentIndex];
+  
+  if (!currentQuestion) {
+    return null;
+  }
+  
+  const isVowel = vowels.includes(currentQuestion.word[0].toUpperCase());
 
   // 選擇答案
   const selectArticle = (article: 'a' | 'an') => {

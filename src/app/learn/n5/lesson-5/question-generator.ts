@@ -31,7 +31,8 @@ const QUESTION_WEIGHTS: { type: QuestionType; weight: number; minPerQuiz: number
 let currentLessonVocab = lesson5Vocab;
 let currentGetVocabByUnit = getVocabByUnit;
 
-export function setLessonData(vocab: any[], getVocabFn: any) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function setLessonData(vocab: any[], getVocabFn: (unitId: number) => any[]) {
   currentLessonVocab = vocab;
   currentGetVocabByUnit = getVocabFn;
 }
@@ -700,7 +701,12 @@ function generateTrueFalse(vocab: GameVocab[], unitId: number, index: number): G
   }
 
   const template = templates[Math.floor(Math.random() * templates.length)];
-  const explanation = (template as any).explanation || '這是一句正確的日文句子！';
+  interface TemplateWithExplanation {
+    sentence: string;
+    translation: string;
+    explanation?: string;
+  }
+  const explanation = (template as TemplateWithExplanation).explanation || '這是一句正確的日文句子！';
   
   return {
     id: `q-${unitId}-tf-${index}`,
