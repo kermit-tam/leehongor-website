@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { CEMNavbar } from '@/components/cem-navbar';
-import { allQuestions, wordBank1, wordBankQ16, matchingOptions, scientists, type Question } from './data/questions';
+import { allQuestions, wordBank1, wordBankQ16, matchingOptions, scientists, type Question, type Option } from './data/questions';
 
 type AnswerState = {
   [key: number]: string | string[];
@@ -18,6 +18,47 @@ type CheckedState = {
   [key: number]: boolean;
 };
 
+// 隨機打亂數組（Fisher-Yates 算法）
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// 生成隨機化嘅題目選項
+function generateShuffledQuestions(questions: Question[]) {
+  return questions.map(q => {
+    // 只有 MC 題目需要隨機化選項
+    if ((q.type === 'mc' || q.type === 'mc-word-bank' || q.type === 'experiment') && q.options && q.options.length === 4) {
+      // 找出正確答案嘅文字
+      const correctLabel = q.answer as string;
+      const correctOption = q.options.find(o => o.label === correctLabel);
+      
+      // 打亂選項順序
+      const shuffledOptions = shuffleArray(q.options);
+      
+      // 重新標記 A/B/C/D
+      const relabeledOptions = shuffledOptions.map((opt, idx) => ({
+        ...opt,
+        label: String.fromCharCode(65 + idx), // A, B, C, D
+      }));
+      
+      // 找出正確答案嘅新標籤
+      const newCorrectLabel = relabeledOptions.find(o => o.text === correctOption?.text)?.label;
+      
+      return {
+        ...q,
+        options: relabeledOptions,
+        answer: newCorrectLabel || q.answer,
+      };
+    }
+    return q;
+  });
+}
+
 export default function TryGPPage() {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<AnswerState>({});
@@ -28,14 +69,17 @@ export default function TryGPPage() {
   const [selectedScientist, setSelectedScientist] = useState<number | null>(null);
   const [selectedToy, setSelectedToy] = useState<number | null>(null);
   const [orderingSequence, setOrderingSequence] = useState<number[]>([]);
+  
+  // 使用 useMemo 生成隨機化嘅題目（只生成一次）
+  const shuffledQuestions = useMemo(() => generateShuffledQuestions(allQuestions), []);
 
-  const question = allQuestions[currentQ];
-  const totalQuestions = allQuestions.length;
+  const question = shuffledQuestions[currentQ];
+  const totalQuestions = shuffledQuestions.length;
 
   const handleAnswer = (qId: number, answer: string | string[]) => {
     setAnswers(prev => ({ ...prev, [qId]: answer }));
     // 只有簡單MC題先自動檢查，其他要等用戶按確認
-    const q = allQuestions.find(qq => qq.id === qId);
+    const q = shuffledQuestions.find(qq => qq.id === qId);
     if (q && (q.type === 'mc' || q.type === 'mc-word-bank' || q.type === 'short-answer')) {
       setTimeout(() => {
         setChecked(prev => ({ ...prev, [qId]: true }));
@@ -56,7 +100,7 @@ export default function TryGPPage() {
     if (!userAnswer) return false;
     
     // 簡答題：用戶自己判斷對錯，'correct' 代表答對
-    if (q.type === 'short-answer') {
+    if (q?.type === 'short-answer') {
       return userAnswer === 'correct';
     }
     
@@ -73,7 +117,7 @@ export default function TryGPPage() {
 
   const calculateScore = () => {
     let correct = 0;
-    allQuestions.forEach(q => {
+    shuffledQuestions.forEach(q => {
       if (checkAnswer(q, answers[q.id])) correct++;
     });
     setScore(correct);
@@ -915,7 +959,7 @@ export default function TryGPPage() {
             <div className="bg-gray-50 rounded-2xl p-4 mb-6">
               <h3 className="font-bold text-gray-700 mb-3">答題情況</h3>
               <div className="grid grid-cols-6 gap-2">
-                {allQuestions.map((q, idx) => {
+                {shuffledQuestions.map((q, idx) => {
                   const isCorrect = checkAnswer(q, answers[q.id]);
                   return (
                     <div
@@ -1051,7 +1095,7 @@ export default function TryGPPage() {
         <div className="mt-8 bg-white rounded-2xl p-4 shadow-sm">
           <p className="text-sm text-gray-500 mb-3 text-center">快速跳轉</p>
           <div className="grid grid-cols-8 gap-2">
-            {allQuestions.map((q, idx) => (
+            {shuffledQuestions.map((q, idx) => (
               <button
                 key={q.id}
                 onClick={() => {
