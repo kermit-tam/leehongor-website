@@ -170,6 +170,28 @@ function generateAdditionQuestion(grade: Grade, qn: number): Question {
   
   const answer = a + b;
   
+  // 生成詳細提示
+  let hint: string;
+  if (useVisual) {
+    if (grade === 'kindergarten') {
+      hint = `伸出${a}隻手指，再數多${b}隻：${a}、${Array.from({length: b}, (_, i) => a + i + 1).join('、')}，總共${answer}隻手指！`;
+    } else {
+      hint = `畫${a}個圓圈⭕，再畫${b}個圓圈🔵，一齊數：1、2...總共${answer}個！`;
+    }
+  } else {
+    // 直式加法提示
+    const aOnes = a % 10, aTens = Math.floor(a / 10);
+    const bOnes = b % 10, bTens = Math.floor(b / 10);
+    const sumOnes = aOnes + bOnes;
+    const sumTens = aTens + bTens + (sumOnes >= 10 ? 1 : 0);
+    
+    if (sumOnes >= 10) {
+      hint = `個位：${aOnes}+${bOnes}=${sumOnes}（寫${sumOnes % 10}進1），十位：${aTens}+${bTens}+1=${sumTens}，答案係${answer}`;
+    } else {
+      hint = `個位：${aOnes}+${bOnes}=${sumOnes}，十位：${aTens}+${bTens}=${sumTens}，答案係${answer}`;
+    }
+  }
+  
   return {
     id: `q-${qn}`,
     type: 'choice',
@@ -181,7 +203,7 @@ function generateAdditionQuestion(grade: Grade, qn: number): Question {
     options: generateOptions(answer, grade === 'kindergarten' ? 'easy' : 'medium'),
     correctAnswer: answer,
     explanation: `${a}加${b}等於${answer}`,
-    hint: useVisual ? `用手指或者圓圈幫手數` : `個位數加個位數，十位數加十位數`,
+    hint,
   };
 }
 
@@ -212,6 +234,29 @@ function generateSubtractionQuestion(grade: Grade, qn: number): Question {
   
   const answer = a - b;
   
+  // 生成詳細提示
+  let hint: string;
+  if (useVisual) {
+    if (grade === 'kindergarten') {
+      // 顯示具體劃走過程
+      const crossedOut = Array.from({length: b}, (_, i) => i + 1).join('、');
+      hint = `畫${a}個圓圈⭕⭕...先劃走${b}個（${crossedOut}），數吓剩低嘅：${answer}個！`;
+    } else {
+      hint = `畫${a}個圓圈，劃走${b}個❌，數吓剩低幾多個：1、2...總共${answer}個！`;
+    }
+  } else {
+    // 直式減法提示
+    const aOnes = a % 10, aTens = Math.floor(a / 10);
+    const bOnes = b % 10, bTens = Math.floor(b / 10);
+    
+    if (aOnes < bOnes) {
+      // 需要退位
+      hint = `個位唔夠減要借位：${aOnes}+10-${bOnes}=${aOnes + 10 - bOnes}，十位：${aTens}-1-${bTens}=${aTens - 1 - bTens}，答案係${answer}`;
+    } else {
+      hint = `個位：${aOnes}-${bOnes}=${aOnes - bOnes}，十位：${aTens}-${bTens}=${aTens - bTens}，答案係${answer}`;
+    }
+  }
+  
   return {
     id: `q-${qn}`,
     type: 'choice',
@@ -223,7 +268,7 @@ function generateSubtractionQuestion(grade: Grade, qn: number): Question {
     options: generateOptions(answer, grade === 'kindergarten' ? 'easy' : 'medium'),
     correctAnswer: answer,
     explanation: `${a}減${b}等於${answer}`,
-    hint: useVisual ? `畫${a}個圓圈，再劃走${b}個，數吓剩低幾多個` : `由${a}數返後${b}個數`,
+    hint,
   };
 }
 

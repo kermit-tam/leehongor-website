@@ -6,6 +6,7 @@ import { MathBroAvatar } from './components/MathBroAvatar';
 import { AnswerButtons } from './components/AnswerButtons';
 import { useMathBroSpeech } from './hooks/use-speech';
 import { useBackgroundMusic } from './hooks/use-background-music';
+import { useSound } from './hooks/use-sound';
 import { 
   generateQuestion, 
   TOPICS,
@@ -42,6 +43,7 @@ export default function MathBroPage() {
   const [showResult, setShowResult] = useState(false);
   const [broEmotion, setBroEmotion] = useState<'normal' | 'happy' | 'thinking' | 'encouraging'>('normal');
   const [showHint, setShowHint] = useState(false);
+  const [retryCount, setRetryCount] = useState(0); // 重試次數
   
   // 用戶資料
   const [userName, setUserName] = useState<string>('');
@@ -69,6 +71,9 @@ export default function MathBroPage() {
 
   // 背景音樂鉤子
   const { isMuted: isMusicMuted, toggle: toggleMusic } = useBackgroundMusic();
+
+  // 音效鉤子
+  const { playCorrect, playWrong, playHint, playComplete } = useSound();
 
   // 用戶點擊開始後才播放自我介紹
   const handleStartIntro = useCallback(() => {
@@ -138,19 +143,45 @@ export default function MathBroPage() {
     const isCorrect = answer === currentQuestion.correctAnswer;
 
     if (isCorrect) {
+      // 答啱：播放音效、加分、讚佢
+      playCorrect();
       setScore(s => s + 1);
       setBroEmotion('happy');
       correct(() => {
         setTimeout(() => nextQuestion(), 1500);
       });
     } else {
-      setMistakes(m => [...m, currentQuestion]);
+      // 答錯：播放音效、顯示錯誤
+      playWrong();
       setBroEmotion('encouraging');
-      wrong(currentQuestion.explanation, () => {
-        setTimeout(() => nextQuestion(), 3000);
+      wrong('唔啱呀，再試過！', () => {
+        // 唔自動跳下一題，俾佢再試
       });
     }
-  }, [currentQuestion, showResult, correct, wrong]);
+  }, [currentQuestion, showResult, correct, wrong, playCorrect, playWrong]);
+
+  // 再試一次（答錯後）
+  const handleRetry = useCallback(() => {
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setRetryCount(c => c + 1);
+    setBroEmotion('normal');
+    // 如果重試超過2次，顯示提示
+    if (retryCount >= 1) {
+      setShowHint(true);
+      playHint();
+    }
+  }, [retryCount, playHint]);
+
+  // 顯示答案並去下一題（放棄重試）
+  const handleShowAnswer = useCallback(() => {
+    if (!currentQuestion) return;
+    setMistakes(m => [...m, currentQuestion]);
+    setShowHint(true);
+    giveHint(currentQuestion.explanation);
+    // 3秒後自動去下一題
+    setTimeout(() => nextQuestion(), 4000);
+  }, [currentQuestion, giveHint]);
 
   // 下一題
   const nextQuestion = useCallback(() => {
@@ -599,7 +630,29 @@ export default function MathBroPage() {
                 showResult={showResult}
               />
 
-              {/* 提示按鈕 */}
+              {/* 答錯後：再試 / 睇答案 按鈕 */}
+              {showResult && selectedAnswer !== currentQuestion.correctAnswer && (
+                <div className="flex gap-3 mt-6 justify-center">
+                  <motion.button
+                    onClick={handleRetry}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-6 py-3 bg-blue-500 text-white rounded-2xl font-bold shadow-lg"
+                  >
+                    🔄 再試一次
+                  </motion.button>
+                  <motion.button
+                    onClick={handleShowAnswer}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-6 py-3 bg-orange-500 text-white rounded-2xl font-bold shadow-lg"
+                  >
+                    💡 睇答案
+                  </motion.button>
+                </div>
+              )}
+
+              {/* 提示按鈕（未答題時） */}
               {!showResult && !showHint && (
                 <motion.button
                   onClick={handleShowHint}
