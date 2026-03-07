@@ -133,28 +133,36 @@ export default function MathBroPage() {
     }
   }, [currentQuestion, showResult, correct, wrong]);
 
-  // 下一題
+  // 下一題 - 使用函數式更新避免閉包問題
   const nextQuestion = useCallback(() => {
-    if (questionNumber >= 10) {
-      // 完咗
-      setGameState('summary');
-      summary(score + (selectedAnswer === currentQuestion?.correctAnswer ? 1 : 0), 10);
-    } else {
-      // 下一題
-      const nextNum = questionNumber + 1;
-      const question = generateQuestion(selectedTopic!, selectedDifficulty, nextNum);
-      setCurrentQuestion(question);
-      setQuestionNumber(nextNum);
-      setSelectedAnswer(null);
-      setShowResult(false);
-      setShowHint(false);
-      setBroEmotion('normal');
-      
-      setTimeout(() => {
-        askQuestion(question.questionText);
-      }, 500);
-    }
-  }, [questionNumber, score, selectedAnswer, currentQuestion, selectedTopic, selectedDifficulty, summary, askQuestion]);
+    setQuestionNumber(prevNum => {
+      if (prevNum >= 10) {
+        // 完咗 - 使用函數式獲取最新分數
+        setGameState('summary');
+        setTimeout(() => {
+          setScore(currentScore => {
+            summary(currentScore, 10);
+            return currentScore;
+          });
+        }, 100);
+        return prevNum;
+      } else {
+        // 下一題
+        const nextNum = prevNum + 1;
+        const question = generateQuestion(selectedTopic!, selectedDifficulty, nextNum);
+        setCurrentQuestion(question);
+        setSelectedAnswer(null);
+        setShowResult(false);
+        setShowHint(false);
+        setBroEmotion('normal');
+        
+        setTimeout(() => {
+          askQuestion(question.questionText);
+        }, 500);
+        return nextNum;
+      }
+    });
+  }, [selectedTopic, selectedDifficulty, summary, askQuestion]);
 
   // 顯示提示
   const handleShowHint = useCallback(() => {

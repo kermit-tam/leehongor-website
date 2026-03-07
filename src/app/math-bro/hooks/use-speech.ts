@@ -159,23 +159,25 @@ export function useMathBroSpeech(userName: string = '') {
     speak(`哈囉${name}！好開心認識你！我哋一齊學數學啦！`, onEnd);
   }, [speak]);
 
-  // 問想做乜題目
+  // 問想做乜題目 - 50% 機率叫名字
   const askTopic = useCallback((onEnd?: () => void) => {
-    const text = userName 
+    const useName = userName && Math.random() < 0.5;
+    const text = useName 
       ? `${nameCall}你想練加法、減法、乘法定除法呀？揀一樣啦！`
       : '你想練加法、減法、乘法定除法呀？揀一樣啦！';
     speak(text, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 問難度
+  // 問難度 - 50% 機率叫名字
   const askDifficulty = useCallback((onEnd?: () => void) => {
-    const text = userName
+    const useName = userName && Math.random() < 0.5;
+    const text = useName
       ? `${nameCall}想由簡單開始定係挑戰難啲嘅？`
       : '想由簡單開始定係挑戰難啲嘅？';
     speak(text, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 出題
+  // 出題 - 偶爾叫名字 (30% 機率)
   const askQuestion = useCallback((question: string, onEnd?: () => void) => {
     // 將 "3 + 2 = ?" 轉為 "3加2等於幾多？"
     const spokenQuestion = question
@@ -184,15 +186,17 @@ export function useMathBroSpeech(userName: string = '') {
       .replace(/\s*×\s*/g, '乘')
       .replace(/\s*÷\s*/g, '除')
       .replace(/\s*=\s*\?/g, '等於幾多？');
-    const text = userName 
+    const useName = userName && Math.random() < 0.3;
+    const text = useName 
       ? `${nameCall}${spokenQuestion}`
       : spokenQuestion;
     speak(text, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 答啱咗
+  // 答啱咗 - 50% 機率叫名字
   const correct = useCallback((onEnd?: () => void) => {
-    const responses = userName ? [
+    const useName = userName && Math.random() < 0.5;
+    const responses = useName ? [
       `${nameCall}啱晒！好叻呀！`,
       `正確！${nameCall}你真係好掂！`,
       `無錯！${nameCall}繼續加油！`,
@@ -209,9 +213,10 @@ export function useMathBroSpeech(userName: string = '') {
     speak(random, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 答錯咗
+  // 答錯咗 - 50% 機率叫名字
   const wrong = useCallback((explanation: string, onEnd?: () => void) => {
-    const responses = userName ? [
+    const useName = userName && Math.random() < 0.5;
+    const responses = useName ? [
       `唔緊要${nameCall}！${explanation} 再試過！`,
       `差少少${nameCall}！${explanation} 諗清楚啲！`,
       `唔啱喎${nameCall}！${explanation} 慢慢嚟！`,
@@ -224,29 +229,31 @@ export function useMathBroSpeech(userName: string = '') {
     speak(random, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 提示
+  // 提示 - 30% 機率叫名字
   const giveHint = useCallback((hint: string, onEnd?: () => void) => {
-    const text = userName
+    const useName = userName && Math.random() < 0.3;
+    const text = useName
       ? `${nameCall}提示你啦！${hint}`
       : `提示你啦！${hint}`;
     speak(text, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 總結
+  // 總結 - 70% 機率叫名字（總結比較重要，所以機率高點）
   const summary = useCallback((score: number, total: number, onEnd?: () => void) => {
     const percentage = Math.round((score / total) * 100);
+    const useName = userName && Math.random() < 0.7;
     let message: string;
     
     if (percentage === 100) {
-      message = userName 
+      message = useName 
         ? `Wow${nameCall}！全中！${total}題全部啱晒！你係數學天才呀！`
         : `Wow！全中！${total}題全部啱晒！你係數學天才呀！`;
     } else if (percentage >= 80) {
-      message = userName
+      message = useName
         ? `好勁呀${nameCall}！啱咗${score}題！繼續保持！`
         : `好勁呀！啱咗${score}題！繼續保持！`;
     } else if (percentage >= 60) {
-      message = userName
+      message = useName
         ? `唔錯呀${nameCall}，啱咗${score}題！再練多啲會更好！`
         : `唔錯呀，啱咗${score}題！再練多啲會更好！`;
     } else {
