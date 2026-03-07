@@ -256,9 +256,9 @@ export function GenericSentenceBuilder({ lessonNum, lessonTitle, blocks, categor
         };
         
         // 確保音頻上下文已恢復（針對 iOS）
-        const AudioContext = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        if (AudioContext) {
-          const audioContext = new AudioContext();
+        const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
+        if (AudioContextClass) {
+          const audioContext = new AudioContextClass();
           if (audioContext.state === 'suspended') {
             await audioContext.resume();
           }

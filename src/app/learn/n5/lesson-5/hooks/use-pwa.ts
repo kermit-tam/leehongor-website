@@ -131,7 +131,7 @@ export function usePWA() {
     try {
       const registration = await navigator.serviceWorker.ready;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (registration as { sync: { register: (tag: string) => Promise<void> } }).sync.register(tag);
+      await ((registration as unknown) as { sync: { register: (tag: string) => Promise<void> } }).sync.register(tag);
       return true;
     } catch {
       return false;

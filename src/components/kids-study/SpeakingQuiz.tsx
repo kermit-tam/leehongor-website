@@ -1,7 +1,46 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { StudyCard } from '../data/types';
+import { StudyCard } from './types';
+
+// Web Speech API 類型
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence?: number;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  [index: number]: SpeechRecognitionAlternative;
+  length: number;
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResult[];
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+}
+
+interface SpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
 
 interface SpeakingQuizProps {
   cards: StudyCard[];
@@ -40,9 +79,9 @@ export function SpeakingQuiz({ cards, onComplete, onBack }: SpeakingQuizProps) {
   // 初始化語音識別
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as unknown as { SpeechRecognition: typeof SpeechRecognition; webkitSpeechRecognition: typeof SpeechRecognition }).SpeechRecognition || (window as unknown as { SpeechRecognition: typeof SpeechRecognition; webkitSpeechRecognition: typeof SpeechRecognition }).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
+      const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognitionClass) {
+        recognitionRef.current = new SpeechRecognitionClass();
         recognitionRef.current.lang = 'zh-HK'; // 粵語
         recognitionRef.current.continuous = true;
         recognitionRef.current.interimResults = true;

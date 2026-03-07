@@ -8,7 +8,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { StudyCard } from '../data/types';
+import { StudyCard } from './types';
 
 interface QuizSectionProps {
   cards: StudyCard[];

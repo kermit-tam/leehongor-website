@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { StudyCard } from '../data/types';
+import { StudyCard } from './types';
 
 interface ListeningQuizProps {
   cards: StudyCard[];

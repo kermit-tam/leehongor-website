@@ -26,7 +26,7 @@ import {
   exportImageMappings,
   importImageMappings,
   ImageMapping 
-} from '@/app/private/study/data/image-service';
+} from '@/components/kids-study/image-service';
 
 export default function StudyImagesAdminPage() {
   const { user, isLoading } = useRequireAuth('/');
@@ -377,7 +377,7 @@ export default function StudyImagesAdminPage() {
                         <div className="relative w-full h-full">
                           <Image 
                             src={imageUrl} 
-                            alt={card.character}
+                            alt={card.character || card.id}
                             fill
                             className="object-cover"
                             unoptimized

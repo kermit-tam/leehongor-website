@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ReadingPassage, ReadingQuestion, ReadingResult, QUESTION_TYPE_LABELS } from './types';
 import { triggerConfetti } from '../../lesson-5/components/game-feedback';

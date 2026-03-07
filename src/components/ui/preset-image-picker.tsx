@@ -7,7 +7,7 @@
 'use client';
 
 import { useState } from 'react';
-import { presetImages, getCategories, findPresetImages, PresetImage } from '@/app/private/study/data/preset-images';
+import { presetImages, getCategories, findPresetImages, PresetImage } from '@/components/kids-study/preset-images';
 
 interface PresetImagePickerProps {
   onSelect: (url: string) => void;

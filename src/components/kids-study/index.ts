@@ -4,7 +4,7 @@
  */
 
 // 導出類型
-export type { StudyCard, Lesson, ImageInfo } from './types';
+export type { StudyCard, Lesson, Topic, Example, WordPhrase } from './types';
 
 // 導出數據
 export {
@@ -26,5 +26,14 @@ export { PictureMatch } from './PictureMatch';
 export { ProgressBar } from './ProgressBar';
 
 // 導出圖片服務
-export { ImageService } from './image-service';
+export { 
+  getImageMappings, 
+  getCardImage, 
+  setCardImage, 
+  removeCardImage, 
+  getAllImageMappings, 
+  exportImageMappings, 
+  importImageMappings,
+  type ImageMapping
+} from './image-service';
 export { presetImages } from './preset-images';

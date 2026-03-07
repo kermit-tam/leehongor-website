@@ -10,7 +10,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { StudyCard } from '../data/types';
+import { StudyCard } from './types';
 
 interface FlashCardProps {
   cards: StudyCard[];

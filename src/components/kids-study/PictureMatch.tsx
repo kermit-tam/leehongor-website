@@ -9,8 +9,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { StudyCard } from '../data/types';
-import { getImageMappings } from '../data/image-service';
+import { StudyCard } from './types';
+import { getImageMappings } from './image-service';
 
 interface PictureMatchProps {
   cards: StudyCard[];

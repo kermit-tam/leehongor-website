@@ -34,7 +34,7 @@ export default function SpellingKing({ onComplete, onExit }: SpellingKingProps) 
   const [elapsedTime, setElapsedTime] = useState(0);
 
   // 使用 ref 來儲存 nextQuestion 函數，避免循環依賴
-  const nextQuestionRef = useRef<() => void>();
+  const nextQuestionRef = useRef<() => void>(() => {});
 
   // 生成遊戲單詞列表
   const generateWords = useCallback((selectedUnit: Unit): GameWord[] => {
