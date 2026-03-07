@@ -262,7 +262,7 @@ export default function MathBroPage() {
           {/* 遊戲中 */}
           {gameState === 'playing' && currentQuestion && (
             <motion.div
-              key="playing"
+              key={`playing-${currentQuestion.id}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -292,12 +292,11 @@ export default function MathBroPage() {
                     className="bg-purple-100 rounded-2xl p-4 relative"
                     initial={{ scale: 0.9 }}
                     animate={{ scale: 1 }}
-                    key={currentQuestion.id}
                   >
                     {/* 對話框尾巴 */}
                     <div className="absolute left-0 top-1/2 -translate-x-2 -translate-y-1/2 w-4 h-4 bg-purple-100 rotate-45" />
                     <p className="text-2xl font-bold text-gray-800 text-center">
-                      {currentQuestion.questionText.replace('?', ' = ?')}
+                      {currentQuestion.questionText}
                     </p>
                   </motion.div>
                 </div>
