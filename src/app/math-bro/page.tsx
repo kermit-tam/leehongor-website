@@ -39,7 +39,7 @@ export default function MathBroPage() {
   const [questionNumber, setQuestionNumber] = useState(1);
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState<Question[]>([]);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [broEmotion, setBroEmotion] = useState<'normal' | 'happy' | 'thinking' | 'encouraging'>('normal');
   const [showHint, setShowHint] = useState(false);
@@ -134,7 +134,7 @@ export default function MathBroPage() {
   }, [userGrade, askQuestion]);
 
   // 回答問題
-  const handleAnswer = useCallback((answer: number) => {
+  const handleAnswer = useCallback((answer: number | string) => {
     if (!currentQuestion || showResult) return;
     
     setSelectedAnswer(answer);
@@ -606,6 +606,29 @@ export default function MathBroPage() {
                       <span className="text-sm text-gray-500 mt-1">{count}</span>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* 方向/指南針圖示 */}
+              {currentQuestion.visual?.type === 'direction' && currentQuestion.visual.labels?.[0] && (
+                <div className="flex justify-center mb-6">
+                  {currentQuestion.visual.labels[0].includes('⊕') || currentQuestion.visual.labels[0].includes('N') ? (
+                    // 指南針圖示
+                    <div className="bg-amber-50 border-4 border-amber-300 rounded-full p-6 text-center">
+                      <pre className="text-2xl font-mono text-amber-800 leading-relaxed whitespace-pre">
+                        {currentQuestion.visual.labels[0]}
+                      </pre>
+                    </div>
+                  ) : (
+                    // 簡單箭頭
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="text-8xl"
+                    >
+                      {currentQuestion.visual.labels[0]}
+                    </motion.div>
+                  )}
                 </div>
               )}
 

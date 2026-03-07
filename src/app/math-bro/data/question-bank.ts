@@ -29,8 +29,8 @@ export interface Question {
     values: number[];
     labels?: string[];
   };
-  options: number[];
-  correctAnswer: number;
+  options: (number | string)[];
+  correctAnswer: number | string;
   explanation: string;
   hint: string;
 }
@@ -424,24 +424,35 @@ function generateOrderingQuestion(grade: Grade, qn: number): Question {
   };
 }
 
-// 方向題目
+// 方向題目 - 包含東南西北和指南針圖示
 function generateDirectionQuestion(qn: number): Question {
-  const directions = [
-    { name: '上', arrow: '⬆️', opposite: '下' },
-    { name: '下', arrow: '⬇️', opposite: '上' },
-    { name: '左', arrow: '⬅️', opposite: '右' },
-    { name: '右', arrow: '➡️', opposite: '左' },
+  // 基本方向：上下左右
+  const basicDirections = [
+    { name: '上', arrow: '⬆️', opposite: '下', shortcut: 'N' },
+    { name: '下', arrow: '⬇️', opposite: '上', shortcut: 'S' },
+    { name: '左', arrow: '⬅️', opposite: '右', shortcut: 'W' },
+    { name: '右', arrow: '➡️', opposite: '左', shortcut: 'E' },
   ];
   
-  const qType = Math.random() < 0.5 ? 'which' : 'opposite';
+  // 進階方向：東南西北
+  const cardinalDirections = [
+    { name: '東', arrow: '➡️', shortcut: 'E', description: '太陽升起嘅方向' },
+    { name: '南', arrow: '⬇️', shortcut: 'S', description: '太陽落下嘅方向' },
+    { name: '西', arrow: '⬅️', shortcut: 'W', description: '太陽下山的方向' },
+    { name: '北', arrow: '⬆️', shortcut: 'N', description: '指南針指住嘅方向' },
+  ];
   
-  if (qType === 'which') {
-    const dir = directions[Math.floor(Math.random() * directions.length)];
-    const options = directions.map(d => d.name);
+  // 隨機選擇題型：基本方向、進階方向、指南針題目
+  const qType = Math.random();
+  
+  if (qType < 0.33) {
+    // 基本方向題：箭頭指邊度
+    const dir = basicDirections[Math.floor(Math.random() * basicDirections.length)];
+    const options = basicDirections.map(d => d.name);
     return {
       id: `q-${qn}`,
       type: 'choice',
-      questionText: `呢個箭頭指邊度？ ${dir.arrow}`,
+      questionText: `呢個箭頭指邊度？`,
       visual: {
         type: 'direction',
         values: [1],
@@ -450,21 +461,77 @@ function generateDirectionQuestion(qn: number): Question {
       options: options,
       correctAnswer: dir.name,
       explanation: `箭頭${dir.arrow}指向${dir.name}面`,
-      hint: `睇清楚箭頭指邊邊`,
-    } as unknown as Question;
-  } else {
-    const dir = directions[Math.floor(Math.random() * directions.length)];
-    const options = directions.map(d => d.name);
+      hint: `睇清楚箭頭指緊邊，向上係上、向下係下、向左係左、向右係右`,
+    };
+  } else if (qType < 0.66) {
+    // 進階方向題：東南西北
+    const dir = cardinalDirections[Math.floor(Math.random() * cardinalDirections.length)];
+    const options = cardinalDirections.map(d => d.name);
     return {
       id: `q-${qn}`,
       type: 'choice',
-      questionText: `${dir.name}面嘅相反係邊面？`,
+      questionText: `指南針顯示${dir.name}面喺邊度？`,
+      visual: {
+        type: 'direction',
+        values: [1],
+        labels: [dir.arrow],
+      },
       options: options,
-      correctAnswer: dir.opposite,
-      explanation: `${dir.name}面嘅相反係${dir.opposite}面`,
-      hint: `諗吓你面向${dir.name}，背脊向邊？`,
-    } as unknown as Question;
+      correctAnswer: dir.name,
+      explanation: `${dir.name}面係${dir.description}，箭頭指向${dir.name}`,
+      hint: `記住：上北、下南、左西、右東。日出東方，日落西方。`,
+    };
+  } else {
+    // 指南針題目：顯示指南針圖示問方向
+    const compassDir = cardinalDirections[Math.floor(Math.random() * cardinalDirections.length)];
+    const options = cardinalDirections.map(d => d.name);
+    
+    // 生成指南針ASCII圖
+    const compassVisual = generateCompassVisual(compassDir.name);
+    
+    return {
+      id: `q-${qn}`,
+      type: 'choice',
+      questionText: `根據指南針，N（北）喺邊度？`,
+      visual: {
+        type: 'direction',
+        values: [1],
+        labels: [compassVisual],
+      },
+      options: options,
+      correctAnswer: compassDir.name,
+      explanation: `指南針顯示${compassDir.name}面係正確方向。記住上北下南左西右東！`,
+      hint: `指南針紅色指針一定指住北方（N）。上北下南，左西右東。`,
+    };
   }
+}
+
+// 生成指南針圖示
+function generateCompassVisual(northDirection: string): string {
+  // 根據北方位置生成不同嘅指南針
+  const compasses: Record<string, string> = {
+    '北': `    N
+    ↑
+W ← ⊕ → E
+    ↓
+    S`,
+    '東': `    W
+    ↑
+S ← ⊕ → N
+    ↓
+    E`,
+    '南': `    S
+    ↑
+E ← ⊕ → W
+    ↓
+    N`,
+    '西': `    E
+    ↑
+N ← ⊕ → S
+    ↓
+    W`,
+  };
+  return compasses[northDirection] || compasses['北'];
 }
 
 // 角度題目

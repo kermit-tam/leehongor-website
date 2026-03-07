@@ -22,8 +22,9 @@ export function useSpeech(options: UseSpeechOptions = {}) {
   const [isSupported, setIsSupported] = useState(true);
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const maleVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
-  // 檢查瀏覽器支援
+  // 檢查瀏覽器支援並選擇男聲
   useEffect(() => {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       setIsSupported(false);
@@ -31,6 +32,29 @@ export function useSpeech(options: UseSpeechOptions = {}) {
     }
     
     synthesisRef.current = window.speechSynthesis;
+    
+    // 獲取男聲
+    const loadVoices = () => {
+      const voices = synthesisRef.current?.getVoices() || [];
+      // 搵粵語男聲（Microsoft Danny 或其他男聲）
+      const cantoneseMaleVoice = voices.find(v => 
+        v.lang === 'zh-HK' && (v.name.includes('Danny') || v.name.includes('男') || v.name.includes('Male'))
+      );
+      // 如果搵唔到粵語男聲，試下搵普通話男聲
+      const chineseMaleVoice = voices.find(v => 
+        (v.lang === 'zh-CN' || v.lang === 'zh-TW') && 
+        (v.name.includes('Yunxi') || v.name.includes('Yunjian') || v.name.includes('Kangkang'))
+      );
+      maleVoiceRef.current = cantoneseMaleVoice || chineseMaleVoice || null;
+    };
+    
+    loadVoices();
+    // Chrome 需要等待 voices loaded
+    synthesisRef.current?.addEventListener('voiceschanged', loadVoices);
+    
+    return () => {
+      synthesisRef.current?.removeEventListener('voiceschanged', loadVoices);
+    };
   }, []);
 
   // 停止語音
@@ -57,6 +81,11 @@ export function useSpeech(options: UseSpeechOptions = {}) {
     utterance.rate = rate;
     utterance.pitch = pitch;
     utterance.volume = volume;
+    
+    // 使用男聲（如果有）
+    if (maleVoiceRef.current) {
+      utterance.voice = maleVoiceRef.current;
+    }
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => {
@@ -236,37 +265,57 @@ export function useMathBroSpeech(
     speak(text, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 答啱咗 - 50% 機率叫名字
+  // 答啱咗 - 更多變化
   const correct = useCallback((onEnd?: () => void) => {
     const useName = userName && Math.random() < 0.5;
     const responses = useName ? [
-      `${nameCall}啱晒！好叻呀！`,
-      `正確！${nameCall}你真係好掂！`,
-      `無錯！${nameCall}繼續加油！`,
-      `${nameCall}啱咗！數學BRO為你驕傲！`,
-      `Perfect${nameCall}！下一題！`,
+      `${nameCall}啱晒！好叻呀！👏`,
+      `正確！${nameCall}你真係好掂！🌟`,
+      `無錯！${nameCall}繼續加油！💪`,
+      `${nameCall}啱咗！數學BRO為你驕傲！🏆`,
+      `Perfect${nameCall}！下一題！🎯`,
+      `哇！${nameCall}好勁呀！🎉`,
+      `答啱咗！${nameCall}好聰明！🧠`,
+      `${nameCall}太勁啦！繼續保持！🔥`,
+      `啱！${nameCall}計得好快！⚡`,
+      `好正呀${nameCall}！你識諗！✨`,
     ] : [
-      '啱晒！好叻呀！',
-      '正確！繼續加油！',
-      '無錯！你真係好掂！',
-      '啱咗！數學BRO為你驕傲！',
-      'Perfect！下一題！',
+      '啱晒！好叻呀！👏',
+      '正確！繼續加油！🌟',
+      '無錯！你真係好掂！💪',
+      '啱咗！數學BRO為你驕傲！🏆',
+      'Perfect！下一題！🎯',
+      '哇！好勁呀！🎉',
+      '答啱咗！好聰明！🧠',
+      '太勁啦！繼續保持！🔥',
+      '啱！計得好快！⚡',
+      '好正呀！你識諗！✨',
     ];
     const random = responses[Math.floor(Math.random() * responses.length)];
     speak(random, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 答錯咗 - 50% 機率叫名字
+  // 答錯咗 - 更多變化
   const wrong = useCallback((explanation: string, onEnd?: () => void) => {
     const useName = userName && Math.random() < 0.5;
     const responses = useName ? [
-      `唔緊要${nameCall}！${explanation} 再試過！`,
-      `差少少${nameCall}！${explanation} 諗清楚啲！`,
-      `唔啱喎${nameCall}！${explanation} 慢慢嚟！`,
+      `唔緊要${nameCall}！再試過！你可以嘅！💪`,
+      `差少少${nameCall}！諗清楚啲！慢慢嚟！🤔`,
+      `唔啱喎${nameCall}！唔緊要，再嚟過！🔄`,
+      `錯咗${nameCall}，但唔緊要！學緊嘢！📚`,
+      `噢！${nameCall}今次唔啱，再試吓！💭`,
+      `冇所謂${nameCall}！錯咗先識學！🌱`,
+      `試多一次${nameCall}！下次一定啱！🎯`,
+      `唔緊要${nameCall}！數學係要練㗎！✏️`,
     ] : [
-      `唔緊要！${explanation} 再試過！`,
-      `差少少！${explanation} 諗清楚啲！`,
-      `唔啱喎！${explanation} 慢慢嚟！`,
+      '唔緊要！再試過！你可以嘅！💪',
+      '差少少！諗清楚啲！慢慢嚟！🤔',
+      '唔啱喎！唔緊要，再嚟過！🔄',
+      '錯咗，但唔緊要！學緊嘢！📚',
+      '噢！今次唔啱，再試吓！💭',
+      '冇所謂！錯咗先識學！🌱',
+      '試多一次！下次一定啱！🎯',
+      '唔緊要！數學係要練㗎！✏️',
     ];
     const random = responses[Math.floor(Math.random() * responses.length)];
     speak(random, onEnd);

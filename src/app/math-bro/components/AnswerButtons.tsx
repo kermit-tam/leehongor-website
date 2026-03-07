@@ -3,11 +3,11 @@
 import { motion } from 'framer-motion';
 
 interface AnswerButtonsProps {
-  options: number[];
-  onSelect: (answer: number) => void;
+  options: (number | string)[];
+  onSelect: (answer: number | string) => void;
   disabled?: boolean;
-  selectedAnswer?: number | null;
-  correctAnswer?: number | null;
+  selectedAnswer?: number | string | null;
+  correctAnswer?: number | string | null;
   showResult?: boolean;
 }
 
