@@ -123,8 +123,10 @@ function toSpokenCantonese(text: string): string {
 }
 
 // 數學BRO 專用語音鉤子（有預設對白）
-export function useMathBroSpeech(userName: string = '') {
-  const { speak: baseSpeak, isSpeaking, isSupported, stop } = useSpeech({ rate: 0.85 });
+export function useMathBroSpeech(userName: string = '', speechRate: 'slow' | 'normal' | 'fast' = 'normal') {
+  // 根據語速設置 rate：慢 0.7, 正常 0.9, 快 1.2
+  const rate = speechRate === 'slow' ? 0.7 : speechRate === 'fast' ? 1.2 : 0.9;
+  const { speak: baseSpeak, isSpeaking, isSupported, stop } = useSpeech({ rate });
   
   // 包裝 speak 函數，自動轉換廣東話口語
   const speak = useCallback((text: string, onEnd?: () => void) => {

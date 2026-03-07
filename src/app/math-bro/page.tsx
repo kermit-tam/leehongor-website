@@ -8,9 +8,11 @@ import { useMathBroSpeech } from './hooks/use-speech';
 import { useBackgroundMusic } from './hooks/use-background-music';
 import { 
   generateQuestion, 
-  TOPICS, 
+  TOPICS,
+  GRADES,
+  getTopicsForGrade,
   MathTopic, 
-  Difficulty,
+  Grade,
   Question 
 } from './data/question-bank';
 import Link from 'next/link';
@@ -20,8 +22,10 @@ type GameState =
   | 'welcome'      // 歡迎畫面
   | 'intro'        // 自我介紹
   | 'ask-name'     // 問名字
+  | 'ask-grade'    // 問年級
+  | 'ask-math-love' // 問喜不喜歡數學
+  | 'select-speed' // 選擇語速
   | 'select-topic' // 選擇題型
-  | 'select-difficulty' // 選擇難度
   | 'playing'      // 遊戲中
   | 'feedback'     // 答題反饋
   | 'summary';     // 總結
@@ -30,7 +34,6 @@ export default function MathBroPage() {
   // 遊戲狀態
   const [gameState, setGameState] = useState<GameState>('welcome');
   const [selectedTopic, setSelectedTopic] = useState<MathTopic | null>(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('easy');
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [questionNumber, setQuestionNumber] = useState(1);
   const [score, setScore] = useState(0);
@@ -39,33 +42,35 @@ export default function MathBroPage() {
   const [showResult, setShowResult] = useState(false);
   const [broEmotion, setBroEmotion] = useState<'normal' | 'happy' | 'thinking' | 'encouraging'>('normal');
   const [showHint, setShowHint] = useState(false);
+  
+  // 用戶資料
   const [userName, setUserName] = useState<string>('');
   const [nameInput, setNameInput] = useState<string>('');
+  const [userGrade, setUserGrade] = useState<Grade | null>(null);
+  const [likesMath, setLikesMath] = useState<boolean | null>(null);
+  const [speechRate, setSpeechRate] = useState<'slow' | 'normal' | 'fast'>('normal');
 
-  // 語音鉤子（傳入用戶名字）
+  // 語音鉤子（傳入用戶名字和語速）
   const { 
     intro,
     welcome, 
     greetWithName,
     askTopic, 
-    askDifficulty, 
     askQuestion, 
     correct, 
     wrong, 
     giveHint, 
     summary,
-    encourage,
     isSpeaking,
     stop 
-  } = useMathBroSpeech(userName);
+  } = useMathBroSpeech(userName, speechRate);
 
   // 背景音樂鉤子
   const { isMuted: isMusicMuted, toggle: toggleMusic } = useBackgroundMusic();
 
-  // 用戶點擊開始後才播放自我介紹（手機需要用户交互才能播放语音）
+  // 用戶點擊開始後才播放自我介紹
   const handleStartIntro = useCallback(() => {
     setGameState('intro');
-    // 給一點時間讓畫面切換
     setTimeout(() => {
       intro(() => {
         setTimeout(() => setGameState('ask-name'), 500);
@@ -78,24 +83,35 @@ export default function MathBroPage() {
     if (nameInput.trim()) {
       const name = nameInput.trim();
       setUserName(name);
-      // 問候用戶
       greetWithName(name, () => {
-        setTimeout(() => setGameState('select-topic'), 500);
+        setTimeout(() => setGameState('ask-grade'), 500);
       });
     }
   }, [nameInput, greetWithName]);
 
+  // 選擇年級
+  const handleSelectGrade = useCallback((grade: Grade) => {
+    setUserGrade(grade);
+    setGameState('ask-math-love');
+  }, []);
+
+  // 選擇喜不喜歡數學
+  const handleSelectMathLove = useCallback((likes: boolean) => {
+    setLikesMath(likes);
+    setGameState('select-speed');
+  }, []);
+
+  // 選擇語速
+  const handleSelectSpeed = useCallback((speed: 'slow' | 'normal' | 'fast') => {
+    setSpeechRate(speed);
+    setGameState('select-topic');
+    setTimeout(() => askTopic(), 500);
+  }, [askTopic]);
+
   // 選擇題型
   const handleSelectTopic = useCallback((topic: MathTopic) => {
     setSelectedTopic(topic);
-    setGameState('select-difficulty');
-    askDifficulty();
-  }, [askDifficulty]);
-
-  // 選擇難度並開始
-  const handleStartGame = useCallback((difficulty: Difficulty) => {
-    setSelectedDifficulty(difficulty);
-    const question = generateQuestion(selectedTopic!, difficulty, 1);
+    const question = generateQuestion(topic, userGrade!, 1);
     setCurrentQuestion(question);
     setQuestionNumber(1);
     setScore(0);
@@ -105,7 +121,7 @@ export default function MathBroPage() {
     setTimeout(() => {
       askQuestion(question.questionText);
     }, 500);
-  }, [selectedTopic, askQuestion]);
+  }, [userGrade, askQuestion]);
 
   // 回答問題
   const handleAnswer = useCallback((answer: number) => {
@@ -131,11 +147,10 @@ export default function MathBroPage() {
     }
   }, [currentQuestion, showResult, correct, wrong]);
 
-  // 下一題 - 使用函數式更新避免閉包問題
+  // 下一題
   const nextQuestion = useCallback(() => {
     setQuestionNumber(prevNum => {
       if (prevNum >= 10) {
-        // 完咗 - 使用函數式獲取最新分數
         setGameState('summary');
         setTimeout(() => {
           setScore(currentScore => {
@@ -145,9 +160,8 @@ export default function MathBroPage() {
         }, 100);
         return prevNum;
       } else {
-        // 下一題
         const nextNum = prevNum + 1;
-        const question = generateQuestion(selectedTopic!, selectedDifficulty, nextNum);
+        const question = generateQuestion(selectedTopic!, userGrade!, nextNum);
         setCurrentQuestion(question);
         setSelectedAnswer(null);
         setShowResult(false);
@@ -160,7 +174,7 @@ export default function MathBroPage() {
         return nextNum;
       }
     });
-  }, [selectedTopic, selectedDifficulty, summary, askQuestion]);
+  }, [selectedTopic, userGrade, summary, askQuestion]);
 
   // 顯示提示
   const handleShowHint = useCallback(() => {
@@ -179,7 +193,15 @@ export default function MathBroPage() {
     setShowResult(false);
     setShowHint(false);
     setBroEmotion('normal');
+    setUserName('');
+    setNameInput('');
+    setUserGrade(null);
+    setLikesMath(null);
+    setSpeechRate('normal');
   }, []);
+
+  // 獲取適合該年級的主題
+  const availableTopics = userGrade ? getTopicsForGrade(userGrade) : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
@@ -193,7 +215,6 @@ export default function MathBroPage() {
             ←
           </Link>
           <h1 className="text-2xl font-bold text-white">數學BRO</h1>
-          {/* 音樂切換按鈕 */}
           <motion.button
             onClick={toggleMusic}
             whileHover={{ scale: 1.1 }}
@@ -207,7 +228,7 @@ export default function MathBroPage() {
 
         {/* 主要內容 */}
         <AnimatePresence mode="wait">
-          {/* 歡迎畫面 - 點擊開始 */}
+          {/* 歡迎畫面 */}
           {gameState === 'welcome' && (
             <motion.div
               key="welcome"
@@ -288,8 +309,124 @@ export default function MathBroPage() {
                   whileTap={{ scale: nameInput.trim() ? 0.98 : 1 }}
                   className="w-full p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-bold text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  開始學數學！🚀
+                  下一步 👉
                 </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 問年級 */}
+          {gameState === 'ask-grade' && (
+            <motion.div
+              key="ask-grade"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-white rounded-3xl p-6 shadow-2xl"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <MathBroAvatar isSpeaking={isSpeaking} emotion="happy" size="sm" />
+                <p className="text-lg text-gray-700">哈囉{nameInput}！你讀緊幾多年班呀？</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {GRADES.map((grade) => (
+                  <motion.button
+                    key={grade.id}
+                    onClick={() => handleSelectGrade(grade.id)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl text-center hover:shadow-md transition-shadow"
+                  >
+                    <span className="text-2xl">{grade.emoji}</span>
+                    <p className="font-bold text-gray-800 mt-1">{grade.name}</p>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* 問喜不喜歡數學 */}
+          {gameState === 'ask-math-love' && (
+            <motion.div
+              key="ask-math-love"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-white rounded-3xl p-6 shadow-2xl"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <MathBroAvatar isSpeaking={isSpeaking} emotion="happy" size="sm" />
+                <p className="text-lg text-gray-700">{nameInput}，你鍾唔鍾意數學呀？</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <motion.button
+                  onClick={() => handleSelectMathLove(true)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="p-6 bg-gradient-to-r from-green-400 to-green-500 text-white rounded-2xl text-center shadow-lg"
+                >
+                  <span className="text-4xl">😍</span>
+                  <p className="font-bold text-lg mt-2">鍾意！</p>
+                </motion.button>
+                <motion.button
+                  onClick={() => handleSelectMathLove(false)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="p-6 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-2xl text-center shadow-lg"
+                >
+                  <span className="text-4xl">😐</span>
+                  <p className="font-bold text-lg mt-2">一般般</p>
+                </motion.button>
+              </div>
+              
+              {likesMath === false && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center text-purple-600 mt-4 text-sm"
+                >
+                  唔緊要！數學BRO會令數學變得有趣！✨
+                </motion.p>
+              )}
+            </motion.div>
+          )}
+
+          {/* 選擇語速 */}
+          {gameState === 'select-speed' && (
+            <motion.div
+              key="select-speed"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-white rounded-3xl p-6 shadow-2xl"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <MathBroAvatar isSpeaking={isSpeaking} emotion="happy" size="sm" />
+                <p className="text-lg text-gray-700">你想我講嘢快定慢呀？</p>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { id: 'slow', name: '慢慢講', desc: '清楚易明', emoji: '🐢' },
+                  { id: 'normal', name: '正常', desc: '剛剛好', emoji: '🚶' },
+                  { id: 'fast', name: '快啲講', desc: '節奏明快', emoji: '🏃' },
+                ].map((speed) => (
+                  <motion.button
+                    key={speed.id}
+                    onClick={() => handleSelectSpeed(speed.id as 'slow' | 'normal' | 'fast')}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full p-4 bg-gradient-to-r from-blue-400 to-purple-500 text-white rounded-2xl shadow-lg flex items-center gap-4"
+                  >
+                    <span className="text-3xl">{speed.emoji}</span>
+                    <div className="text-left">
+                      <div className="font-bold text-lg">{speed.name}</div>
+                      <div className="text-white/80 text-sm">{speed.desc}</div>
+                    </div>
+                  </motion.button>
+                ))}
               </div>
             </motion.div>
           )}
@@ -303,7 +440,6 @@ export default function MathBroPage() {
               exit={{ opacity: 0, scale: 0.9 }}
               className="bg-white rounded-3xl p-6 shadow-2xl"
             >
-              {/* 顯示用戶名字問候 */}
               {userName && (
                 <div className="text-center mb-4">
                   <span className="text-purple-600 font-medium">哈囉 {userName}！👋</span>
@@ -316,57 +452,17 @@ export default function MathBroPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {TOPICS.map((topic) => (
+                {availableTopics.map((topic) => (
                   <motion.button
                     key={topic.id}
                     onClick={() => handleSelectTopic(topic.id)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-blue-200 hover:border-blue-400 transition-colors"
-                  >
-                    <div className="text-4xl mb-2">{topic.emoji}</div>
-                    <div className="font-bold text-gray-800">{topic.name}</div>
-                    <div className="text-sm text-gray-500">{topic.description}</div>
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* 選擇難度 */}
-          {gameState === 'select-difficulty' && (
-            <motion.div
-              key="select-difficulty"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="bg-white rounded-3xl p-6 shadow-2xl"
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <MathBroAvatar emotion="thinking" size="sm" />
-                <p className="text-lg text-gray-700">想由邊度開始?</p>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { id: 'easy', name: '簡單', desc: '輕鬆熱身', emoji: '🌱', color: 'from-green-400 to-green-500' },
-                  { id: 'medium', name: '中等', desc: '挑戰自己', emoji: '🔥', color: 'from-orange-400 to-orange-500' },
-                  { id: 'hard', name: '困難', desc: '高手對決', emoji: '👑', color: 'from-red-400 to-red-500' },
-                ].map((diff) => (
-                  <motion.button
-                    key={diff.id}
-                    onClick={() => handleStartGame(diff.id as Difficulty)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`w-full p-5 bg-gradient-to-r ${diff.color} text-white rounded-2xl shadow-lg`}
+                    className="p-4 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-2xl text-center hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="text-3xl">{diff.emoji}</span>
-                      <div className="text-left">
-                        <div className="font-bold text-xl">{diff.name}</div>
-                        <div className="text-white/80">{diff.desc}</div>
-                      </div>
-                    </div>
+                    <span className="text-3xl">{topic.emoji}</span>
+                    <p className="font-bold text-gray-800 mt-2">{topic.name}</p>
+                    <p className="text-xs text-gray-500 mt-1">{topic.description}</p>
                   </motion.button>
                 ))}
               </div>
@@ -407,7 +503,6 @@ export default function MathBroPage() {
                     initial={{ scale: 0.9 }}
                     animate={{ scale: 1 }}
                   >
-                    {/* 對話框尾巴 */}
                     <div className="absolute left-0 top-1/2 -translate-x-2 -translate-y-1/2 w-4 h-4 bg-purple-100 rotate-45" />
                     <p className="text-2xl font-bold text-gray-800 text-center">
                       {currentQuestion.questionText}
@@ -415,6 +510,68 @@ export default function MathBroPage() {
                   </motion.div>
                 </div>
               </div>
+
+              {/* 視覺輔助 - 水果/手指/圓圈 */}
+              {currentQuestion.visual?.type === 'fruits' && currentQuestion.visual.values[0] && (
+                <div className="flex justify-center gap-2 mb-6 flex-wrap">
+                  {Array.from({ length: currentQuestion.visual.values[0] }).map((_, i) => (
+                    <motion.span
+                      key={i}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="text-3xl"
+                    >
+                      {currentQuestion.visual?.labels?.[0] || '🍎'}
+                    </motion.span>
+                  ))}
+                </div>
+              )}
+              
+              {currentQuestion.visual?.type === 'fingers' && (
+                <div className="flex justify-center gap-4 mb-6">
+                  {currentQuestion.visual.values.map((count, idx) => (
+                    <div key={idx} className="flex flex-col items-center">
+                      <div className="flex flex-wrap gap-1 justify-center w-20">
+                        {Array.from({ length: count }).map((_, i) => (
+                          <motion.span
+                            key={i}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: i * 0.05 }}
+                            className="text-2xl"
+                          >
+                            👆
+                          </motion.span>
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-500 mt-1">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {currentQuestion.visual?.type === 'circles' && (
+                <div className="flex justify-center gap-4 mb-6">
+                  {currentQuestion.visual.values.map((count, idx) => (
+                    <div key={idx} className="flex flex-col items-center">
+                      <div className="flex flex-wrap gap-1 justify-center w-24">
+                        {Array.from({ length: Math.min(count, 10) }).map((_, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: i * 0.03 }}
+                            className="w-4 h-4 rounded-full bg-purple-400"
+                          />
+                        ))}
+                        {count > 10 && <span className="text-sm text-gray-500">+{count - 10}</span>}
+                      </div>
+                      <span className="text-sm text-gray-500 mt-1">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* 提示 */}
               {showHint && (
@@ -489,22 +646,14 @@ export default function MathBroPage() {
                 </div>
               )}
 
-              <div className="space-y-3">
-                <motion.button
-                  onClick={handleRestart}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-bold text-lg"
-                >
-                  再練過 🔄
-                </motion.button>
-                <Link 
-                  href="/"
-                  className="block w-full p-4 bg-gray-100 text-gray-600 rounded-2xl font-bold"
-                >
-                  返屋企 🏠
-                </Link>
-              </div>
+              <motion.button
+                onClick={handleRestart}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-bold text-lg shadow-lg"
+              >
+                再玩一次 🔄
+              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
