@@ -62,18 +62,16 @@ export default function MathBroPage() {
   // 背景音樂鉤子
   const { isMuted: isMusicMuted, toggle: toggleMusic } = useBackgroundMusic();
 
-  // 開始時播放自我介紹
-  useEffect(() => {
-    if (gameState === 'welcome') {
-      // 先進入 intro 狀態，顯示 BRO 並播放自我介紹
-      setTimeout(() => {
-        setGameState('intro');
-        intro(() => {
-          setTimeout(() => setGameState('ask-name'), 500);
-        });
-      }, 500);
-    }
-  }, [gameState, intro]);
+  // 用戶點擊開始後才播放自我介紹（手機需要用户交互才能播放语音）
+  const handleStartIntro = useCallback(() => {
+    setGameState('intro');
+    // 給一點時間讓畫面切換
+    setTimeout(() => {
+      intro(() => {
+        setTimeout(() => setGameState('ask-name'), 500);
+      });
+    }, 300);
+  }, [intro]);
 
   // 處理提交名字
   const handleSubmitName = useCallback(() => {
@@ -209,7 +207,7 @@ export default function MathBroPage() {
 
         {/* 主要內容 */}
         <AnimatePresence mode="wait">
-          {/* 歡迎畫面 - 只顯示 BRO */}
+          {/* 歡迎畫面 - 點擊開始 */}
           {gameState === 'welcome' && (
             <motion.div
               key="welcome"
@@ -226,7 +224,16 @@ export default function MathBroPage() {
               >
                 數學BRO
               </motion.h2>
-              <p className="text-white/70 mt-4">準備好未？一齊學數學啦！</p>
+              <p className="text-white/70 mt-4 mb-8">準備好未？一齊學數學啦！</p>
+              
+              <motion.button
+                onClick={handleStartIntro}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-4 bg-white text-purple-600 rounded-2xl font-bold text-xl shadow-lg"
+              >
+                開始 🚀
+              </motion.button>
             </motion.div>
           )}
 
