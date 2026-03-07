@@ -18,6 +18,8 @@ import Link from 'next/link';
 // 遊戲狀態
 type GameState = 
   | 'welcome'      // 歡迎畫面
+  | 'intro'        // 自我介紹
+  | 'ask-name'     // 問名字
   | 'select-topic' // 選擇題型
   | 'select-difficulty' // 選擇難度
   | 'playing'      // 遊戲中
@@ -37,10 +39,14 @@ export default function MathBroPage() {
   const [showResult, setShowResult] = useState(false);
   const [broEmotion, setBroEmotion] = useState<'normal' | 'happy' | 'thinking' | 'encouraging'>('normal');
   const [showHint, setShowHint] = useState(false);
+  const [userName, setUserName] = useState<string>('');
+  const [nameInput, setNameInput] = useState<string>('');
 
-  // 語音鉤子
+  // 語音鉤子（傳入用戶名字）
   const { 
+    intro,
     welcome, 
+    greetWithName,
     askTopic, 
     askDifficulty, 
     askQuestion, 
@@ -51,19 +57,35 @@ export default function MathBroPage() {
     encourage,
     isSpeaking,
     stop 
-  } = useMathBroSpeech();
+  } = useMathBroSpeech(userName);
 
   // 背景音樂鉤子
   const { isMuted: isMusicMuted, toggle: toggleMusic } = useBackgroundMusic();
 
-  // 開始時播放歡迎
+  // 開始時播放自我介紹
   useEffect(() => {
     if (gameState === 'welcome') {
-      welcome(() => {
+      // 先進入 intro 狀態，顯示 BRO 並播放自我介紹
+      setTimeout(() => {
+        setGameState('intro');
+        intro(() => {
+          setTimeout(() => setGameState('ask-name'), 500);
+        });
+      }, 500);
+    }
+  }, [gameState, intro]);
+
+  // 處理提交名字
+  const handleSubmitName = useCallback(() => {
+    if (nameInput.trim()) {
+      const name = nameInput.trim();
+      setUserName(name);
+      // 問候用戶
+      greetWithName(name, () => {
         setTimeout(() => setGameState('select-topic'), 500);
       });
     }
-  }, [gameState, welcome]);
+  }, [nameInput, greetWithName]);
 
   // 選擇題型
   const handleSelectTopic = useCallback((topic: MathTopic) => {
@@ -179,7 +201,7 @@ export default function MathBroPage() {
 
         {/* 主要內容 */}
         <AnimatePresence mode="wait">
-          {/* 歡迎畫面 */}
+          {/* 歡迎畫面 - 只顯示 BRO */}
           {gameState === 'welcome' && (
             <motion.div
               key="welcome"
@@ -188,15 +210,72 @@ export default function MathBroPage() {
               exit={{ opacity: 0, y: -20 }}
               className="text-center py-12"
             >
-              <MathBroAvatar isSpeaking={isSpeaking} emotion={broEmotion} size="lg" />
+              <MathBroAvatar isSpeaking={isSpeaking} emotion="happy" size="lg" />
               <motion.h2 
                 className="text-3xl font-bold text-white mt-8"
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                Yo! 我係數學BRO!
+                數學BRO
               </motion.h2>
-              <p className="text-white/80 mt-4 text-lg">準備好未？一齊學數學啦!</p>
+              <p className="text-white/70 mt-4">準備好未？一齊學數學啦！</p>
+            </motion.div>
+          )}
+
+          {/* 自我介紹 */}
+          {gameState === 'intro' && (
+            <motion.div
+              key="intro"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-3xl p-8 shadow-2xl text-center"
+            >
+              <MathBroAvatar isSpeaking={isSpeaking} emotion="happy" size="lg" />
+              <h2 className="text-2xl font-bold text-gray-800 mt-6">數學BROTHER</h2>
+              <p className="text-gray-500 mt-2">你嘅數學好兄弟</p>
+            </motion.div>
+          )}
+
+          {/* 問名字 */}
+          {gameState === 'ask-name' && (
+            <motion.div
+              key="ask-name"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-white rounded-3xl p-8 shadow-2xl"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <MathBroAvatar isSpeaking={isSpeaking} emotion="happy" size="md" />
+                <div className="flex-1">
+                  <div className="bg-purple-100 rounded-2xl p-4 relative">
+                    <div className="absolute left-0 top-1/2 -translate-x-2 -translate-y-1/2 w-4 h-4 bg-purple-100 rotate-45" />
+                    <p className="text-lg text-gray-800">請問你叫咩名呀？😊</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="輸入你的名字..."
+                  className="w-full p-4 text-xl text-center border-2 border-purple-200 rounded-2xl focus:border-purple-500 focus:outline-none"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmitName()}
+                  autoFocus
+                />
+                <motion.button
+                  onClick={handleSubmitName}
+                  disabled={!nameInput.trim()}
+                  whileHover={{ scale: nameInput.trim() ? 1.02 : 1 }}
+                  whileTap={{ scale: nameInput.trim() ? 0.98 : 1 }}
+                  className="w-full p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-bold text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  開始學數學！🚀
+                </motion.button>
+              </div>
             </motion.div>
           )}
 
@@ -209,6 +288,13 @@ export default function MathBroPage() {
               exit={{ opacity: 0, scale: 0.9 }}
               className="bg-white rounded-3xl p-6 shadow-2xl"
             >
+              {/* 顯示用戶名字問候 */}
+              {userName && (
+                <div className="text-center mb-4">
+                  <span className="text-purple-600 font-medium">哈囉 {userName}！👋</span>
+                </div>
+              )}
+              
               <div className="flex items-center gap-4 mb-6">
                 <MathBroAvatar emotion="normal" size="sm" />
                 <p className="text-lg text-gray-700">今日想練乜嘢呀?</p>
@@ -360,7 +446,10 @@ export default function MathBroPage() {
             >
               <MathBroAvatar emotion="happy" size="lg" />
               
-              <h2 className="text-3xl font-bold text-gray-800 mt-6">練習完成!</h2>
+              {userName && (
+                <p className="text-purple-600 font-medium mt-4">{userName}，</p>
+              )}
+              <h2 className="text-3xl font-bold text-gray-800 mt-2">練習完成!</h2>
               
               <div className="my-8">
                 <div className="text-6xl font-bold text-purple-600">

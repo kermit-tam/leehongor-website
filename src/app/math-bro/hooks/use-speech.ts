@@ -123,7 +123,7 @@ function toSpokenCantonese(text: string): string {
 }
 
 // 數學BRO 專用語音鉤子（有預設對白）
-export function useMathBroSpeech() {
+export function useMathBroSpeech(userName: string = '') {
   const { speak: baseSpeak, isSpeaking, isSupported, stop } = useSpeech({ rate: 0.85 });
   
   // 包裝 speak 函數，自動轉換廣東話口語
@@ -131,42 +131,74 @@ export function useMathBroSpeech() {
     baseSpeak(toSpokenCantonese(text), onEnd);
   }, [baseSpeak]);
 
-  // 歡迎語
+  // 生成帶名字的稱呼
+  const nameCall = userName ? `${userName}，` : '';
+
+  // 自我介紹 + 問名字
+  const intro = useCallback((onEnd?: () => void) => {
+    speak('大家好！我係你哋嘅數學BROTHER，數學BRO！我會教你哋數學。請問你叫咩名呀？', onEnd);
+  }, [speak]);
+
+  // 歡迎語（記住名字後）
   const welcome = useCallback((onEnd?: () => void) => {
-    const greetings = [
+    const greetings = userName ? [
+      `${nameCall}歡迎嚟到數學BRO！今日想練乜嘢呀？`,
+      `哈囉${nameCall}！準備好未呀？一齊學數學啦！`,
+      `Hey${nameCall}！數學BRO上線！今日我哋學啲咩好呢？`,
+    ] : [
       'Yo！歡迎嚟到數學BRO！今日想練乜嘢呀？',
       '哈囉！我係數學BRO，準備好未呀？',
       'Hey！數學BRO上線！今日一齊學數學啦！',
     ];
     const random = greetings[Math.floor(Math.random() * greetings.length)];
     speak(random, onEnd);
+  }, [speak, nameCall, userName]);
+
+  // 記住名字後的問候
+  const greetWithName = useCallback((name: string, onEnd?: () => void) => {
+    speak(`哈囉${name}！好開心認識你！我哋一齊學數學啦！`, onEnd);
   }, [speak]);
 
   // 問想做乜題目
   const askTopic = useCallback((onEnd?: () => void) => {
-    speak('你想練加法、減法、乘法定除法呀？揀一樣啦！', onEnd);
-  }, [speak]);
+    const text = userName 
+      ? `${nameCall}你想練加法、減法、乘法定除法呀？揀一樣啦！`
+      : '你想練加法、減法、乘法定除法呀？揀一樣啦！';
+    speak(text, onEnd);
+  }, [speak, nameCall, userName]);
 
   // 問難度
   const askDifficulty = useCallback((onEnd?: () => void) => {
-    speak('想由簡單開始定係挑戰難啲嘅？', onEnd);
-  }, [speak]);
+    const text = userName
+      ? `${nameCall}想由簡單開始定係挑戰難啲嘅？`
+      : '想由簡單開始定係挑戰難啲嘅？';
+    speak(text, onEnd);
+  }, [speak, nameCall, userName]);
 
   // 出題
   const askQuestion = useCallback((question: string, onEnd?: () => void) => {
     // 將 "3 + 2 = ?" 轉為 "3加2等於幾多？"
-    const spoken = question
+    const spokenQuestion = question
       .replace(/\s*\+\s*/g, '加')
       .replace(/\s*-\s*/g, '減')
       .replace(/\s*×\s*/g, '乘')
       .replace(/\s*÷\s*/g, '除')
       .replace(/\s*=\s*\?/g, '等於幾多？');
-    speak(spoken, onEnd);
-  }, [speak]);
+    const text = userName 
+      ? `${nameCall}${spokenQuestion}`
+      : spokenQuestion;
+    speak(text, onEnd);
+  }, [speak, nameCall, userName]);
 
   // 答啱咗
   const correct = useCallback((onEnd?: () => void) => {
-    const responses = [
+    const responses = userName ? [
+      `${nameCall}啱晒！好叻呀！`,
+      `正確！${nameCall}你真係好掂！`,
+      `無錯！${nameCall}繼續加油！`,
+      `${nameCall}啱咗！數學BRO為你驕傲！`,
+      `Perfect${nameCall}！下一題！`,
+    ] : [
       '啱晒！好叻呀！',
       '正確！繼續加油！',
       '無錯！你真係好掂！',
@@ -175,23 +207,30 @@ export function useMathBroSpeech() {
     ];
     const random = responses[Math.floor(Math.random() * responses.length)];
     speak(random, onEnd);
-  }, [speak]);
+  }, [speak, nameCall, userName]);
 
   // 答錯咗
   const wrong = useCallback((explanation: string, onEnd?: () => void) => {
-    const responses = [
+    const responses = userName ? [
+      `唔緊要${nameCall}！${explanation} 再試過！`,
+      `差少少${nameCall}！${explanation} 諗清楚啲！`,
+      `唔啱喎${nameCall}！${explanation} 慢慢嚟！`,
+    ] : [
       `唔緊要！${explanation} 再試過！`,
       `差少少！${explanation} 諗清楚啲！`,
       `唔啱喎！${explanation} 慢慢嚟！`,
     ];
     const random = responses[Math.floor(Math.random() * responses.length)];
     speak(random, onEnd);
-  }, [speak]);
+  }, [speak, nameCall, userName]);
 
   // 提示
   const giveHint = useCallback((hint: string, onEnd?: () => void) => {
-    speak(`提示你啦！${hint}`, onEnd);
-  }, [speak]);
+    const text = userName
+      ? `${nameCall}提示你啦！${hint}`
+      : `提示你啦！${hint}`;
+    speak(text, onEnd);
+  }, [speak, nameCall, userName]);
 
   // 總結
   const summary = useCallback((score: number, total: number, onEnd?: () => void) => {
@@ -199,17 +238,25 @@ export function useMathBroSpeech() {
     let message: string;
     
     if (percentage === 100) {
-      message = `Wow！全中！${total}題全部啱晒！你係數學天才呀！`;
+      message = userName 
+        ? `Wow${nameCall}！全中！${total}題全部啱晒！你係數學天才呀！`
+        : `Wow！全中！${total}題全部啱晒！你係數學天才呀！`;
     } else if (percentage >= 80) {
-      message = `好勁呀！啱咗${score}題！繼續保持！`;
+      message = userName
+        ? `好勁呀${nameCall}！啱咗${score}題！繼續保持！`
+        : `好勁呀！啱咗${score}題！繼續保持！`;
     } else if (percentage >= 60) {
-      message = `唔錯呀，啱咗${score}題！再練多啲會更好！`;
+      message = userName
+        ? `唔錯呀${nameCall}，啱咗${score}題！再練多啲會更好！`
+        : `唔錯呀，啱咗${score}題！再練多啲會更好！`;
     } else {
-      message = `啱咗${score}題，唔緊要！慢慢嚟，數學BRO陪你練！`;
+      message = userName
+        ? `啱咗${score}題，唔緊要${nameCall}！慢慢嚟，數學BRO陪你練！`
+        : `啱咗${score}題，唔緊要！慢慢嚟，數學BRO陪你練！`;
     }
     
     speak(message, onEnd);
-  }, [speak]);
+  }, [speak, nameCall, userName]);
 
   // 鼓勵
   const encourage = useCallback((onEnd?: () => void) => {
@@ -225,7 +272,9 @@ export function useMathBroSpeech() {
   }, [speak]);
 
   return {
+    intro,
     welcome,
+    greetWithName,
     askTopic,
     askDifficulty,
     askQuestion,
