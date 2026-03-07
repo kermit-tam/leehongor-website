@@ -104,9 +104,32 @@ export function useSpeech(options: UseSpeechOptions = {}) {
   };
 }
 
+// 將書面語轉換為廣東話口語（用於語音）
+function toSpokenCantonese(text: string): string {
+  return text
+    .replace(/的/g, '嘅')     // 的 → 嘅
+    .replace(/是/g, '係')     // 是 → 係
+    .replace(/這/g, '呢')     // 這 → 呢
+    .replace(/那/g, '嗰')     // 那 → 嗰
+    .replace(/不/g, '唔')     // 不 → 唔
+    .replace(/沒/g, '冇')     // 沒 → 冇
+    .replace(/他/g, '佢')     // 他 → 佢
+    .replace(/她/g, '佢')     // 她 → 佢
+    .replace(/它/g, '佢')     // 它 → 佢
+    .replace(/們/g, '哋')     // 們 → 哋
+    .replace(/了/g, '咗')     // 了 → 咗
+    .replace(/著/g, '住')     // 著 → 住
+    .replace(/過/g, '過');    // 過保持不變
+}
+
 // 數學BRO 專用語音鉤子（有預設對白）
 export function useMathBroSpeech() {
-  const { speak, isSpeaking, isSupported, stop } = useSpeech({ rate: 0.85 });
+  const { speak: baseSpeak, isSpeaking, isSupported, stop } = useSpeech({ rate: 0.85 });
+  
+  // 包裝 speak 函數，自動轉換廣東話口語
+  const speak = useCallback((text: string, onEnd?: () => void) => {
+    baseSpeak(toSpokenCantonese(text), onEnd);
+  }, [baseSpeak]);
 
   // 歡迎語
   const welcome = useCallback((onEnd?: () => void) => {
@@ -131,7 +154,14 @@ export function useMathBroSpeech() {
 
   // 出題
   const askQuestion = useCallback((question: string, onEnd?: () => void) => {
-    speak(question.replace('?', '等於幾多？'), onEnd);
+    // 將 "3 + 2 = ?" 轉為 "3加2等於幾多？"
+    const spoken = question
+      .replace(/\s*\+\s*/g, '加')
+      .replace(/\s*-\s*/g, '減')
+      .replace(/\s*×\s*/g, '乘')
+      .replace(/\s*÷\s*/g, '除')
+      .replace(/\s*=\s*\?/g, '等於幾多？');
+    speak(spoken, onEnd);
   }, [speak]);
 
   // 答啱咗

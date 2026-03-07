@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MathBroAvatar } from './components/MathBroAvatar';
 import { AnswerButtons } from './components/AnswerButtons';
 import { useMathBroSpeech } from './hooks/use-speech';
+import { useBackgroundMusic } from './hooks/use-background-music';
 import { 
   generateQuestion, 
   TOPICS, 
@@ -51,6 +52,9 @@ export default function MathBroPage() {
     isSpeaking,
     stop 
   } = useMathBroSpeech();
+
+  // 背景音樂鉤子
+  const { isMuted: isMusicMuted, toggle: toggleMusic } = useBackgroundMusic();
 
   // 開始時播放歡迎
   useEffect(() => {
@@ -161,7 +165,16 @@ export default function MathBroPage() {
             ←
           </Link>
           <h1 className="text-2xl font-bold text-white">數學BRO</h1>
-          <div className="w-8" /> {/* 平衡用 */}
+          {/* 音樂切換按鈕 */}
+          <motion.button
+            onClick={toggleMusic}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+            title={isMusicMuted ? '開啟背景音樂' : '關閉背景音樂'}
+          >
+            {isMusicMuted ? '🔇' : '🎵'}
+          </motion.button>
         </div>
 
         {/* 主要內容 */}
