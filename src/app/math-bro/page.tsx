@@ -50,11 +50,13 @@ export default function MathBroPage() {
   const [likesMath, setLikesMath] = useState<boolean | null>(null);
   const [speechRate, setSpeechRate] = useState<'slow' | 'normal' | 'fast'>('normal');
 
-  // 語音鉤子（傳入用戶名字和語速）
+  // 語音鉤子（傳入用戶名字、語速和年級）
   const { 
     intro,
-    welcome, 
     greetWithName,
+    askGrade,
+    askMathLove,
+    askSpeed,
     askTopic, 
     askQuestion, 
     correct, 
@@ -63,7 +65,7 @@ export default function MathBroPage() {
     summary,
     isSpeaking,
     stop 
-  } = useMathBroSpeech(userName, speechRate);
+  } = useMathBroSpeech(userName, speechRate, userGrade || '');
 
   // 背景音樂鉤子
   const { isMuted: isMusicMuted, toggle: toggleMusic } = useBackgroundMusic();
@@ -93,19 +95,22 @@ export default function MathBroPage() {
   const handleSelectGrade = useCallback((grade: Grade) => {
     setUserGrade(grade);
     setGameState('ask-math-love');
-  }, []);
+    setTimeout(() => askMathLove(), 300);
+  }, [askMathLove]);
 
   // 選擇喜不喜歡數學
   const handleSelectMathLove = useCallback((likes: boolean) => {
     setLikesMath(likes);
     setGameState('select-speed');
-  }, []);
+    setTimeout(() => askSpeed(), 300);
+  }, [askSpeed]);
 
   // 選擇語速
   const handleSelectSpeed = useCallback((speed: 'slow' | 'normal' | 'fast') => {
     setSpeechRate(speed);
     setGameState('select-topic');
-    setTimeout(() => askTopic(), 500);
+    // 延遲一下讓語速設置生效
+    setTimeout(() => askTopic(), 800);
   }, [askTopic]);
 
   // 選擇題型

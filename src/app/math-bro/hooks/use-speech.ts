@@ -123,10 +123,14 @@ function toSpokenCantonese(text: string): string {
 }
 
 // 數學BRO 專用語音鉤子（有預設對白）
-export function useMathBroSpeech(userName: string = '', speechRate: 'slow' | 'normal' | 'fast' = 'normal') {
+export function useMathBroSpeech(
+  userName: string = '', 
+  speechRate: 'slow' | 'normal' | 'fast' = 'normal',
+  grade: string = ''
+) {
   // 根據語速設置 rate：慢 0.7, 正常 0.9, 快 1.2
   const rate = speechRate === 'slow' ? 0.7 : speechRate === 'fast' ? 1.2 : 0.9;
-  const { speak: baseSpeak, isSpeaking, isSupported, stop } = useSpeech({ rate });
+  const { speak: baseSpeak, isSpeaking, isSupported, stop } = useSpeech({ rate, pitch: 1.1 });
   
   // 包裝 speak 函數，自動轉換廣東話口語
   const speak = useCallback((text: string, onEnd?: () => void) => {
@@ -136,9 +140,24 @@ export function useMathBroSpeech(userName: string = '', speechRate: 'slow' | 'no
   // 生成帶名字的稱呼
   const nameCall = userName ? `${userName}，` : '';
 
+  // 根據年級獲取適合的選項提示
+  const getTopicOptions = () => {
+    if (grade === 'kindergarten') {
+      return '數水果、加數同減數';
+    } else if (grade === 'p1') {
+      return '數水果、加數、減數、排次序同方向';
+    } else if (grade === 'p2') {
+      return '加數、減數、乘數、三位數同排次序';
+    } else if (grade === 'p3' || grade === 'p4') {
+      return '加減乘除、三位數、四位數、排次序同方向';
+    } else {
+      return '加減乘除、大數、排次序、方向同角度';
+    }
+  };
+
   // 自我介紹 + 問名字
   const intro = useCallback((onEnd?: () => void) => {
-    speak('大家好！我係你哋嘅數學BROTHER，數學BRO！我會教你哋數學。請問你叫咩名呀？', onEnd);
+    speak('哈囉，大家好！我係你哋嘅數學BROTHER，數學BRO！我會教你哋數學㗎。請問，你叫咩名呀？', onEnd);
   }, [speak]);
 
   // 歡迎語（記住名字後）
@@ -158,17 +177,39 @@ export function useMathBroSpeech(userName: string = '', speechRate: 'slow' | 'no
 
   // 記住名字後的問候
   const greetWithName = useCallback((name: string, onEnd?: () => void) => {
-    speak(`哈囉${name}！好開心認識你！我哋一齊學數學啦！`, onEnd);
+    speak(`哈囉${name}！好開心認識你呀！我哋一齊學數學啦！`, onEnd);
   }, [speak]);
 
-  // 問想做乜題目 - 50% 機率叫名字
+  // 問想做乜題目 - 根據年級顯示不同選項
   const askTopic = useCallback((onEnd?: () => void) => {
     const useName = userName && Math.random() < 0.5;
+    const options = getTopicOptions();
     const text = useName 
-      ? `${nameCall}你想練加法、減法、乘法定除法呀？揀一樣啦！`
-      : '你想練加法、減法、乘法定除法呀？揀一樣啦！';
+      ? `${nameCall}你想玩${options}呀？揀一樣啦！`
+      : `你想玩${options}呀？揀一樣啦！`;
+    speak(text, onEnd);
+  }, [speak, nameCall, userName, grade]);
+
+  // 問年級
+  const askGrade = useCallback((onEnd?: () => void) => {
+    const text = userName 
+      ? `${nameCall}你讀緊幾多年班呀？`
+      : '你讀緊幾多年班呀？';
     speak(text, onEnd);
   }, [speak, nameCall, userName]);
+
+  // 問喜不喜歡數學
+  const askMathLove = useCallback((onEnd?: () => void) => {
+    const text = userName 
+      ? `${nameCall}你鍾唔鍾意數學㗎？`
+      : '你鍾唔鍾意數學㗎？';
+    speak(text, onEnd);
+  }, [speak, nameCall, userName]);
+
+  // 選擇語速
+  const askSpeed = useCallback((onEnd?: () => void) => {
+    speak('你想我講嘢快啲定慢啲呀？', onEnd);
+  }, [speak]);
 
   // 問難度 - 50% 機率叫名字
   const askDifficulty = useCallback((onEnd?: () => void) => {
@@ -284,6 +325,9 @@ export function useMathBroSpeech(userName: string = '', speechRate: 'slow' | 'no
     intro,
     welcome,
     greetWithName,
+    askGrade,
+    askMathLove,
+    askSpeed,
     askTopic,
     askDifficulty,
     askQuestion,

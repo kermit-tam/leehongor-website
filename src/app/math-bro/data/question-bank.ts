@@ -109,21 +109,30 @@ export function generateQuestion(
 // 數水果題目（幼稚園/P1）
 function generateCountingQuestion(qn: number): Question {
   const fruitCount = Math.floor(Math.random() * 8) + 3; // 3-10個水果
-  const fruits = ['🍎', '🍊', '🍇', '🍓', '🍌', '🍐', '🍑', '🍒'];
+  const fruits = [
+    { emoji: '🍎', name: '蘋果' },
+    { emoji: '🍊', name: '橙' },
+    { emoji: '🍇', name: '提子' },
+    { emoji: '🍓', name: '士多啤梨' },
+    { emoji: '🍌', name: '香蕉' },
+    { emoji: '🍐', name: '啤梨' },
+    { emoji: '🍑', name: '水蜜桃' },
+    { emoji: '🥭', name: '芒果' },
+  ];
   const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
   
   return {
     id: `q-${qn}`,
     type: 'choice',
-    questionText: `數一數有幾多個${randomFruit}？`,
+    questionText: `數一數有幾多個${randomFruit.name}？`,
     visual: {
       type: 'fruits',
       values: [fruitCount],
-      labels: [randomFruit],
+      labels: [randomFruit.emoji],
     },
     options: generateOptions(fruitCount, 'easy'),
     correctAnswer: fruitCount,
-    explanation: `數一數：1、2、3...總共有${fruitCount}個${randomFruit}`,
+    explanation: `數一數：1、2、3...總共有${fruitCount}個${randomFruit.name}`,
     hint: `用手指數一數，一個一個數清楚`,
   };
 }
