@@ -7,6 +7,7 @@ import { useCallback, useRef, useEffect } from 'react';
 
 export function useSound() {
   const audioContextRef = useRef<AudioContext | null>(null);
+  const isReadyRef = useRef(false);
 
   // 初始化音頻上下文
   useEffect(() => {
@@ -18,10 +19,24 @@ export function useSound() {
     };
   }, []);
 
+  // 解鎖音頻（需要用戶交互後調用）
+  const unlockAudio = useCallback(async () => {
+    if (!audioContextRef.current) return;
+    if (audioContextRef.current.state === 'suspended') {
+      await audioContextRef.current.resume();
+    }
+    isReadyRef.current = true;
+  }, []);
+
   // 播放正確音效（開心的上升音階）
   const playCorrect = useCallback(() => {
     if (!audioContextRef.current) return;
     const ctx = audioContextRef.current;
+    
+    // 確保音頻上下文係 running 狀態
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
     
     // 播放「叮叮」聲
     const playNote = (freq: number, time: number, duration: number) => {
@@ -52,6 +67,11 @@ export function useSound() {
     if (!audioContextRef.current) return;
     const ctx = audioContextRef.current;
     
+    // 確保音頻上下文係 running 狀態
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
@@ -74,6 +94,11 @@ export function useSound() {
     if (!audioContextRef.current) return;
     const ctx = audioContextRef.current;
     
+    // 確保音頻上下文係 running 狀態
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
@@ -94,6 +119,11 @@ export function useSound() {
   const playComplete = useCallback(() => {
     if (!audioContextRef.current) return;
     const ctx = audioContextRef.current;
+    
+    // 確保音頻上下文係 running 狀態
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
     
     const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
     
@@ -121,5 +151,6 @@ export function useSound() {
     playWrong,
     playHint,
     playComplete,
+    unlockAudio,
   };
 }

@@ -73,17 +73,19 @@ export default function MathBroPage() {
   const { isMuted: isMusicMuted, toggle: toggleMusic } = useBackgroundMusic();
 
   // 音效鉤子
-  const { playCorrect, playWrong, playHint, playComplete } = useSound();
+  const { playCorrect, playWrong, playHint, playComplete, unlockAudio } = useSound();
 
   // 用戶點擊開始後才播放自我介紹
   const handleStartIntro = useCallback(() => {
+    // 解鎖音頻（需要用戶交互後先可以播聲）
+    unlockAudio();
     setGameState('intro');
     setTimeout(() => {
       intro(() => {
         setTimeout(() => setGameState('ask-name'), 500);
       });
     }, 300);
-  }, [intro]);
+  }, [intro, unlockAudio]);
 
   // 處理提交名字
   const handleSubmitName = useCallback(() => {

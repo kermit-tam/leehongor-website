@@ -135,7 +135,14 @@ export function useSpeech(options: UseSpeechOptions = {}) {
 
 // 將書面語轉換為廣東話口語（用於語音）
 function toSpokenCantonese(text: string): string {
-  return text
+  // 先移除所有 emoji
+  const withoutEmoji = text
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')  // 雜項符號和象形文字
+    .replace(/[\u{2600}-\u{26FF}]/gu, '')    // 雜項符號
+    .replace(/[\u{2700}-\u{27BF}]/gu, '')    // 裝飾符號
+    .replace(/\p{Emoji}/gu, '');              // 其他 emoji
+  
+  return withoutEmoji
     .replace(/的/g, '嘅')     // 的 → 嘅
     .replace(/是/g, '係')     // 是 → 係
     .replace(/這/g, '呢')     // 這 → 呢
@@ -148,7 +155,8 @@ function toSpokenCantonese(text: string): string {
     .replace(/們/g, '哋')     // 們 → 哋
     .replace(/了/g, '咗')     // 了 → 咗
     .replace(/著/g, '住')     // 著 → 住
-    .replace(/過/g, '過');    // 過保持不變
+    .replace(/過/g, '過')     // 過保持不變
+    .trim();
 }
 
 // 數學BRO 專用語音鉤子（有預設對白）
@@ -265,57 +273,82 @@ export function useMathBroSpeech(
     speak(text, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 答啱咗 - 更多變化
+  // 答啱咗 - 更多兒童友好語句（無emoji）
   const correct = useCallback((onEnd?: () => void) => {
     const useName = userName && Math.random() < 0.5;
     const responses = useName ? [
-      `${nameCall}啱晒！好叻呀！👏`,
-      `正確！${nameCall}你真係好掂！🌟`,
-      `無錯！${nameCall}繼續加油！💪`,
-      `${nameCall}啱咗！數學BRO為你驕傲！🏆`,
-      `Perfect${nameCall}！下一題！🎯`,
-      `哇！${nameCall}好勁呀！🎉`,
-      `答啱咗！${nameCall}好聰明！🧠`,
-      `${nameCall}太勁啦！繼續保持！🔥`,
-      `啱！${nameCall}計得好快！⚡`,
-      `好正呀${nameCall}！你識諗！✨`,
+      `${nameCall}啱晒！好叻呀！`,
+      `${nameCall}你真係好掂！繼續加油！`,
+      `${nameCall}啱咗！數學BRO為你驕傲！`,
+      `哇！${nameCall}好勁呀！`,
+      `答啱咗！${nameCall}好聰明！`,
+      `${nameCall}太勁啦！繼續保持！`,
+      `啱！${nameCall}計得好快！`,
+      `好正呀${nameCall}！你識諗！`,
+      `${nameCall}叻叻！俾個掌聲你！`,
+      `耶！${nameCall}又啱咗！`,
+      `${nameCall}好叻仔！數學高手！`,
+      `叻叻豬${nameCall}！好叻呀！`,
+      `${nameCall}計得好快！厲害！`,
+      `又啱咗！${nameCall}好勁！`,
+      `正呀${nameCall}！一百分！`,
     ] : [
-      '啱晒！好叻呀！👏',
-      '正確！繼續加油！🌟',
-      '無錯！你真係好掂！💪',
-      '啱咗！數學BRO為你驕傲！🏆',
-      'Perfect！下一題！🎯',
-      '哇！好勁呀！🎉',
-      '答啱咗！好聰明！🧠',
-      '太勁啦！繼續保持！🔥',
-      '啱！計得好快！⚡',
-      '好正呀！你識諗！✨',
+      '啱晒！好叻呀！',
+      '正確！繼續加油！',
+      '你真係好掂！',
+      '啱咗！數學BRO為你驕傲！',
+      '哇！好勁呀！',
+      '答啱咗！好聰明！',
+      '太勁啦！繼續保持！',
+      '啱！計得好快！',
+      '好正呀！你識諗！',
+      '叻叻！俾個掌聲你！',
+      '耶！又啱咗！',
+      '好叻仔！數學高手！',
+      '叻叻豬！好叻呀！',
+      '計得好快！厲害！',
+      '又啱咗！好勁！',
+      '正呀！一百分！',
     ];
     const random = responses[Math.floor(Math.random() * responses.length)];
     speak(random, onEnd);
   }, [speak, nameCall, userName]);
 
-  // 答錯咗 - 更多變化
+  // 答錯咗 - 更多兒童友好語句（無emoji）
   const wrong = useCallback((explanation: string, onEnd?: () => void) => {
     const useName = userName && Math.random() < 0.5;
     const responses = useName ? [
-      `唔緊要${nameCall}！再試過！你可以嘅！💪`,
-      `差少少${nameCall}！諗清楚啲！慢慢嚟！🤔`,
-      `唔啱喎${nameCall}！唔緊要，再嚟過！🔄`,
-      `錯咗${nameCall}，但唔緊要！學緊嘢！📚`,
-      `噢！${nameCall}今次唔啱，再試吓！💭`,
-      `冇所謂${nameCall}！錯咗先識學！🌱`,
-      `試多一次${nameCall}！下次一定啱！🎯`,
-      `唔緊要${nameCall}！數學係要練㗎！✏️`,
+      `唔緊要${nameCall}！再試過！你可以嘅！`,
+      `差少少${nameCall}！諗清楚啲！慢慢嚟！`,
+      `唔啱喎${nameCall}！唔緊要，再嚟過！`,
+      `錯咗${nameCall}，但唔緊要！學緊嘢！`,
+      `噢${nameCall}！今次唔啱，再試吓！`,
+      `冇所謂${nameCall}！錯咗先識學！`,
+      `試多一次${nameCall}！下次一定啱！`,
+      `唔緊要${nameCall}！數學係要練㗎！`,
+      `唔啱呀${nameCall}！再嚟過！你一定得！`,
+      `錯咗${nameCall}！唔緊要！試多次！`,
+      `差啲啲${nameCall}！再諗吓！`,
+      `今次唔啱${nameCall}！下次會啱！`,
+      `唔緊要${nameCall}！慢慢嚟！`,
+      `錯咗都冇所謂${nameCall}！繼續試！`,
+      `再試吓${nameCall}！你會識㗎！`,
     ] : [
-      '唔緊要！再試過！你可以嘅！💪',
-      '差少少！諗清楚啲！慢慢嚟！🤔',
-      '唔啱喎！唔緊要，再嚟過！🔄',
-      '錯咗，但唔緊要！學緊嘢！📚',
-      '噢！今次唔啱，再試吓！💭',
-      '冇所謂！錯咗先識學！🌱',
-      '試多一次！下次一定啱！🎯',
-      '唔緊要！數學係要練㗎！✏️',
+      '唔緊要！再試過！你可以嘅！',
+      '差少少！諗清楚啲！慢慢嚟！',
+      '唔啱喎！唔緊要，再嚟過！',
+      '錯咗，但唔緊要！學緊嘢！',
+      '噢！今次唔啱，再試吓！',
+      '冇所謂！錯咗先識學！',
+      '試多一次！下次一定啱！',
+      '唔緊要！數學係要練㗎！',
+      '唔啱呀！再嚟過！你一定得！',
+      '錯咗！唔緊要！試多次！',
+      '差啲啲！再諗吓！',
+      '今次唔啱！下次會啱！',
+      '唔緊要！慢慢嚟！',
+      '錯咗都冇所謂！繼續試！',
+      '再試吓！你會識㗎！',
     ];
     const random = responses[Math.floor(Math.random() * responses.length)];
     speak(random, onEnd);
