@@ -18,6 +18,10 @@ type CheckedState = {
   [key: number]: boolean;
 };
 
+type WrongAttemptsState = {
+  [key: number]: string[]; // 記錄每題邊啲選項已經試過兼且錯
+};
+
 // 隨機打亂數組（Fisher-Yates 算法）
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -69,6 +73,7 @@ export default function TryGPPage() {
   const [selectedScientist, setSelectedScientist] = useState<number | null>(null);
   const [selectedToy, setSelectedToy] = useState<number | null>(null);
   const [orderingSequence, setOrderingSequence] = useState<number[]>([]);
+  const [wrongAttempts, setWrongAttempts] = useState<WrongAttemptsState>({}); // 記錄答錯的選項
   
   // 使用 useMemo 生成隨機化嘅題目（只生成一次）
   const shuffledQuestions = useMemo(() => generateShuffledQuestions(allQuestions), []);
@@ -77,9 +82,22 @@ export default function TryGPPage() {
   const totalQuestions = shuffledQuestions.length;
 
   const handleAnswer = (qId: number, answer: string | string[]) => {
+    const q = shuffledQuestions.find(qq => qq.id === qId);
+    
+    // 檢查是否答錯（對於MC題）
+    if (q && typeof answer === 'string' && q.type !== 'short-answer') {
+      const isCorrect = answer === q.answer;
+      if (!isCorrect) {
+        // 記錄這個選項已經試過且錯
+        setWrongAttempts(prev => ({
+          ...prev,
+          [qId]: [...(prev[qId] || []), answer]
+        }));
+      }
+    }
+    
     setAnswers(prev => ({ ...prev, [qId]: answer }));
     // 只有簡單MC題先自動檢查，其他要等用戶按確認
-    const q = shuffledQuestions.find(qq => qq.id === qId);
     if (q && (q.type === 'mc' || q.type === 'mc-word-bank' || q.type === 'short-answer')) {
       setTimeout(() => {
         setChecked(prev => ({ ...prev, [qId]: true }));
@@ -134,6 +152,7 @@ export default function TryGPPage() {
     setSelectedScientist(null);
     setSelectedToy(null);
     setOrderingSequence([]);
+    setWrongAttempts({});
   };
 
   // 讀卷功能 - 把填空位讀成「乜乜」
@@ -213,21 +232,40 @@ export default function TryGPPage() {
             ))}
           </div>
           {/* 選項按鈕 */}
-          <div className="grid grid-cols-2 gap-3">
-            {q.options.map(opt => (
-              <button
-                key={opt.label}
-                onClick={() => !checked[q.id] && handleAnswer(q.id, opt.label)}
-                disabled={checked[q.id]}
-                className={`p-4 rounded-xl text-left transition-all ${
-                  answers[q.id] === opt.label
-                    ? checkAnswer(q, opt.label) ? 'bg-green-500 text-white shadow-lg' : 'bg-red-500 text-white shadow-lg'
-                    : checked[q.id] && q.answer === opt.label ? 'bg-green-200 text-green-800' : 'bg-white hover:bg-green-50 shadow-sm'
-                } ${checked[q.id] ? 'cursor-not-allowed opacity-70' : ''}`}
-              >
-                <span className="font-bold">{opt.label}.</span> {opt.text}
-              </button>
-            ))}
+          <div className="grid grid-cols-1 gap-3">
+            {q.options.map(opt => {
+              const isWrongAttempt = wrongAttempts[q.id]?.includes(opt.label);
+              const isCorrectSelected = answers[q.id] === q.answer && q.answer === opt.label;
+              const isLocked = isWrongAttempt && !isCorrectSelected && !checked[q.id];
+              
+              return (
+                <div key={opt.label} className="flex gap-2">
+                  <button
+                    onClick={() => !checked[q.id] && !isLocked && handleAnswer(q.id, opt.label)}
+                    disabled={checked[q.id] || isLocked}
+                    className={`flex-1 p-4 rounded-xl text-left transition-all ${
+                      answers[q.id] === opt.label
+                        ? checkAnswer(q, opt.label) ? 'bg-green-500 text-white shadow-lg' : 'bg-red-500 text-white shadow-lg'
+                        : checked[q.id] && q.answer === opt.label ? 'bg-green-200 text-green-800' 
+                        : isLocked ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-white hover:bg-green-50 shadow-sm'
+                    }`}
+                  >
+                    <span className="font-bold">{opt.label}.</span> {opt.text}
+                    {isLocked && <span className="ml-2 text-xs">（已試過）</span>}
+                  </button>
+                  <button
+                    onClick={() => readAnswer(opt.text)}
+                    className="px-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-xl transition-colors shrink-0"
+                    title="讀出答案"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            })}
           </div>
           
           {/* 讀完整句子按鈕 */}
@@ -256,20 +294,43 @@ export default function TryGPPage() {
     // 普通MC題
     return (
       <div className="space-y-3">
-        {q.options.map(opt => (
-          <button
-            key={opt.label}
-            onClick={() => !checked[q.id] && handleAnswer(q.id, opt.label)}
-            disabled={checked[q.id]}
-            className={`w-full p-4 rounded-xl text-left transition-all ${
-              answers[q.id] === opt.label
-                ? checkAnswer(q, opt.label) ? 'bg-green-500 text-white shadow-lg' : 'bg-red-500 text-white shadow-lg'
-                : checked[q.id] && q.answer === opt.label ? 'bg-green-200 text-green-800' : 'bg-white hover:bg-green-50 shadow-sm'
-            } ${checked[q.id] ? 'cursor-not-allowed opacity-70' : ''}`}
-          >
-            <span className="font-bold">{opt.label}.</span> {opt.text}
-          </button>
-        ))}
+        {q.options.map(opt => {
+          // 檢查這個選項是否已經試過且錯
+          const isWrongAttempt = wrongAttempts[q.id]?.includes(opt.label);
+          // 是否已經答對（正確答案被選中）
+          const isCorrectSelected = answers[q.id] === q.answer && q.answer === opt.label;
+          // 這個選項是否應該被鎖定（答錯過且未答對正確答案）
+          const isLocked = isWrongAttempt && !isCorrectSelected && !checked[q.id];
+          
+          return (
+            <div key={opt.label} className="flex gap-2">
+              <button
+                onClick={() => !checked[q.id] && !isLocked && handleAnswer(q.id, opt.label)}
+                disabled={checked[q.id] || isLocked}
+                className={`flex-1 p-4 rounded-xl text-left transition-all ${
+                  answers[q.id] === opt.label
+                    ? checkAnswer(q, opt.label) ? 'bg-green-500 text-white shadow-lg' : 'bg-red-500 text-white shadow-lg'
+                    : checked[q.id] && q.answer === opt.label ? 'bg-green-200 text-green-800' 
+                    : isLocked ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                    : 'bg-white hover:bg-green-50 shadow-sm'
+                }`}
+              >
+                <span className="font-bold">{opt.label}.</span> {opt.text}
+                {isLocked && <span className="ml-2 text-xs">（已試過）</span>}
+              </button>
+              {/* 喇叭按鈕 - 讀出選項文字 */}
+              <button
+                onClick={() => readAnswer(opt.text)}
+                className="px-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-xl transition-colors shrink-0"
+                title="讀出答案"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+              </button>
+            </div>
+          );
+        })}
         
         {/* 讀完整句子按鈕（供詞填充題） */}
         {answers[q.id] && !Array.isArray(answers[q.id]) && q.type === 'mc-word-bank' && (
@@ -319,20 +380,39 @@ export default function TryGPPage() {
         
         {/* 選項 */}
         <div className="space-y-3">
-          {q.options.map(opt => (
-            <button
-              key={opt.label}
-              onClick={() => !checked[q.id] && handleAnswer(q.id, opt.label)}
-              disabled={checked[q.id]}
-              className={`w-full p-4 rounded-xl text-left transition-all ${
-                answers[q.id] === opt.label
-                  ? checkAnswer(q, opt.label) ? 'bg-green-500 text-white shadow-lg' : 'bg-red-500 text-white shadow-lg'
-                  : checked[q.id] && q.answer === opt.label ? 'bg-green-200 text-green-800' : 'bg-white hover:bg-green-50 shadow-sm'
-              } ${checked[q.id] ? 'cursor-not-allowed opacity-70' : ''}`}
-            >
-              <span className="font-bold">{opt.label}.</span> {opt.text}
-            </button>
-          ))}
+          {q.options.map(opt => {
+            const isWrongAttempt = wrongAttempts[q.id]?.includes(opt.label);
+            const isCorrectSelected = answers[q.id] === q.answer && q.answer === opt.label;
+            const isLocked = isWrongAttempt && !isCorrectSelected && !checked[q.id];
+            
+            return (
+              <div key={opt.label} className="flex gap-2">
+                <button
+                  onClick={() => !checked[q.id] && !isLocked && handleAnswer(q.id, opt.label)}
+                  disabled={checked[q.id] || isLocked}
+                  className={`flex-1 p-4 rounded-xl text-left transition-all ${
+                    answers[q.id] === opt.label
+                      ? checkAnswer(q, opt.label) ? 'bg-green-500 text-white shadow-lg' : 'bg-red-500 text-white shadow-lg'
+                      : checked[q.id] && q.answer === opt.label ? 'bg-green-200 text-green-800' 
+                      : isLocked ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                      : 'bg-white hover:bg-green-50 shadow-sm'
+                  }`}
+                >
+                  <span className="font-bold">{opt.label}.</span> {opt.text}
+                  {isLocked && <span className="ml-2 text-xs">（已試過）</span>}
+                </button>
+                <button
+                  onClick={() => readAnswer(opt.text)}
+                  className="px-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-xl transition-colors shrink-0"
+                  title="讀出答案"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
