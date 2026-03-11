@@ -39,6 +39,7 @@ export default function GuitarChordsPage() {
   const [wrongAttempts, setWrongAttempts] = useState<string[]>([]);
   const [showGiveUp, setShowGiveUp] = useState(false);
   const [giveUpTimer, setGiveUpTimer] = useState(5);
+  const [currentOptions, setCurrentOptions] = useState<Chord[]>([]);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const giveUpTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -84,6 +85,17 @@ export default function GuitarChordsPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   
+  // 生成選項（只在一題開始時調用）
+  const generateOptions = useCallback((chord: Chord, wrongs: string[]) => {
+    const correctName = chord.name;
+    const wrongChords = CHORD_DATABASE
+      .filter(c => c.name !== correctName && !wrongs.includes(c.name))
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3);
+    
+    return [chord, ...wrongChords].sort(() => Math.random() - 0.5);
+  }, []);
+
   const startGame = () => {
     const root = config.root === 'all' ? undefined : config.root;
     const quality = config.quality === 'all' ? undefined : config.quality;
@@ -96,6 +108,12 @@ export default function GuitarChordsPage() {
     setWrongAttempts([]);
     setSelectedAnswer(null);
     setIsRunning(true);
+    
+    // 生成第一題的選項
+    if (newQuestions.length > 0) {
+      setCurrentOptions(generateOptions(newQuestions[0], []));
+    }
+    
     setGameState('playing');
   };
   
@@ -119,11 +137,14 @@ export default function GuitarChordsPage() {
   
   const handleNextQuestion = () => {
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(i => i + 1);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
       setSelectedAnswer(null);
       setWrongAttempts([]);
       setGameState('playing');
       setShowGiveUp(false);
+      // 預先生成下一題的選項
+      setCurrentOptions(generateOptions(questions[nextIndex], []));
     } else {
       // 遊戲結束
       setIsRunning(false);
@@ -135,23 +156,7 @@ export default function GuitarChordsPage() {
     handleNextQuestion();
   };
   
-  // 獲取選項（包含正確答案和干擾項）
-  const getOptions = () => {
-    if (!currentChord) return [];
-    
-    const correctName = currentChord.name;
-    const wrongChords = CHORD_DATABASE
-      .filter(c => c.name !== correctName && !wrongAttempts.includes(c.name))
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
-    
-    const options = [currentChord, ...wrongChords]
-      .sort(() => Math.random() - 0.5);
-    
-    return options;
-  };
-  
-  const options = getOptions();
+  // 使用預先生成的選項
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100">
@@ -349,7 +354,7 @@ export default function GuitarChordsPage() {
               
               {/* 選項 */}
               <div className="grid grid-cols-2 gap-3">
-                {options.map((chord, idx) => {
+                {currentOptions.map((chord) => {
                   const isSelected = selectedAnswer === chord.name;
                   const isCorrect = chord.name === currentChord.name;
                   const isWrongAttempt = wrongAttempts.includes(chord.name);
