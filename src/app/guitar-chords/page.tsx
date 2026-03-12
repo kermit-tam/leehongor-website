@@ -4,117 +4,264 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ChordDiagram } from './components/ChordDiagram';
-import { 
-  CHORD_DATABASE, 
-  ROOTS, 
-  QUALITIES, 
-  Chord, 
-  ChordQuality,
-  getRandomChords,
-  getChordDisplayName 
-} from './data/chords';
+import { CHORD_DATABASE, Chord, ChordQuality } from './data/chords';
 
-type GameState = 'menu' | 'select' | 'playing' | 'answered' | 'summary';
+type GameState = 'menu' | 'select' | 'countdown' | 'playing' | 'answered' | 'summary';
+type Difficulty = 'beginner' | 'easy' | 'medium' | 'hard' | 'expert' | 'legend';
 
-interface GameConfig {
-  root: string | 'all';
-  quality: ChordQuality | 'all';
+// 難度設定
+const DIFFICULTY_CONFIG: Record<Difficulty, {
+  name: string;
+  emoji: string;
+  description: string;
   questionCount: number;
+  optionCount: number;  // 選項數量
+  qualities: ChordQuality[];
+  timeLimit: number | null; // 秒數，null = 無限時
+}> = {
+  beginner: {
+    name: '新手',
+    emoji: '🌱',
+    description: '只有 Major 和 Minor',
+    questionCount: 5,
+    optionCount: 3,
+    qualities: ['major', 'minor'],
+    timeLimit: null,
+  },
+  easy: {
+    name: '初階',
+    emoji: '🎯',
+    description: 'Major, Minor, 7',
+    questionCount: 10,
+    optionCount: 4,
+    qualities: ['major', 'minor', '7'],
+    timeLimit: null,
+  },
+  medium: {
+    name: '中階',
+    emoji: '⚡',
+    description: '加入 Maj7 和 Min7',
+    questionCount: 15,
+    optionCount: 4,
+    qualities: ['major', 'minor', '7', 'maj7', 'min7'],
+    timeLimit: null,
+  },
+  hard: {
+    name: '進階',
+    emoji: '🔥',
+    description: '所有和弦類型',
+    questionCount: 20,
+    optionCount: 6,
+    qualities: ['major', 'minor', '7', 'maj7', 'min7'],
+    timeLimit: null,
+  },
+  expert: {
+    name: '高手',
+    emoji: '💎',
+    description: '更多選項，更快節奏',
+    questionCount: 25,
+    optionCount: 8,
+    qualities: ['major', 'minor', '7', 'maj7', 'min7'],
+    timeLimit: 10, // 每題10秒
+  },
+  legend: {
+    name: '傳奇',
+    emoji: '👑',
+    description: '終極挑戰！限時作答',
+    questionCount: 30,
+    optionCount: 8,
+    qualities: ['major', 'minor', '7', 'maj7', 'min7'],
+    timeLimit: 5, // 每題5秒
+  },
+};
+
+// 音效播放函數
+function playCorrectSound() {
+  try {
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    
+    
+    
+    // 播放「叮」聲
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.value = 880; // A5
+    
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+    
+    // 第二個音
+    setTimeout(() => {
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.value = 1108.73; // C#6
+      gain2.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start();
+      osc2.stop(ctx.currentTime + 0.3);
+    }, 50);
+  } catch {
+    // 忽略音效錯誤
+  }
+}
+
+function playWrongSound() {
+  try {
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.3);
+    
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch {
+    // 忽略音效錯誤
+  }
 }
 
 export default function GuitarChordsPage() {
   const [gameState, setGameState] = useState<GameState>('menu');
-  const [config, setConfig] = useState<GameConfig>({
-    root: 'all',
-    quality: 'all',
-    questionCount: 10,
-  });
+  const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   
   const [questions, setQuestions] = useState<Chord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [timer, setTimer] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(0); // 單位：百分之一秒
   const [isRunning, setIsRunning] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [wrongAttempts, setWrongAttempts] = useState<string[]>([]);
-  const [showGiveUp, setShowGiveUp] = useState(false);
-  const [giveUpTimer, setGiveUpTimer] = useState(5);
   const [currentOptions, setCurrentOptions] = useState<Chord[]>([]);
+  const [questionTimeLeft, setQuestionTimeLeft] = useState<number | null>(null); // 當前題目剩餘時間
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const giveUpTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const questionTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const currentChord = questions[currentIndex];
+  const config = DIFFICULTY_CONFIG[difficulty];
   
-  // 計時器
+  // 格式化時間顯示 (mm:ss.cs)
+  const formatTime = (centiseconds: number) => {
+    const mins = Math.floor(centiseconds / 6000);
+    const secs = Math.floor((centiseconds % 6000) / 100);
+    const cs = centiseconds % 100;
+    return `${mins}:${secs.toString().padStart(2, '0')}.${cs.toString().padStart(2, '0')}`;
+  };
+  
+  // 主計時器 (0.01秒精度)
   useEffect(() => {
     if (isRunning) {
       timerRef.current = setInterval(() => {
-        setTimer(t => t + 1);
-      }, 1000);
+        setTimeElapsed(t => t + 1);
+      }, 10);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isRunning]);
   
-  // 放棄計時器
+  // 題目限時計時器
   useEffect(() => {
-    if (gameState === 'answered' && selectedAnswer !== currentChord?.name) {
-      setShowGiveUp(true);
-      setGiveUpTimer(5);
-      giveUpTimerRef.current = setInterval(() => {
-        setGiveUpTimer(t => {
-          if (t <= 1) {
-            // 時間到，自動下一題
-            handleNextQuestion();
+    if (gameState === 'playing' && config.timeLimit) {
+      setQuestionTimeLeft(config.timeLimit);
+      questionTimerRef.current = setInterval(() => {
+        setQuestionTimeLeft(t => {
+          if (t === null || t <= 0.1) {
+            // 時間到，算錯，自動下一題
+            handleTimeUp();
             return 0;
           }
-          return t - 1;
+          return t ? t - 0.1 : 0;
         });
-      }, 1000);
+      }, 100);
     }
     return () => {
-      if (giveUpTimerRef.current) clearInterval(giveUpTimerRef.current);
+      if (questionTimerRef.current) clearInterval(questionTimerRef.current);
     };
-  }, [gameState, selectedAnswer, currentChord]);
+  }, [gameState, currentIndex, difficulty]);
   
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const handleTimeUp = () => {
+    playWrongSound();
+    setSelectedAnswer('TIME_UP');
+    setGameState('answered');
+    // 2秒後自動下一題
+    setTimeout(() => handleNextQuestion(), 2000);
   };
   
-  // 生成選項（只在一題開始時調用）
-  const generateOptions = useCallback((chord: Chord, wrongs: string[]) => {
+  // 根據難度生成題目
+  const generateQuestions = useCallback((diff: Difficulty): Chord[] => {
+    const { qualities, questionCount } = DIFFICULTY_CONFIG[diff];
+    const filtered = CHORD_DATABASE.filter(c => qualities.includes(c.quality));
+    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(questionCount, filtered.length));
+  }, []);
+  
+  // 生成選項
+  const generateOptions = useCallback((chord: Chord, wrongs: string[], diff: Difficulty): Chord[] => {
+    const { optionCount, qualities } = DIFFICULTY_CONFIG[diff];
     const correctName = chord.name;
+    
+    // 從符合難度要求的和弦中選擇干擾項
     const wrongChords = CHORD_DATABASE
-      .filter(c => c.name !== correctName && !wrongs.includes(c.name))
+      .filter(c => 
+        c.name !== correctName && 
+        !wrongs.includes(c.name) &&
+        qualities.includes(c.quality)
+      )
       .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
+      .slice(0, optionCount - 1);
     
     return [chord, ...wrongChords].sort(() => Math.random() - 0.5);
   }, []);
-
+  
   const startGame = () => {
-    const root = config.root === 'all' ? undefined : config.root;
-    const quality = config.quality === 'all' ? undefined : config.quality;
-    const newQuestions = getRandomChords(config.questionCount, root, quality);
-    
+    const newQuestions = generateQuestions(difficulty);
     setQuestions(newQuestions);
     setCurrentIndex(0);
     setScore(0);
-    setTimer(0);
+    setTimeElapsed(0);
     setWrongAttempts([]);
     setSelectedAnswer(null);
-    setIsRunning(true);
     
-    // 生成第一題的選項
     if (newQuestions.length > 0) {
-      setCurrentOptions(generateOptions(newQuestions[0], []));
+      setCurrentOptions(generateOptions(newQuestions[0], [], difficulty));
     }
     
-    setGameState('playing');
+    // 倒數3秒開始
+    setGameState('countdown');
+    let count = 3;
+    const countInterval = setInterval(() => {
+      count--;
+      if (count <= 0) {
+        clearInterval(countInterval);
+        setIsRunning(true);
+        setGameState('playing');
+      }
+    }, 1000);
   };
   
   const handleAnswer = (answer: string) => {
@@ -124,14 +271,25 @@ export default function GuitarChordsPage() {
     
     if (answer === currentChord.name) {
       // 答對
+      playCorrectSound();
       setScore(s => s + 1);
       setGameState('answered');
-      // 自動下一題
-      setTimeout(() => handleNextQuestion(), 1000);
+      // 立即下一題，無延遲
+      setTimeout(() => handleNextQuestion(), 300);
     } else {
       // 答錯
+      playWrongSound();
       setWrongAttempts(prev => [...prev, answer]);
-      setGameState('answered');
+      // 檢查是否還有未試過的選項
+      const remainingOptions = currentOptions.filter(o => 
+        o.name !== currentChord.name && 
+        ![...wrongAttempts, answer].includes(o.name)
+      );
+      if (remainingOptions.length === 0) {
+        // 所有選項都試過了，顯示答案後下一題
+        setGameState('answered');
+        setTimeout(() => handleNextQuestion(), 1500);
+      }
     }
   };
   
@@ -142,21 +300,17 @@ export default function GuitarChordsPage() {
       setSelectedAnswer(null);
       setWrongAttempts([]);
       setGameState('playing');
-      setShowGiveUp(false);
-      // 預先生成下一題的選項
-      setCurrentOptions(generateOptions(questions[nextIndex], []));
+      setCurrentOptions(generateOptions(questions[nextIndex], [], difficulty));
     } else {
-      // 遊戲結束
       setIsRunning(false);
       setGameState('summary');
     }
   };
   
-  const handleSkip = () => {
-    handleNextQuestion();
-  };
-  
-  // 使用預先生成的選項
+  // 獲取當前顯示的選項（過濾掉已試過的錯誤選項）
+  const displayOptions = currentOptions.filter(opt => 
+    opt.name === currentChord?.name || !wrongAttempts.includes(opt.name)
+  );
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100">
@@ -195,7 +349,7 @@ export default function GuitarChordsPage() {
             </motion.div>
           )}
           
-          {/* 選擇設定 */}
+          {/* 選擇難度 */}
           {gameState === 'select' && (
             <motion.div
               key="select"
@@ -204,89 +358,42 @@ export default function GuitarChordsPage() {
               exit={{ opacity: 0, scale: 0.9 }}
               className="bg-white rounded-3xl p-6 shadow-xl"
             >
-              <h2 className="text-2xl font-black text-amber-800 mb-6 text-center">選擇挑戰設定</h2>
+              <h2 className="text-2xl font-black text-amber-800 mb-6 text-center">選擇難度</h2>
               
-              {/* 根音選擇 */}
-              <div className="mb-6">
-                <label className="block text-amber-700 font-bold mb-3">根音 (Root)</label>
-                <div className="grid grid-cols-4 gap-2">
-                  <button
-                    onClick={() => setConfig(c => ({ ...c, root: 'all' }))}
-                    className={`p-3 rounded-xl font-bold transition-all ${
-                      config.root === 'all' 
-                        ? 'bg-amber-500 text-white' 
-                        : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                    }`}
-                  >
-                    全部
-                  </button>
-                  {ROOTS.map(root => (
-                    <button
-                      key={root}
-                      onClick={() => setConfig(c => ({ ...c, root }))}
-                      className={`p-3 rounded-xl font-bold transition-all ${
-                        config.root === root 
-                          ? 'bg-amber-500 text-white' 
-                          : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+              <div className="space-y-3">
+                {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[]).map((diff) => {
+                  const cfg = DIFFICULTY_CONFIG[diff];
+                  return (
+                    <motion.button
+                      key={diff}
+                      onClick={() => setDifficulty(diff)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full p-4 rounded-2xl text-left transition-all ${
+                        difficulty === diff
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
+                          : 'bg-amber-50 hover:bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {root}
-                    </button>
-                  ))}
-                </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-3xl">{cfg.emoji}</span>
+                        <div className="flex-1">
+                          <div className="font-bold text-lg">{cfg.name}</div>
+                          <div className={`text-sm ${difficulty === diff ? 'text-white/80' : 'text-amber-600'}`}>
+                            {cfg.description} · {cfg.questionCount}題
+                            {cfg.timeLimit && ` · 限時${cfg.timeLimit}秒/題`}
+                          </div>
+                        </div>
+                        <div className={`text-2xl font-black ${difficulty === diff ? 'text-white' : 'text-amber-300'}`}>
+                          {cfg.optionCount}選1
+                        </div>
+                      </div>
+                    </motion.button>
+                  );
+                })}
               </div>
               
-              {/* 和弦性質選擇 */}
-              <div className="mb-6">
-                <label className="block text-amber-700 font-bold mb-3">和弦性質 (Quality)</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setConfig(c => ({ ...c, quality: 'all' }))}
-                    className={`p-3 rounded-xl font-bold transition-all ${
-                      config.quality === 'all' 
-                        ? 'bg-orange-500 text-white' 
-                        : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                    }`}
-                  >
-                    全部
-                  </button>
-                  {QUALITIES.map(q => (
-                    <button
-                      key={q.id}
-                      onClick={() => setConfig(c => ({ ...c, quality: q.id }))}
-                      className={`p-3 rounded-xl font-bold transition-all ${
-                        config.quality === q.id 
-                          ? 'bg-orange-500 text-white' 
-                          : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                      }`}
-                    >
-                      {q.name} ({q.symbol || 'maj'})
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* 題目數量 */}
-              <div className="mb-8">
-                <label className="block text-amber-700 font-bold mb-3">題目數量</label>
-                <div className="flex gap-2">
-                  {[5, 10, 15, 20].map(count => (
-                    <button
-                      key={count}
-                      onClick={() => setConfig(c => ({ ...c, questionCount: count }))}
-                      className={`flex-1 p-3 rounded-xl font-bold transition-all ${
-                        config.questionCount === count 
-                          ? 'bg-yellow-500 text-white' 
-                          : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                      }`}
-                    >
-                      {count}題
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex gap-3">
+              <div className="flex gap-3 mt-8">
                 <button
                   onClick={() => setGameState('menu')}
                   className="flex-1 py-4 bg-gray-200 text-gray-700 rounded-xl font-bold"
@@ -300,6 +407,28 @@ export default function GuitarChordsPage() {
                   開始！
                 </button>
               </div>
+            </motion.div>
+          )}
+          
+          {/* 倒數開始 */}
+          {gameState === 'countdown' && (
+            <motion.div
+              key="countdown"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-20"
+            >
+              <motion.div
+                key="count-3"
+                initial={{ scale: 0 }}
+                animate={{ scale: [0, 1.5, 1] }}
+                transition={{ duration: 0.5 }}
+                className="text-8xl font-black text-amber-500"
+              >
+                3
+              </motion.div>
+              <p className="text-amber-600 mt-4">準備開始...</p>
             </motion.div>
           )}
           
@@ -318,12 +447,29 @@ export default function GuitarChordsPage() {
                   <span className="text-amber-400"> / {questions.length}</span>
                 </div>
                 <div className="text-2xl font-mono font-black text-amber-600">
-                  {formatTime(timer)}
+                  {formatTime(timeElapsed)}
                 </div>
                 <div className="text-green-600 font-bold">
                   ✅ {score}
                 </div>
               </div>
+              
+              {/* 題目限時進度條 */}
+              {config.timeLimit && gameState === 'playing' && (
+                <div className="mb-4">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-red-500"
+                      initial={{ width: '100%' }}
+                      animate={{ width: `${(questionTimeLeft || 0) / config.timeLimit * 100}%` }}
+                      transition={{ duration: 0.1, ease: 'linear' }}
+                    />
+                  </div>
+                  <p className="text-center text-red-500 text-sm mt-1">
+                    剩餘時間：{(questionTimeLeft || 0).toFixed(1)}秒
+                  </p>
+                </div>
+              )}
               
               {/* 和弦圖 */}
               <div className="bg-white rounded-3xl p-6 shadow-xl mb-6">
@@ -333,53 +479,48 @@ export default function GuitarChordsPage() {
                 />
               </div>
               
-              {/* 放棄提示 */}
-              {showGiveUp && selectedAnswer !== currentChord.name && (
+              {/* 答錯提示 */}
+              {gameState === 'answered' && selectedAnswer !== currentChord.name && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-red-100 border-2 border-red-400 rounded-2xl p-4 mb-4 text-center"
                 >
-                  <p className="text-red-700 font-bold mb-2">
-                    答錯了！{giveUpTimer}秒後自動下一題
+                  <p className="text-red-700 font-bold">
+                    {selectedAnswer === 'TIME_UP' ? '時間到！' : '答錯了！'}
                   </p>
-                  <button
-                    onClick={handleSkip}
-                    className="px-6 py-2 bg-red-500 text-white rounded-xl font-bold"
-                  >
-                    放棄，下一題 →
-                  </button>
+                  <p className="text-red-600">正確答案：{currentChord.name}</p>
                 </motion.div>
               )}
               
-              {/* 選項 */}
-              <div className="grid grid-cols-2 gap-3">
-                {currentOptions.map((chord) => {
+              {/* 選項 - 動態網格根據選項數量調整 */}
+              <div className={`grid gap-3 ${
+                displayOptions.length <= 3 ? 'grid-cols-3' : 
+                displayOptions.length <= 4 ? 'grid-cols-2' : 
+                displayOptions.length <= 6 ? 'grid-cols-3' : 'grid-cols-4'
+              }`}>
+                {displayOptions.map((chord) => {
                   const isSelected = selectedAnswer === chord.name;
                   const isCorrect = chord.name === currentChord.name;
-                  const isWrongAttempt = wrongAttempts.includes(chord.name);
+                  const isWrong = selectedAnswer === chord.name && !isCorrect;
                   const showResult = gameState === 'answered';
                   
-                  let buttonClass = 'bg-white hover:bg-amber-50 text-amber-800';
+                  let buttonClass = 'bg-white hover:bg-amber-50 text-amber-800 shadow-md';
                   if (showResult) {
-                    if (isCorrect) buttonClass = 'bg-green-500 text-white';
-                    else if (isSelected && !isCorrect) buttonClass = 'bg-red-500 text-white';
-                    else if (isWrongAttempt) buttonClass = 'bg-gray-200 text-gray-400';
-                  } else if (isWrongAttempt) {
-                    buttonClass = 'bg-gray-200 text-gray-400 cursor-not-allowed';
+                    if (isCorrect) buttonClass = 'bg-green-500 text-white shadow-lg';
+                    else if (isWrong) buttonClass = 'bg-red-500 text-white shadow-lg';
                   }
                   
                   return (
                     <motion.button
                       key={chord.name}
                       onClick={() => handleAnswer(chord.name)}
-                      disabled={gameState !== 'playing' || isWrongAttempt}
-                      whileHover={gameState === 'playing' && !isWrongAttempt ? { scale: 1.02 } : {}}
-                      whileTap={gameState === 'playing' && !isWrongAttempt ? { scale: 0.98 } : {}}
-                      className={`p-5 rounded-2xl font-black text-xl shadow-md transition-all ${buttonClass}`}
+                      disabled={gameState !== 'playing'}
+                      whileHover={gameState === 'playing' ? { scale: 1.05 } : {}}
+                      whileTap={gameState === 'playing' ? { scale: 0.95 } : {}}
+                      className={`p-4 rounded-2xl font-black text-lg transition-all ${buttonClass}`}
                     >
                       {chord.name}
-                      {isWrongAttempt && <span className="block text-xs font-normal">已試過</span>}
                     </motion.button>
                   );
                 })}
@@ -395,8 +536,10 @@ export default function GuitarChordsPage() {
               animate={{ scale: 1, opacity: 1 }}
               className="bg-white rounded-3xl p-8 shadow-xl text-center"
             >
-              <div className="text-6xl mb-4">🎸</div>
-              <h2 className="text-3xl font-black text-amber-800 mb-4">挑戰完成！</h2>
+              <div className="text-6xl mb-4">{config.emoji}</div>
+              <h2 className="text-3xl font-black text-amber-800 mb-2">
+                {config.name}級挑戰完成！
+              </h2>
               
               <div className="bg-amber-50 rounded-2xl p-6 mb-6">
                 <div className="text-5xl font-black text-amber-600 mb-2">
@@ -406,8 +549,21 @@ export default function GuitarChordsPage() {
                   正確率 {Math.round((score / questions.length) * 100)}%
                 </p>
                 <p className="text-2xl font-mono font-bold text-orange-600 mt-3">
-                  總時間：{formatTime(timer)}
+                  總時間：{formatTime(timeElapsed)}
                 </p>
+              </div>
+              
+              {/* 評價 */}
+              <div className="mb-6">
+                {score === questions.length ? (
+                  <p className="text-2xl font-bold text-green-600">🌟 完美！全對！</p>
+                ) : score >= questions.length * 0.8 ? (
+                  <p className="text-2xl font-bold text-blue-600">💪 好勁！繼續保持！</p>
+                ) : score >= questions.length * 0.6 ? (
+                  <p className="text-xl font-bold text-amber-600">👍 唔錯！再練多啲！</p>
+                ) : (
+                  <p className="text-xl font-bold text-orange-600">📚 加油！多啲練習！</p>
+                )}
               </div>
               
               <div className="flex gap-3">
@@ -418,7 +574,7 @@ export default function GuitarChordsPage() {
                   主選單
                 </button>
                 <button
-                  onClick={startGame}
+                  onClick={() => setGameState('select')}
                   className="flex-1 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold shadow-lg"
                 >
                   再玩一次
