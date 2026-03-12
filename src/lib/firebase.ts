@@ -62,6 +62,7 @@ export const COLLECTIONS = {
   PRACTICE_RECORDS: 'practice_records',
   BADGES: 'badges',
   COMMENTS: 'comments',
+  GUITAR_CHORDS_LEADERBOARD: 'guitar_chords_leaderboard',
 } as const;
 
 // ==================== 環境檢查 ====================

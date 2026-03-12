@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ChordDiagram } from './components/ChordDiagram';
+import { Leaderboard } from './components/Leaderboard';
+import { submitScore } from './services/leaderboard';
 import { CHORD_DATABASE, Chord, ChordQuality } from './data/chords';
 
-type GameState = 'menu' | 'select' | 'countdown' | 'playing' | 'answered' | 'summary';
-type Difficulty = 'beginner' | 'easy' | 'medium' | 'hard' | 'expert' | 'legend';
+type GameState = 'menu' | 'select' | 'countdown' | 'playing' | 'answered' | 'summary' | 'submitting';
+export type Difficulty = 'beginner' | 'easy' | 'medium' | 'hard' | 'expert' | 'legend';
 
 // 難度設定
 const DIFFICULTY_CONFIG: Record<Difficulty, {
@@ -156,7 +158,10 @@ export default function GuitarChordsPage() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [wrongAttempts, setWrongAttempts] = useState<string[]>([]);
   const [currentOptions, setCurrentOptions] = useState<Chord[]>([]);
-  const [questionTimeLeft, setQuestionTimeLeft] = useState<number | null>(null); // 當前題目剩餘時間
+  const [questionTimeLeft, setQuestionTimeLeft] = useState<number | null>(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [submitted, setSubmitted] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const questionTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -304,7 +309,24 @@ export default function GuitarChordsPage() {
     } else {
       setIsRunning(false);
       setGameState('summary');
+      setSubmitted(false);
     }
+  };
+
+  const handleSubmitScore = async () => {
+    if (submitted || !playerName.trim()) return;
+    
+    setGameState('submitting');
+    await submitScore(
+      playerName,
+      score,
+      questions.length,
+      difficulty,
+      config.name,
+      timeElapsed
+    );
+    setSubmitted(true);
+    setGameState('summary');
   };
   
   // 獲取當前顯示的選項（過濾掉已試過的錯誤選項）
@@ -338,14 +360,25 @@ export default function GuitarChordsPage() {
               <h2 className="text-3xl font-black text-amber-800 mb-4">結他和弦大挑戰</h2>
               <p className="text-amber-600 mb-8">睇和弦圖，鬥快答出正確和弦！</p>
               
-              <motion.button
-                onClick={() => setGameState('select')}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-10 py-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-black text-xl shadow-xl"
-              >
-                開始挑戰 🎵
-              </motion.button>
+              <div className="space-y-4">
+                <motion.button
+                  onClick={() => setGameState('select')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full px-10 py-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-black text-xl shadow-xl"
+                >
+                  開始挑戰 🎵
+                </motion.button>
+                
+                <motion.button
+                  onClick={() => setShowLeaderboard(true)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full px-10 py-4 bg-gradient-to-r from-yellow-400 to-amber-400 text-white rounded-2xl font-black text-lg shadow-lg"
+                >
+                  🏆 全球排行榜
+                </motion.button>
+              </div>
             </motion.div>
           )}
           
@@ -528,6 +561,19 @@ export default function GuitarChordsPage() {
             </motion.div>
           )}
           
+          {/* 提交中 */}
+          {gameState === 'submitting' && (
+            <motion.div
+              key="submitting"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-20"
+            >
+              <div className="text-6xl mb-4">⏳</div>
+              <p className="text-amber-600 font-bold">提交分數中...</p>
+            </motion.div>
+          )}
+          
           {/* 總結 */}
           {gameState === 'summary' && (
             <motion.div
@@ -554,7 +600,7 @@ export default function GuitarChordsPage() {
               </div>
               
               {/* 評價 */}
-              <div className="mb-6">
+              <div className="mb-4">
                 {score === questions.length ? (
                   <p className="text-2xl font-bold text-green-600">🌟 完美！全對！</p>
                 ) : score >= questions.length * 0.8 ? (
@@ -565,25 +611,68 @@ export default function GuitarChordsPage() {
                   <p className="text-xl font-bold text-orange-600">📚 加油！多啲練習！</p>
                 )}
               </div>
+
+              {/* 提交分數 */}
+              {!submitted && score > 0 && (
+                <div className="mb-6 p-4 bg-blue-50 rounded-xl">
+                  <p className="text-blue-700 font-bold mb-3">🏆 提交到全球排行榜</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={playerName}
+                      onChange={(e) => setPlayerName(e.target.value)}
+                      placeholder="輸入你的名字"
+                      maxLength={20}
+                      className="flex-1 px-4 py-2 border-2 border-blue-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={handleSubmitScore}
+                      disabled={!playerName.trim()}
+                      className="px-6 py-2 bg-blue-500 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      提交
+                    </button>
+                  </div>
+                </div>
+              )}
               
-              <div className="flex gap-3">
+              {submitted && (
+                <p className="text-green-600 font-bold mb-4">✅ 分數已提交！</p>
+              )}
+              
+              <div className="grid grid-cols-2 gap-3 mb-4">
                 <button
                   onClick={() => setGameState('menu')}
-                  className="flex-1 py-4 bg-gray-200 text-gray-700 rounded-xl font-bold"
+                  className="py-4 bg-gray-200 text-gray-700 rounded-xl font-bold"
                 >
                   主選單
                 </button>
                 <button
                   onClick={() => setGameState('select')}
-                  className="flex-1 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold shadow-lg"
+                  className="py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold shadow-lg"
                 >
                   再玩一次
                 </button>
               </div>
+
+              <button
+                onClick={() => setShowLeaderboard(true)}
+                className="w-full py-4 bg-gradient-to-r from-yellow-400 to-amber-400 text-white rounded-xl font-bold shadow-lg"
+              >
+                🏆 查看排行榜
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* 排行榜彈窗 */}
+      {showLeaderboard && (
+        <Leaderboard
+          currentDifficulty={difficulty}
+          onClose={() => setShowLeaderboard(false)}
+        />
+      )}
     </div>
   );
 }
