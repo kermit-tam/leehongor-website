@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from 'framer-motion';
 // 通用詞彙接口，兼容所有課程
 interface VocabItem {
@@ -30,10 +30,45 @@ export function VocabFlashcard({ vocab, showCantonese, onComplete }: VocabFlashc
   const [isFlipped, setIsFlipped] = useState(false);
   const [exitDirection, setExitDirection] = useState<'left' | 'right' | null>(null);
   const [showHint, setShowHint] = useState(true);
+  const autoPlayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentVocab = vocab[currentIndex];
   const nextVocab = vocab[currentIndex + 1];
   const progress = ((currentIndex + 1) / vocab.length) * 100;
+
+  // 播放音頻函數
+  const playAudio = useCallback((text?: string) => {
+    if (!('speechSynthesis' in window)) return;
+    
+    // 取消之前的播放
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text || currentVocab.hiragana);
+    utterance.lang = 'ja-JP';
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+
+    window.speechSynthesis.speak(utterance);
+  }, [currentVocab]);
+
+  // 自動播放音頻 - 卡片顯示時自動朗讀
+  useEffect(() => {
+    // 清除之前的定時器
+    if (autoPlayTimeoutRef.current) {
+      clearTimeout(autoPlayTimeoutRef.current);
+    }
+    
+    // 延遲一點時間後自動播放，避免過於急促
+    autoPlayTimeoutRef.current = setTimeout(() => {
+      playAudio();
+    }, 500);
+
+    return () => {
+      if (autoPlayTimeoutRef.current) {
+        clearTimeout(autoPlayTimeoutRef.current);
+      }
+    };
+  }, [currentIndex, playAudio]);
 
   // 手勢控制
   const x = useMotionValue(0);
@@ -83,17 +118,11 @@ export function VocabFlashcard({ vocab, showCantonese, onComplete }: VocabFlashc
     }
   }, [handleNext, handlePrev]);
 
-  const playAudio = useCallback((e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (!('speechSynthesis' in window)) return;
-
-    const utterance = new SpeechSynthesisUtterance(currentVocab.hiragana);
-    utterance.lang = 'ja-JP';
-    utterance.rate = 0.8;
-    utterance.pitch = 1;
-
-    window.speechSynthesis.speak(utterance);
-  }, [currentVocab]);
+  // 手動播放音頻（按鈕點擊）
+  const handlePlayAudioClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    playAudio();
+  }, [playAudio]);
 
   // 下一張卡片的動畫
   const nextCardVariants = {
@@ -229,7 +258,7 @@ export function VocabFlashcard({ vocab, showCantonese, onComplete }: VocabFlashc
                 
                 {/* 播放按 */}
                 <button
-                  onClick={(e) => playAudio(e)}
+                  onClick={handlePlayAudioClick}
                   className="absolute top-4 right-4 p-3 rounded-full bg-[#F5F5F0] text-[#8C8C8C] hover:text-[#4A4A4A] hover:bg-[#E0D5C7] transition-colors"
                 >
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">

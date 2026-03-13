@@ -42,14 +42,20 @@ export function generateQuestionsForUnit(unitId: number, count: number = 10): Ga
   const allVocab = currentLessonVocab;
   const questions: GameQuestion[] = [];
   const usedTypes: QuestionType[] = [];
+  // 追蹤已使用的詞彙ID，避免同一練習中出現重複詞彙
+  const usedVocabIds = new Set<string>();
 
   // 確保每種題型最少數量
   QUESTION_WEIGHTS.forEach(({ type, minPerQuiz }) => {
     for (let i = 0; i < minPerQuiz; i++) {
-      const question = generateQuestionByType(type, vocab, allVocab, unitId, questions.length);
+      const question = generateQuestionByType(type, vocab, allVocab, unitId, questions.length, usedVocabIds);
       if (question) {
         questions.push(question);
         usedTypes.push(type);
+        // 記錄使用的詞彙
+        if ('correctVocabId' in question && question.correctVocabId) {
+          usedVocabIds.add(question.correctVocabId);
+        }
       }
     }
   });
@@ -77,10 +83,14 @@ export function generateQuestionsForUnit(unitId: number, count: number = 10): Ga
       }
     }
 
-    const question = generateQuestionByType(selectedType, vocab, allVocab, unitId, questions.length);
+    const question = generateQuestionByType(selectedType, vocab, allVocab, unitId, questions.length, usedVocabIds);
     if (question) {
       questions.push(question);
       usedTypes.push(selectedType);
+      // 記錄使用的詞彙
+      if ('correctVocabId' in question && question.correctVocabId) {
+        usedVocabIds.add(question.correctVocabId);
+      }
     }
   }
 
@@ -92,17 +102,18 @@ function generateQuestionByType(
   unitVocab: GameVocab[],
   allVocab: GameVocab[],
   unitId: number,
-  index: number
+  index: number,
+  usedVocabIds?: Set<string>
 ): GameQuestion | null {
   switch (type) {
     case 'speed-match':
-      return generateSpeedMatch(unitVocab, unitId, index);
+      return generateSpeedMatch(unitVocab, unitId, index, usedVocabIds);
     case 'audio-select':
-      return generateAudioSelect(unitVocab, allVocab, unitId, index);
+      return generateAudioSelect(unitVocab, allVocab, unitId, index, usedVocabIds);
     case 'sentence-puzzle':
       return generateSentencePuzzle(unitVocab, unitId, index);
     case 'visual-quiz':
-      return generateVisualQuiz(unitVocab, allVocab, unitId, index);
+      return generateVisualQuiz(unitVocab, allVocab, unitId, index, usedVocabIds);
     case 'true-false':
       return generateTrueFalse(unitVocab, unitId, index);
     case 'cloze':
@@ -114,10 +125,18 @@ function generateQuestionByType(
 
 // ==================== 各題型生成器 ====================
 
-function generateSpeedMatch(vocab: GameVocab[], unitId: number, index: number): GameQuestion {
+function generateSpeedMatch(vocab: GameVocab[], unitId: number, index: number, usedVocabIds?: Set<string>): GameQuestion {
+  // 過濾掉已使用的詞彙
+  const availableVocab = usedVocabIds 
+    ? vocab.filter(v => !usedVocabIds.has(v.id))
+    : vocab;
+  
+  // 如果可用詞彙不足，使用所有詞彙
+  const vocabPool = availableVocab.length >= 4 ? availableVocab : vocab;
+  
   // 隨機選4-6對詞彙
-  const pairCount = Math.min(6, Math.max(4, Math.floor(vocab.length / 2)));
-  const selectedVocab = shuffle(vocab).slice(0, pairCount);
+  const pairCount = Math.min(6, Math.max(4, Math.floor(vocabPool.length / 2)));
+  const selectedVocab = shuffle(vocabPool).slice(0, pairCount);
   
   return {
     id: `q-${unitId}-sm-${index}`,
@@ -136,10 +155,19 @@ function generateAudioSelect(
   unitVocab: GameVocab[],
   allVocab: GameVocab[],
   unitId: number,
-  index: number
+  index: number,
+  usedVocabIds?: Set<string>
 ): GameQuestion {
+  // 過濾掉已使用的詞彙
+  const availableVocab = usedVocabIds 
+    ? unitVocab.filter(v => !usedVocabIds.has(v.id))
+    : unitVocab;
+  
+  // 如果可用詞彙不足，使用所有詞彙
+  const vocabPool = availableVocab.length > 0 ? availableVocab : unitVocab;
+  
   // 選一個正確答案
-  const correct = unitVocab[Math.floor(Math.random() * unitVocab.length)];
+  const correct = vocabPool[Math.floor(Math.random() * vocabPool.length)];
   
   // 選3個錯誤選項（從其他詞彙）
   const wrongOptions = shuffle(allVocab.filter(v => v.id !== correct.id))
@@ -155,6 +183,7 @@ function generateAudioSelect(
     audioText: correct.hiragana,
     correctAnswer: correct.meaning,
     options,
+    correctVocabId: correct.id, // 記錄正確詞彙ID用於去重
   };
 }
 
@@ -367,15 +396,23 @@ function generateVisualQuiz(
   unitVocab: GameVocab[],
   allVocab: GameVocab[],
   unitId: number,
-  index: number
+  index: number,
+  usedVocabIds?: Set<string>
 ): GameQuestion {
-  // 選擇有emoji的詞彙
-  const emojiVocab = unitVocab.filter(v => v.emoji);
+  // 選擇有emoji的詞彙，過濾掉已使用的
+  let emojiVocab = unitVocab.filter(v => v.emoji);
+  if (usedVocabIds) {
+    const availableEmojiVocab = emojiVocab.filter(v => !usedVocabIds.has(v.id));
+    if (availableEmojiVocab.length > 0) {
+      emojiVocab = availableEmojiVocab;
+    }
+  }
+  
   const correct = emojiVocab[Math.floor(Math.random() * emojiVocab.length)];
   
   if (!correct) {
     // 如果沒有emoji詞彙，使用audio-select代替
-    return generateAudioSelect(unitVocab, allVocab, unitId, index);
+    return generateAudioSelect(unitVocab, allVocab, unitId, index, usedVocabIds);
   }
   
   // 選3個錯誤選項
@@ -392,6 +429,7 @@ function generateVisualQuiz(
     emoji: correct.emoji!,
     correctAnswer: correct.hiragana,
     options,
+    correctVocabId: correct.id, // 記錄正確詞彙ID用於去重
   };
 }
 

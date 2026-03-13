@@ -56,6 +56,18 @@ export function SpeedMatchGame({ question, onComplete, onTimeUp }: SpeedMatchGam
     setSelectedLeft(index);
   }, [matched]);
 
+  // 朗讀日文
+  const speakJapanese = useCallback((text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP';
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+    
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
   const handleRightClick = useCallback((rightIndex: number) => {
     if (selectedLeft === null) return;
 
@@ -67,13 +79,16 @@ export function SpeedMatchGame({ question, onComplete, onTimeUp }: SpeedMatchGam
       setMatched(prev => new Set([...prev, selectedLeft]));
       setScore(prev => prev + 100);
       setSelectedLeft(null);
+      
+      // 朗讀配對成功的日文單詞
+      speakJapanese(leftMatch.hiragana);
     } else {
       // 配對失敗 - 震動效果
       setShakeIndex(rightIndex);
       setTimeout(() => setShakeIndex(null), 300);
       setSelectedLeft(null);
     }
-  }, [selectedLeft, leftItems, rightItems]);
+  }, [selectedLeft, leftItems, rightItems, speakJapanese]);
 
   return (
     <div className="w-full max-w-2xl mx-auto">

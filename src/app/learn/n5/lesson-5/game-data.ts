@@ -133,6 +133,7 @@ export interface AudioSelectQuestion extends BaseQuestion {
   audioText: string;
   correctAnswer: string;
   options: string[];
+  correctVocabId?: string; // 用於去重
 }
 
 export interface SentencePuzzleQuestion extends BaseQuestion {
@@ -147,6 +148,7 @@ export interface VisualQuizQuestion extends BaseQuestion {
   emoji: string;
   correctAnswer: string;
   options: string[];
+  correctVocabId?: string; // 用於去重
 }
 
 export interface TrueFalseQuestion extends BaseQuestion {

@@ -49,6 +49,7 @@ export default function Lesson1Page() {
   const [unitProgress, setUnitProgress] = useState<UnitProgress[]>([]);
   const [savedSentences, setSavedSentences] = useState<SavedSentence[]>([]);
   const [totalExp, setTotalExp] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   // 測驗結果
   const [showResult, setShowResult] = useState(false);
@@ -117,6 +118,9 @@ export default function Lesson1Page() {
       if (exp) {
         setTotalExp(parseInt(exp));
       }
+      
+      // 標記數據已加載
+      setIsLoaded(true);
     }, 0);
 
     return () => clearTimeout(initTimer);
@@ -224,7 +228,20 @@ export default function Lesson1Page() {
   const unlockedUnits = lesson1Units.length;
 
   // 渲染主選單
-  const renderMenu = () => (
+  const renderMenu = () => {
+    // 加載中顯示
+    if (!isLoaded) {
+      return (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="text-4xl mb-4">📚</div>
+            <div className="text-[#8C8C8C]">加載中...</div>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
     <div className="space-y-6">
       {/* 頂部資訊 */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E5E5]">
@@ -435,7 +452,8 @@ export default function Lesson1Page() {
         </button>
       </div>
     </div>
-  );
+    );
+  };
 
   // 渲染學習模式
   const renderStudy = () => {
