@@ -16,9 +16,11 @@ import { ExamFilters } from './components/exam-filters';
 import { ExamResults } from './components/exam-results';
 
 export default function JLPTExamPage() {
-  // 篩選狀態
-  const [selectedYears, setSelectedYears] = useState<number[]>([]);
-  const [selectedSections, setSelectedSections] = useState<ExamSection[]>([]);
+  // 篩選狀態 - 預設選擇所有年份和部份
+  const [selectedYears, setSelectedYears] = useState<number[]>(
+    [...new Set(AVAILABLE_YEARS.map(y => y.year))]
+  );
+  const [selectedSections, setSelectedSections] = useState<ExamSection[]>(['vocabulary', 'grammar', 'reading']);
   const [shuffleMode, setShuffleMode] = useState(false);
   const [questionCount, setQuestionCount] = useState<number | null>(null);
 
