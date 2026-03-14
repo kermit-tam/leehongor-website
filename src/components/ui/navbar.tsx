@@ -19,6 +19,7 @@ export function Navbar() {
   const navItems: { label: string; href: string; icon: string }[] = [
     { label: '輕鬆學', href: '/posts', icon: '' },
     { label: '系統學', href: '/learn', icon: '' },
+    { label: '歷屆試題', href: '/jlpt-exam', icon: '' },
     { label: '考試模式', href: '/exam', icon: '' },
     { label: '排行榜', href: '/leaderboard', icon: '' },
   ];
