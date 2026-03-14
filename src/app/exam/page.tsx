@@ -255,12 +255,50 @@ export default function ExamPage() {
         })}
       </div>
       
+      {/* 歷屆試題入口 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="mt-8"
+      >
+        <a
+          href="/jlpt-exam"
+          className="block bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border-2 border-amber-200 hover:border-amber-300 transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                📚
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">歷屆試題</h3>
+                <p className="text-gray-600 mt-1">
+                  JLPT N5 日本語能力試驗歷年考古題，包含 2013-2023 年真題練習
+                </p>
+                <div className="flex items-center gap-4 mt-2 text-sm text-amber-700">
+                  <span>🔤 文字語彙</span>
+                  <span>📐 文法</span>
+                  <span>📖 讀解</span>
+                  <span>🔀 亂序練習</span>
+                </div>
+              </div>
+            </div>
+            <div className="text-amber-600 group-hover:translate-x-2 transition-transform">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </a>
+      </motion.div>
+
       {/* 說明 */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="mt-12 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6"
+        className="mt-8 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6"
       >
         <h3 className="text-lg font-bold text-gray-900 mb-3">📋 考試說明</h3>
         <ul className="space-y-2 text-gray-600">
