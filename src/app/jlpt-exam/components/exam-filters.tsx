@@ -135,28 +135,30 @@ export function ExamFilters({
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {(Object.entries(sectionTitles) as [ExamSection, typeof sectionTitles[ExamSection]][]).map(
-            ([section, info]) => {
-              const isSelected = selectedSections.includes(section);
-              return (
-                <motion.button
-                  key={section}
-                  onClick={() => toggleSection(section)}
-                  whileTap={{ scale: 0.95 }}
-                  className={`p-4 rounded-xl border-2 transition-colors text-left
-                    ${isSelected
-                      ? 'border-[#A8B5A0] bg-[#A8B5A0]/10'
-                      : 'border-[#E5E5E5] hover:border-[#C4B9AC]'
-                    }`}
-                >
-                  <div className="text-2xl mb-1">{info.icon}</div>
-                  <div className="font-medium text-[#4A4A4A]">{info.title}</div>
-                  <div className="text-xs text-[#8C8C8C]">{info.titleJp}</div>
-                </motion.button>
-              );
-            }
-          )}
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.entries(sectionTitles) as [ExamSection, typeof sectionTitles[ExamSection]][])
+            .filter(([section]) => section !== 'listening') // 暫時隱藏聆聽理解
+            .map(
+              ([section, info]) => {
+                const isSelected = selectedSections.includes(section);
+                return (
+                  <motion.button
+                    key={section}
+                    onClick={() => toggleSection(section)}
+                    whileTap={{ scale: 0.95 }}
+                    className={`p-4 rounded-xl border-2 transition-colors text-left
+                      ${isSelected
+                        ? 'border-[#A8B5A0] bg-[#A8B5A0]/10'
+                        : 'border-[#E5E5E5] hover:border-[#C4B9AC]'
+                      }`}
+                  >
+                    <div className="text-2xl mb-1">{info.icon}</div>
+                    <div className="font-medium text-[#4A4A4A]">{info.title}</div>
+                    <div className="text-xs text-[#8C8C8C]">{info.titleJp}</div>
+                  </motion.button>
+                );
+              }
+            )}
         </div>
       </div>
 

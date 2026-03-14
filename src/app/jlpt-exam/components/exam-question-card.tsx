@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExamQuestion, SECTION_TITLES } from '@/data/jlpt-n5-exam';
 
@@ -12,6 +12,21 @@ interface ExamQuestionCardProps {
   onSelectAnswer: (answer: string) => void;
 }
 
+// 朗讀日文
+function speakJapanese(text: string) {
+  if (!('speechSynthesis' in window)) return;
+  
+  // 取消之前的播放
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ja-JP';
+  utterance.rate = 0.8;
+  utterance.pitch = 1;
+
+  window.speechSynthesis.speak(utterance);
+}
+
 export function ExamQuestionCard({
   question,
   questionNumber,
@@ -19,10 +34,9 @@ export function ExamQuestionCard({
   showResult,
   onSelectAnswer,
 }: ExamQuestionCardProps) {
-  // 展開/收起狀態
-  const [showQuestionReading, setShowQuestionReading] = useState(false);
+  // 中文顯示狀態
   const [showQuestionMeaning, setShowQuestionMeaning] = useState(false);
-  const [showOptionReadings, setShowOptionReadings] = useState<Record<string, boolean>>({});
+  const [showContextMeaning, setShowContextMeaning] = useState(false);
   const [showOptionMeanings, setShowOptionMeanings] = useState<Record<string, boolean>>({});
   const [showExplanation, setShowExplanation] = useState(false);
 
@@ -30,6 +44,27 @@ export function ExamQuestionCard({
   const isAnswered = selectedAnswer !== null;
 
   const sectionInfo = SECTION_TITLES[question.section];
+
+  // 播放題目讀音
+  const playQuestionAudio = useCallback(() => {
+    const textToRead = question.questionReading || question.question;
+    speakJapanese(textToRead);
+  }, [question]);
+
+  // 播放文章讀音
+  const playContextAudio = useCallback(() => {
+    if (question.context) {
+      const textToRead = question.contextReading || question.context;
+      speakJapanese(textToRead);
+    }
+  }, [question]);
+
+  // 播放選項讀音
+  const playOptionAudio = useCallback((e: React.MouseEvent, optionText: string, optionReading?: string) => {
+    e.stopPropagation();
+    const textToRead = optionReading || optionText;
+    speakJapanese(textToRead);
+  }, []);
 
   return (
     <motion.div
@@ -79,45 +114,41 @@ export function ExamQuestionCard({
         {/* 上下文（讀解用） */}
         {question.context && (
           <div className="mb-6 p-4 bg-[#F5F5F0] rounded-xl">
-            <div className="text-sm text-[#8C8C8C] mb-2">📖 文章</div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-[#8C8C8C]">📖 文章</span>
+              <div className="flex items-center gap-2">
+                {/* 播放文章讀音 */}
+                <button
+                  onClick={playContextAudio}
+                  className="p-2 rounded-full bg-white hover:bg-[#E0D5C7] transition-colors"
+                  title="播放讀音"
+                >
+                  <span className="text-lg">🔊</span>
+                </button>
+                {/* 顯示/隱藏中文 */}
+                <button
+                  onClick={() => setShowContextMeaning(!showContextMeaning)}
+                  className="p-2 rounded-full bg-white hover:bg-[#E0D5C7] transition-colors"
+                  title="中文翻譯"
+                >
+                  <span className="text-lg">☝️</span>
+                </button>
+              </div>
+            </div>
             <p className="text-[#4A4A4A] leading-relaxed whitespace-pre-line">{question.context}</p>
             
-            {/* 文章讀音 */}
-            <button
-              onClick={() => setShowQuestionReading(!showQuestionReading)}
-              className="mt-3 text-sm text-[#A8B5A0] hover:text-[#8B9A80] transition-colors flex items-center gap-1"
-            >
-              {showQuestionReading ? '🔼' : '🔽'} 讀音
-            </button>
+            {/* 文章中文翻譯 */}
             <AnimatePresence>
-              {showQuestionReading && question.contextReading && (
+              {showContextMeaning && question.contextMeaning && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   className="overflow-hidden"
                 >
-                  <p className="mt-2 text-[#8C8C8C] italic">{question.contextReading}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* 文章中文 */}
-            <button
-              onClick={() => setShowQuestionMeaning(!showQuestionMeaning)}
-              className="mt-2 text-sm text-[#A8B5A0] hover:text-[#8B9A80] transition-colors flex items-center gap-1"
-            >
-              {showQuestionMeaning ? '🔼' : '🔽'} 中文解釋
-            </button>
-            <AnimatePresence>
-              {showQuestionMeaning && question.contextMeaning && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <p className="mt-2 text-[#C4B9AC]">{question.contextMeaning}</p>
+                  <p className="mt-3 p-3 bg-white rounded-lg text-[#C4B9AC] border border-[#E5E5E5]">
+                    {question.contextMeaning}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -126,55 +157,45 @@ export function ExamQuestionCard({
 
         {/* 題目 */}
         <div>
-          <p className="text-lg text-[#4A4A4A] leading-relaxed">{question.question}</p>
-          
-          {/* 題目讀音 */}
-          {question.questionReading && (
-            <>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-lg text-[#4A4A4A] leading-relaxed flex-1">{question.question}</p>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* 播放題目讀音 */}
               <button
-                onClick={() => setShowQuestionReading(!showQuestionReading)}
-                className="mt-2 text-sm text-[#A8B5A0] hover:text-[#8B9A80] transition-colors flex items-center gap-1"
+                onClick={playQuestionAudio}
+                className="p-2 rounded-full hover:bg-[#F5F5F0] transition-colors"
+                title="播放讀音"
               >
-                {showQuestionReading ? '🔼' : '🔽'} 讀音
+                <span className="text-xl">🔊</span>
               </button>
-              <AnimatePresence>
-                {showQuestionReading && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="mt-2 text-[#8C8C8C] italic">{question.questionReading}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </>
-          )}
+              {/* 顯示/隱藏中文 */}
+              {question.questionMeaning && (
+                <button
+                  onClick={() => setShowQuestionMeaning(!showQuestionMeaning)}
+                  className="p-2 rounded-full hover:bg-[#F5F5F0] transition-colors"
+                  title="中文翻譯"
+                >
+                  <span className="text-xl">☝️</span>
+                </button>
+              )}
+            </div>
+          </div>
 
-          {/* 題目中文 */}
-          {question.questionMeaning && (
-            <>
-              <button
-                onClick={() => setShowQuestionMeaning(!showQuestionMeaning)}
-                className="mt-2 text-sm text-[#A8B5A0] hover:text-[#8B9A80] transition-colors flex items-center gap-1"
+          {/* 題目中文翻譯 */}
+          <AnimatePresence>
+            {showQuestionMeaning && question.questionMeaning && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
               >
-                {showQuestionMeaning ? '🔼' : '🔽'} 中文解釋
-              </button>
-              <AnimatePresence>
-                {showQuestionMeaning && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="mt-2 text-[#C4B9AC]">{question.questionMeaning}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </>
-          )}
+                <p className="mt-2 p-3 bg-[#F5F5F0] rounded-lg text-[#C4B9AC]">
+                  {question.questionMeaning}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* 選項 */}
@@ -203,7 +224,7 @@ export function ExamQuestionCard({
                   }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0
                     ${showCorrectness
                       ? isCorrectOption
                         ? 'bg-green-400 text-white'
@@ -217,42 +238,21 @@ export function ExamQuestionCard({
                   >
                     {option.id}
                   </span>
-                  <div className="flex-1">
-                    <p className="text-[#4A4A4A]">{option.text}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[#4A4A4A] break-words">{option.text}</p>
 
-                    {/* 選項讀音 */}
-                    {option.reading && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowOptionReadings(prev => ({
-                              ...prev,
-                              [option.id]: !prev[option.id]
-                            }));
-                          }}
-                          className="mt-2 text-xs text-[#A8B5A0] hover:text-[#8B9A80] transition-colors flex items-center gap-1"
-                        >
-                          {showOptionReadings[option.id] ? '🔼' : '🔽'} 讀音
-                        </button>
-                        <AnimatePresence>
-                          {showOptionReadings[option.id] && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="overflow-hidden"
-                            >
-                              <p className="mt-1 text-sm text-[#8C8C8C] italic">{option.reading}</p>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </>
-                    )}
-
-                    {/* 選項中文 */}
-                    {option.meaning && (
-                      <>
+                    {/* 選項操作按鈕 */}
+                    <div className="flex items-center gap-1 mt-2">
+                      {/* 播放選項讀音 */}
+                      <button
+                        onClick={(e) => playOptionAudio(e, option.text, option.reading)}
+                        className="p-1.5 rounded-full hover:bg-[#F5F5F0] transition-colors"
+                        title="播放讀音"
+                      >
+                        <span className="text-base">🔊</span>
+                      </button>
+                      {/* 顯示/隱藏中文 */}
+                      {option.meaning && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -261,24 +261,27 @@ export function ExamQuestionCard({
                               [option.id]: !prev[option.id]
                             }));
                           }}
-                          className="mt-1 text-xs text-[#A8B5A0] hover:text-[#8B9A80] transition-colors flex items-center gap-1"
+                          className="p-1.5 rounded-full hover:bg-[#F5F5F0] transition-colors"
+                          title="中文翻譯"
                         >
-                          {showOptionMeanings[option.id] ? '🔼' : '🔽'} 中文
+                          <span className="text-base">☝️</span>
                         </button>
-                        <AnimatePresence>
-                          {showOptionMeanings[option.id] && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="overflow-hidden"
-                            >
-                              <p className="mt-1 text-sm text-[#C4B9AC]">{option.meaning}</p>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </>
-                    )}
+                      )}
+                    </div>
+
+                    {/* 選項中文翻譯 */}
+                    <AnimatePresence>
+                      {showOptionMeanings[option.id] && option.meaning && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <p className="mt-1 text-sm text-[#C4B9AC]">{option.meaning}</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
               </motion.button>
