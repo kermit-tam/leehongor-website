@@ -697,15 +697,8 @@ export const moreReadingQuestions: ExamQuestion[] = [
   },
 ];
 
-// 匯總所有樣本題目
-export const allSampleQuestions: ExamQuestion[] = [
-  ...sampleVocabularyQuestions,
-  ...moreVocabularyQuestions,
-  ...sampleGrammarQuestions,
-  ...moreGrammarQuestions,
-  ...sampleReadingQuestions,
-  ...moreReadingQuestions,
-];
+// 從 all-questions.ts 導入完整題庫
+export { allQuestions as allSampleQuestions, questionStats } from './all-questions';
 
 // 根據條件篩選題目
 export function filterQuestions(
